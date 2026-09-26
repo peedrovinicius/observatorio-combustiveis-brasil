@@ -2,12 +2,19 @@
 
 Os scripts desta pasta usam sintaxe PostgreSQL.
 
-## Ordem
+## Estrutura
 
-1. `schema.sql`: cria dimensões, fato, restrições e índices.
-2. carregar os CSVs de `data/processed/model/` para as tabelas correspondentes.
-3. `views.sql`: cria a camada semântica.
-4. `queries.sql`: consultas analíticas de referência.
+- `schema.sql`: schema da série agregada;
+- `station_schema.sql`: schema da camada por posto;
+- `views.sql`: camada semântica agregada;
+- `queries.sql`: consultas analíticas da série agregada;
+- `station_queries.sql`: consultas analíticas da camada por posto.
+
+A carga automatizada dos dois modelos é executada por:
+
+```bash
+python -m src.load_postgres
+```
 
 ## Arquivos produzidos pelo pipeline
 
@@ -19,6 +26,6 @@ data/processed/model/
 └── fato_precos_semanais.csv
 ```
 
-O modelo é desenhado para preservar os agregados oficiais publicados pela ANP. A fato representa observações semanais por produto e localidade.
+O modelo agregado preserva os indicadores publicados pela ANP. A fato representa observações semanais por produto e localidade.
 
-A carga automatizada no PostgreSQL será adicionada em uma etapa posterior, após a validação do primeiro processamento completo dos arquivos oficiais.
+Na camada por posto, as consultas de última coleta determinam a data separadamente para cada `produto_posto_id`, que representa produto e unidade de medida. A comparação por bandeira segue a mesma regra de apresentação usada no Python: pelo menos 5 observações e 3 postos distintos.

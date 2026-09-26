@@ -120,3 +120,5 @@ A sinalização é uma regra de apresentação do projeto, não uma definição 
 ### Última coleta
 
 Na camada por posto, a data mais recente é determinada separadamente para cada combinação de produto e unidade de medida. Isso evita excluir um produto apenas porque outro possui observação em data posterior.
+
+Essa regra é aplicada de forma consistente nos exports Python, nas medidas DAX e nas consultas de referência em `sql/station_queries.sql`.

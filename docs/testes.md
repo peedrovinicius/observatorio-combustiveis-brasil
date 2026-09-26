@@ -32,6 +32,8 @@ A suíte verifica, entre outros pontos:
 - KPIs agregados;
 - análises por estabelecimento;
 - contrato dos CSVs com PostgreSQL;
+- consistência das consultas SQL por posto com a regra de última coleta por produto;
+- regra mínima de amostra por bandeira no SQL;
 - geração de gráficos;
 - publicação de snapshot e README;
 - construção do relatório web;
