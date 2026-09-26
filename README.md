@@ -16,7 +16,7 @@
 
 O projeto analisa a evolução e a distribuição dos preços de combustíveis no Brasil a partir de dados públicos da Agência Nacional do Petróleo, Gás Natural e Biocombustíveis (ANP).
 
-A proposta é construir um fluxo analítico reproduzível de ponta a ponta: aquisição, rastreabilidade, inspeção, tratamento, validação, consolidação, modelagem dimensional, SQL e visualização em Power BI.
+O fluxo foi desenhado como um projeto de Data Analytics reproduzível: aquisição, rastreabilidade, inspeção, tratamento, validação, consolidação, modelagem dimensional, SQL, KPIs e preparação para Power BI.
 
 ## Pergunta analítica
 
@@ -32,9 +32,10 @@ flowchart LR
     D --> E[Transformação<br/>Pandas]
     E --> F[Consolidação<br/>2026]
     F --> G[Qualidade<br/>Checks]
-    G --> H[Modelo estrela<br/>Dimensões + fato]
-    H --> I[PostgreSQL<br/>Views e queries]
-    I --> J[Power BI<br/>Dashboard]
+    G --> H[Modelo estrela]
+    H --> I[KPIs e tabelas<br/>analíticas]
+    I --> J[PostgreSQL<br/>Views e queries]
+    J --> K[Power BI<br/>Dashboard]
 ```
 
 ## Implementado
@@ -45,13 +46,16 @@ flowchart LR
 - inspeção de schema e valores ausentes;
 - detecção automática de cabeçalho;
 - padronização de datas, colunas e valores monetários;
-- consolidação exclusiva da série de 2026;
-- identificação automática do nível geográfico;
+- consolidação da série de 2026;
+- identificação do nível geográfico;
 - validações de qualidade;
-- modelo estrela com três dimensões e uma tabela fato;
-- DDL PostgreSQL com chaves, restrições e índices;
-- views analíticas;
-- consultas SQL para tendência, ranking, dispersão e etanol × gasolina;
+- modelo estrela com três dimensões e uma fato;
+- DDL PostgreSQL, views e consultas analíticas;
+- KPIs nacionais por produto;
+- tendência mensal derivada das observações semanais;
+- rankings por UF e município;
+- relação etanol × gasolina comum;
+- medidas DAX e especificação inicial do dashboard;
 - testes automatizados das regras centrais.
 
 ## Estrutura
@@ -64,18 +68,18 @@ observatorio-combustiveis-brasil/
 ├── docs/
 │   ├── dicionario-dados.md
 │   ├── fontes.md
+│   ├── kpis.md
 │   ├── metodologia.md
 │   └── modelo-dados.md
 ├── notebooks/
+├── powerbi/
+│   ├── medidas.dax
+│   └── README.md
 ├── reports/
 ├── sql/
-│   ├── README.md
-│   ├── queries.sql
-│   ├── schema.sql
-│   └── views.sql
 ├── src/
+│   ├── analytics.py
 │   ├── build_model.py
-│   ├── config.py
 │   ├── consolidate.py
 │   ├── download_history.py
 │   ├── inspect_raw.py
@@ -88,7 +92,7 @@ observatorio-combustiveis-brasil/
 └── README.md
 ```
 
-## Execução
+## Execução completa
 
 ```bash
 python -m venv .venv
@@ -103,7 +107,7 @@ python -m src.pipeline
 pytest
 ```
 
-O pipeline executa seis etapas:
+O pipeline executa sete etapas:
 
 ```text
 1. download da série histórica
@@ -112,54 +116,40 @@ O pipeline executa seis etapas:
 4. consolidação da série 2026
 5. validação de qualidade
 6. construção do modelo estrela
+7. geração das tabelas analíticas
 ```
 
-## Saídas locais
+## Saídas analíticas
+
+Além do modelo estrela, o pipeline gera:
 
 ```text
-data/processed/precos_semanais_2026.csv
-
-data/processed/model/
-├── dim_data.csv
-├── dim_produto.csv
-├── dim_localidade.csv
-└── fato_precos_semanais.csv
-
-reports/quality_2026.json
+data/processed/analytics/
+├── kpis_brasil_2026.csv
+├── tendencia_mensal_brasil_2026.csv
+├── ranking_ufs_ultima_semana.csv
+├── ranking_municipios_ultima_semana.csv
+└── etanol_gasolina_ultima_semana.csv
 ```
 
-Os datasets são reconstruíveis e não são versionados no Git, mantendo o repositório leve.
+Essas tabelas são derivadas dos dados processados e não são mantidas manualmente.
 
-## Modelo dimensional
+## Dashboard planejado
 
-```mermaid
-erDiagram
-    DIM_DATA ||--o{ FATO_PRECOS_SEMANAIS : periodo
-    DIM_PRODUTO ||--o{ FATO_PRECOS_SEMANAIS : produto
-    DIM_LOCALIDADE ||--o{ FATO_PRECOS_SEMANAIS : localidade
-```
+O Power BI terá quatro páginas principais:
 
-O grão da fato é **período × produto × localidade × unidade de medida**.
+1. **Visão Geral** — preço atual, variação, amplitude, postos e evolução semanal;
+2. **Geografia** — comparação entre UFs e municípios;
+3. **Tendência** — evolução semanal e indicador mensal derivado;
+4. **Etanol × Gasolina** — relação observada entre os dois combustíveis.
 
-A documentação completa está em [`docs/modelo-dados.md`](docs/modelo-dados.md).
-
-## Análises previstas
-
-- evolução semanal e mensal;
-- preço médio, mínimo e máximo;
-- amplitude e dispersão;
-- comparação Brasil × região × estado × município;
-- rankings geográficos;
-- variação percentual;
-- quantidade de postos pesquisados;
-- relação etanol × gasolina;
-- análise futura por posto e bandeira.
+A especificação e as medidas DAX estão em [`powerbi/README.md`](powerbi/README.md).
 
 ## Metodologia
 
 O projeto preserva os agregados oficiais publicados pela ANP. Não tratamos uma média simples das médias municipais como equivalente ao indicador nacional oficial.
 
-Veja [`docs/metodologia.md`](docs/metodologia.md).
+Indicadores derivados são explicitamente identificados. Veja [`docs/kpis.md`](docs/kpis.md) e [`docs/metodologia.md`](docs/metodologia.md).
 
 ## Princípios
 
@@ -174,9 +164,9 @@ Veja [`docs/metodologia.md`](docs/metodologia.md).
 
 ## Status
 
-**ETL, validação, consolidação 2026, modelo estrela e camada SQL implementados.**
+**ETL, validação, modelo dimensional, SQL e camada inicial de KPIs/Power BI implementados.**
 
-Próxima etapa: processar os arquivos oficiais no ambiente local e construir os primeiros indicadores e visuais do Power BI a partir dos resultados reais.
+A próxima etapa é executar o pipeline contra os arquivos oficiais, revisar os resultados reais e construir o arquivo do dashboard.
 
 ## Licença
 

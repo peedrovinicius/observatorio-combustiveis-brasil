@@ -1,0 +1,59 @@
+-- Medidas base para o modelo Power BI.
+-- Importar dim_data, dim_produto, dim_localidade e fato_precos_semanais.
+-- Relacionamentos: dimensões (1) -> fato (*), direção única.
+
+Preço Médio Publicado =
+AVERAGE ( fato_precos_semanais[preco_medio_revenda] )
+
+Preço Mínimo Publicado =
+MIN ( fato_precos_semanais[preco_minimo_revenda] )
+
+Preço Máximo Publicado =
+MAX ( fato_precos_semanais[preco_maximo_revenda] )
+
+Amplitude de Preço =
+[Preço Máximo Publicado] - [Preço Mínimo Publicado]
+
+Postos Pesquisados =
+SUM ( fato_precos_semanais[postos_pesquisados] )
+
+Última Data Disponível =
+MAX ( dim_data[data_inicial] )
+
+Preço Última Semana =
+VAR UltimaData =
+    MAX ( dim_data[data_inicial] )
+RETURN
+    CALCULATE (
+        [Preço Médio Publicado],
+        dim_data[data_inicial] = UltimaData
+    )
+
+Preço Semana Anterior =
+VAR DataAtual =
+    MAX ( dim_data[data_inicial] )
+VAR DataAnterior =
+    CALCULATE (
+        MAX ( dim_data[data_inicial] ),
+        FILTER (
+            ALL ( dim_data ),
+            dim_data[data_inicial] < DataAtual
+        )
+    )
+RETURN
+    CALCULATE (
+        [Preço Médio Publicado],
+        dim_data[data_inicial] = DataAnterior
+    )
+
+Variação Semanal % =
+DIVIDE (
+    [Preço Última Semana] - [Preço Semana Anterior],
+    [Preço Semana Anterior]
+)
+
+Desvio Padrão Publicado =
+AVERAGE ( fato_precos_semanais[desvio_padrao_revenda] )
+
+Coeficiente de Variação Publicado =
+AVERAGE ( fato_precos_semanais[coef_variacao_revenda] )
