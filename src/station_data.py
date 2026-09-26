@@ -35,7 +35,6 @@ BUSINESS_KEY = [
     "_posto_identidade",
     "produto",
     "unidade_medida",
-    "preco_revenda",
 ]
 
 FALLBACK_STATION_COLUMNS = [
@@ -52,7 +51,11 @@ def _normalize_name(value: object) -> str:
     text = "".join(
         char for char in text if not unicodedata.combining(char)
     )
-    text = re.sub(r"[^a-zA-Z0-9]+", "_", text).strip("_").lower()
+    text = re.sub(
+        r"[^a-zA-Z0-9]+",
+        "_",
+        text,
+    ).strip("_").lower()
     return COLUMN_ALIASES.get(text, text)
 
 
@@ -63,11 +66,20 @@ def _parse_decimal(series: pd.Series) -> pd.Series:
         if isinstance(value, (int, float)):
             return float(value)
 
-        text = str(value).strip().replace("R$", "").replace(" ", "")
+        text = (
+            str(value)
+            .strip()
+            .replace("R$", "")
+            .replace(" ", "")
+        )
         if not text:
             return None
         if "," in text:
-            text = text.replace(".", "").replace(",", ".")
+            text = (
+                text
+                .replace(".", "")
+                .replace(",", ".")
+            )
 
         try:
             return float(text)
@@ -77,7 +89,9 @@ def _parse_decimal(series: pd.Series) -> pd.Series:
     return series.map(parse)
 
 
-def station_identity(frame: pd.DataFrame) -> pd.Series:
+def station_identity(
+    frame: pd.DataFrame,
+) -> pd.Series:
     index = frame.index
 
     if "cnpj_revenda" in frame.columns:
@@ -89,7 +103,11 @@ def station_identity(frame: pd.DataFrame) -> pd.Series:
         )
         cnpj = cnpj.mask(cnpj.eq(""))
     else:
-        cnpj = pd.Series(pd.NA, index=index, dtype="string")
+        cnpj = pd.Series(
+            pd.NA,
+            index=index,
+            dtype="string",
+        )
 
     fallback_parts: list[pd.Series] = []
     for column in FALLBACK_STATION_COLUMNS:
@@ -102,12 +120,19 @@ def station_identity(frame: pd.DataFrame) -> pd.Series:
                 .str.upper()
             )
         else:
-            values = pd.Series("", index=index, dtype="string")
+            values = pd.Series(
+                "",
+                index=index,
+                dtype="string",
+            )
         fallback_parts.append(values)
 
     fallback = fallback_parts[0]
     for part in fallback_parts[1:]:
-        fallback = fallback.str.cat(part, sep="|")
+        fallback = fallback.str.cat(
+            part,
+            sep="|",
+        )
 
     identity = pd.Series(
         "cnpj:" + cnpj,
@@ -121,9 +146,49 @@ def station_identity(frame: pd.DataFrame) -> pd.Series:
     return identity
 
 
-def deduplicate_station_rows(frame: pd.DataFrame) -> pd.DataFrame:
+def source_priority(
+    source: object,
+) -> int:
+    text = str(source).casefold()
+    if "ultimas_4_semanas" in text:
+        return 20
+    if re.search(
+        r"(julho|agosto|setembro|outubro|novembro|dezembro)_2026",
+        text,
+    ):
+        return 10
+    if "2026_s1" in text or "2026-01" in text:
+        return 5
+    return 0
+
+
+def deduplicate_station_rows(
+    frame: pd.DataFrame,
+) -> pd.DataFrame:
     working = frame.copy()
-    working["_posto_identidade"] = station_identity(working)
+    working["_posto_identidade"] = station_identity(
+        working
+    )
+
+    if "fonte_arquivo" in working.columns:
+        working["_source_priority"] = (
+            working["fonte_arquivo"]
+            .map(source_priority)
+            .astype("Int64")
+        )
+    else:
+        working["_source_priority"] = 0
+
+    working["_source_order"] = range(
+        len(working)
+    )
+    working = working.sort_values(
+        [
+            "_source_priority",
+            "_source_order",
+        ],
+        kind="stable",
+    )
 
     keys = [
         key
@@ -134,17 +199,31 @@ def deduplicate_station_rows(frame: pd.DataFrame) -> pd.DataFrame:
         subset=keys,
         keep="last",
     )
+
     return working.drop(
-        columns=["_posto_identidade"],
+        columns=[
+            "_posto_identidade",
+            "_source_priority",
+            "_source_order",
+        ],
         errors="ignore",
     )
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
     attempts = [
-        {"sep": ";", "encoding": "utf-8-sig"},
-        {"sep": ";", "encoding": "latin-1"},
-        {"sep": ",", "encoding": "utf-8-sig"},
+        {
+            "sep": ";",
+            "encoding": "utf-8-sig",
+        },
+        {
+            "sep": ";",
+            "encoding": "latin-1",
+        },
+        {
+            "sep": ",",
+            "encoding": "utf-8-sig",
+        },
     ]
 
     for options in attempts:
@@ -160,11 +239,14 @@ def _read_csv(path: Path) -> pd.DataFrame:
             continue
 
     raise ValueError(
-        f"Não foi possível interpretar {path.name} como CSV da ANP."
+        f"Não foi possível interpretar {path.name} "
+        "como CSV da ANP."
     )
 
 
-def transform_station_file(path: Path) -> pd.DataFrame:
+def transform_station_file(
+    path: Path,
+) -> pd.DataFrame:
     frame = _read_csv(path)
     frame.columns = [
         _normalize_name(column)
@@ -182,8 +264,8 @@ def transform_station_file(path: Path) -> pd.DataFrame:
     missing = required - set(frame.columns)
     if missing:
         raise ValueError(
-            f"{path.name}: colunas obrigatórias ausentes: "
-            f"{sorted(missing)}"
+            f"{path.name}: colunas obrigatórias "
+            f"ausentes: {sorted(missing)}"
         )
 
     frame["data_coleta"] = pd.to_datetime(
@@ -223,10 +305,15 @@ def transform_station_file(path: Path) -> pd.DataFrame:
             )
 
     frame = frame.loc[
-        frame["data_coleta"].dt.year.eq(2026)
+        frame["data_coleta"]
+        .dt.year
+        .eq(2026)
     ].copy()
     frame = frame.dropna(
-        subset=["data_coleta", "preco_revenda"]
+        subset=[
+            "data_coleta",
+            "preco_revenda",
+        ]
     )
     frame = frame.loc[
         frame["preco_revenda"].gt(0)
@@ -239,7 +326,9 @@ def transform_station_file(path: Path) -> pd.DataFrame:
 def consolidate_station_data(
     directory: Path = RAW_OPEN_DATA_DIR,
 ) -> pd.DataFrame:
-    files = sorted(directory.rglob("*.csv"))
+    files = sorted(
+        directory.rglob("*.csv")
+    )
     if not files:
         raise RuntimeError(
             "Nenhum CSV de preços por posto encontrado."
@@ -255,7 +344,9 @@ def consolidate_station_data(
         sort=False,
     )
 
-    combined = deduplicate_station_rows(combined)
+    combined = deduplicate_station_rows(
+        combined
+    )
 
     sort_candidates = [
         "data_coleta",
@@ -286,7 +377,9 @@ def build_station_star_schema(
     dim_data = pd.DataFrame(
         {
             "data_coleta": sorted(
-                working["data_coleta"]
+                working[
+                    "data_coleta"
+                ]
                 .dropna()
                 .unique()
             )
@@ -295,22 +388,40 @@ def build_station_star_schema(
     dim_data.insert(
         0,
         "data_coleta_id",
-        range(1, len(dim_data) + 1),
+        range(
+            1,
+            len(dim_data) + 1,
+        ),
     )
     date_values = pd.to_datetime(
         dim_data["data_coleta"]
     )
-    dim_data["ano"] = date_values.dt.year
-    dim_data["mes"] = date_values.dt.month
+    dim_data["ano"] = (
+        date_values.dt.year
+    )
+    dim_data["mes"] = (
+        date_values.dt.month
+    )
     dim_data["semana_iso"] = (
-        date_values.dt.isocalendar().week.astype("Int64")
+        date_values
+        .dt.isocalendar()
+        .week
+        .astype("Int64")
     )
 
     dim_produto = (
-        working[["produto", "unidade_medida"]]
+        working[
+            [
+                "produto",
+                "unidade_medida",
+            ]
+        ]
         .drop_duplicates()
         .sort_values(
-            ["produto", "unidade_medida"],
+            [
+                "produto",
+                "unidade_medida",
+            ],
             kind="stable",
         )
         .reset_index(drop=True)
@@ -318,7 +429,10 @@ def build_station_star_schema(
     dim_produto.insert(
         0,
         "produto_posto_id",
-        range(1, len(dim_produto) + 1),
+        range(
+            1,
+            len(dim_produto) + 1,
+        ),
     )
 
     posto_cols = [
@@ -340,20 +454,31 @@ def build_station_star_schema(
     ]
     sort_cols = [
         column
-        for column in ["uf", "municipio", "cnpj_revenda", "revenda"]
+        for column in [
+            "uf",
+            "municipio",
+            "cnpj_revenda",
+            "revenda",
+        ]
         if column in posto_cols
     ]
 
     dim_posto = (
         working[posto_cols]
         .drop_duplicates()
-        .sort_values(sort_cols, kind="stable")
+        .sort_values(
+            sort_cols,
+            kind="stable",
+        )
         .reset_index(drop=True)
     )
     dim_posto.insert(
         0,
         "posto_id",
-        range(1, len(dim_posto) + 1),
+        range(
+            1,
+            len(dim_posto) + 1,
+        ),
     )
 
     fact = working.merge(
@@ -364,7 +489,10 @@ def build_station_star_schema(
     )
     fact = fact.merge(
         dim_produto,
-        on=["produto", "unidade_medida"],
+        on=[
+            "produto",
+            "unidade_medida",
+        ],
         how="left",
         validate="many_to_one",
     )
@@ -382,14 +510,23 @@ def build_station_star_schema(
         "preco_revenda",
     ]
     if "preco_compra" in fact.columns:
-        fact_columns.append("preco_compra")
-    fact_columns.append("fonte_arquivo")
+        fact_columns.append(
+            "preco_compra"
+        )
+    fact_columns.append(
+        "fonte_arquivo"
+    )
 
-    fact = fact[fact_columns].copy()
+    fact = fact[
+        fact_columns
+    ].copy()
     fact.insert(
         0,
         "preco_posto_id",
-        range(1, len(fact) + 1),
+        range(
+            1,
+            len(fact) + 1,
+        ),
     )
 
     return {
@@ -417,15 +554,24 @@ def main() -> None:
         parents=True,
         exist_ok=True,
     )
-    for name, table in build_station_star_schema(frame).items():
+    for name, table in build_station_star_schema(
+        frame
+    ).items():
         table.to_csv(
-            STATION_MODEL_DIR / f"{name}.csv",
+            STATION_MODEL_DIR
+            / f"{name}.csv",
             index=False,
             encoding="utf-8",
         )
-        print(f"{name}: {len(table):,} linhas")
+        print(
+            f"{name}: "
+            f"{len(table):,} linhas"
+        )
 
-    print(f"Observações por posto: {len(frame):,}")
+    print(
+        f"Observações por posto: "
+        f"{len(frame):,}"
+    )
 
 
 if __name__ == "__main__":

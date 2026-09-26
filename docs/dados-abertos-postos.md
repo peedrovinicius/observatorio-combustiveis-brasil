@@ -12,13 +12,29 @@ Para evitar arquivos redundantes, o coletor usa:
 - arquivos mensais do segundo semestre para diesel/GNV e etanol/gasolina;
 - as quatro últimas semanas para cobrir o período mais recente ainda não consolidado nos arquivos mensais.
 
-Sobreposições entre o arquivo mensal e o arquivo das últimas quatro semanas são removidas por chave de negócio.
+## Sobreposição entre arquivos
+
+A chave natural da observação é:
+
+```text
+data da coleta × posto × produto × unidade de medida
+```
+
+O preço é uma medida e não faz parte da identidade da observação.
+
+Quando o mesmo registro aparece em mais de uma publicação, o pipeline mantém uma única linha. A janela de quatro últimas semanas tem precedência sobre o arquivo mensal correspondente, permitindo que uma republicação mais recente substitua um valor anterior.
+
+Se o CNPJ estiver disponível, ele identifica o posto. Quando não estiver, é usado um identificador de fallback composto por UF, município, revenda, logradouro e número.
 
 ## Grão
 
 A tabela fato por posto representa:
 
-data da coleta × posto × produto × preço observado
+```text
+data da coleta × posto × produto
+```
+
+O preço observado é uma medida da fato.
 
 Esse grão é diferente da série agregada oficial. Por isso, as duas fontes não são misturadas na mesma tabela fato.
 
@@ -26,12 +42,12 @@ Esse grão é diferente da série agregada oficial. Por isso, as duas fontes nã
 
 A camada gera:
 
-- dim_data_coleta;
-- dim_produto_posto;
-- dim_posto;
-- fato_precos_postos.
+- `dim_data_coleta`;
+- `dim_produto_posto`;
+- `dim_posto`;
+- `fato_precos_postos`.
 
-Os arquivos locais são salvos em data/processed/model_postos e permanecem fora do Git.
+Os arquivos locais são salvos em `data/processed/model_postos` e permanecem fora do Git.
 
 ## Uso analítico
 

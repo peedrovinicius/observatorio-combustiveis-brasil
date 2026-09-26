@@ -2,11 +2,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.download_open_data import _discover_2026_links
+from src.download_open_data import (
+    _discover_2026_links,
+)
 from src.station_data import (
     build_station_star_schema,
     consolidate_station_data,
     deduplicate_station_rows,
+    source_priority,
     station_identity,
     transform_station_file,
 )
@@ -31,15 +34,39 @@ def test_discovers_relevant_2026_open_data_links() -> None:
     """
 
     links = _discover_2026_links(html)
-    datasets = {item["dataset"] for item in links}
+    datasets = {
+        item["dataset"]
+        for item in links
+    }
 
-    assert "automotivos_2026_s1" in datasets
-    assert "diesel_gnv_julho_2026" in datasets
-    assert "diesel_gnv_junho_2026" not in datasets
-    assert "etanol_gasolina_agosto_2026" in datasets
-    assert "diesel_gnv_ultimas_4_semanas" in datasets
-    assert "etanol_gasolina_ultimas_4_semanas" in datasets
-    assert all("glp" not in dataset for dataset in datasets)
+    assert (
+        "automotivos_2026_s1"
+        in datasets
+    )
+    assert (
+        "diesel_gnv_julho_2026"
+        in datasets
+    )
+    assert (
+        "diesel_gnv_junho_2026"
+        not in datasets
+    )
+    assert (
+        "etanol_gasolina_agosto_2026"
+        in datasets
+    )
+    assert (
+        "diesel_gnv_ultimas_4_semanas"
+        in datasets
+    )
+    assert (
+        "etanol_gasolina_ultimas_4_semanas"
+        in datasets
+    )
+    assert all(
+        "glp" not in dataset
+        for dataset in datasets
+    )
 
 
 def _write_sample(
@@ -101,46 +128,166 @@ def test_transform_station_file_uses_official_schema(
         ]],
     )
 
-    result = transform_station_file(path)
+    result = transform_station_file(
+        path
+    )
 
-    assert result.loc[0, "uf"] == "CE"
-    assert result.loc[0, "municipio"] == "FORTALEZA"
-    assert result.loc[0, "preco_revenda"] == 6.129
-    assert result.loc[0, "data_coleta"].year == 2026
+    assert (
+        result.loc[0, "uf"]
+        == "CE"
+    )
+    assert (
+        result.loc[
+            0,
+            "municipio",
+        ]
+        == "FORTALEZA"
+    )
+    assert (
+        result.loc[
+            0,
+            "preco_revenda",
+        ]
+        == 6.129
+    )
+    assert (
+        result.loc[
+            0,
+            "data_coleta",
+        ].year
+        == 2026
+    )
 
 
 def test_station_identity_prefers_cnpj() -> None:
     frame = pd.DataFrame(
         {
-            "cnpj_revenda": ["00.000.000/0001-00"],
+            "cnpj_revenda": [
+                "00.000.000/0001-00"
+            ],
             "uf": ["CE"],
-            "municipio": ["FORTALEZA"],
+            "municipio": [
+                "FORTALEZA"
+            ],
             "revenda": ["POSTO A"],
         }
     )
 
-    assert station_identity(frame).iloc[0] == "cnpj:00000000000100"
+    assert (
+        station_identity(
+            frame
+        ).iloc[0]
+        == "cnpj:00000000000100"
+    )
+
+
+def test_source_priority_prefers_latest_window() -> None:
+    assert (
+        source_priority(
+            "etanol_gasolina_ultimas_4_semanas.csv"
+        )
+        > source_priority(
+            "etanol_gasolina_agosto_2026.csv"
+        )
+    )
 
 
 def test_deduplication_keeps_different_stations_without_cnpj() -> None:
     frame = pd.DataFrame(
         {
             "data_coleta": pd.to_datetime(
-                ["2026-09-20", "2026-09-20"]
+                [
+                    "2026-09-20",
+                    "2026-09-20",
+                ]
             ),
-            "cnpj_revenda": [pd.NA, pd.NA],
+            "cnpj_revenda": [
+                pd.NA,
+                pd.NA,
+            ],
             "uf": ["CE", "CE"],
-            "municipio": ["FORTALEZA", "FORTALEZA"],
-            "revenda": ["POSTO A", "POSTO B"],
-            "produto": ["GASOLINA", "GASOLINA"],
-            "unidade_medida": ["R$ / litro", "R$ / litro"],
-            "preco_revenda": [6.10, 6.10],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO B",
+            ],
+            "produto": [
+                "GASOLINA",
+                "GASOLINA",
+            ],
+            "unidade_medida": [
+                "R$ / litro",
+                "R$ / litro",
+            ],
+            "preco_revenda": [
+                6.10,
+                6.10,
+            ],
         }
     )
 
-    result = deduplicate_station_rows(frame)
+    result = deduplicate_station_rows(
+        frame
+    )
 
     assert len(result) == 2
+
+
+def test_deduplication_prefers_newer_source_when_price_changes() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_coleta": pd.to_datetime(
+                [
+                    "2026-08-31",
+                    "2026-08-31",
+                ]
+            ),
+            "cnpj_revenda": [
+                "00.000.000/0001-00",
+                "00.000.000/0001-00",
+            ],
+            "uf": ["CE", "CE"],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO A",
+            ],
+            "produto": [
+                "GASOLINA",
+                "GASOLINA",
+            ],
+            "unidade_medida": [
+                "R$ / litro",
+                "R$ / litro",
+            ],
+            "preco_revenda": [
+                6.10,
+                6.20,
+            ],
+            "fonte_arquivo": [
+                "etanol_gasolina_agosto_2026.csv",
+                "etanol_gasolina_ultimas_4_semanas.csv",
+            ],
+        }
+    )
+
+    result = deduplicate_station_rows(
+        frame
+    )
+
+    assert len(result) == 1
+    assert (
+        result.iloc[0][
+            "preco_revenda"
+        ]
+        == 6.20
+    )
 
 
 def test_consolidation_removes_overlap(
@@ -165,40 +312,91 @@ def test_consolidation_removes_overlap(
         "BRANCA",
     ]
 
-    _write_sample(tmp_path / "aug.csv", [row])
-    _write_sample(tmp_path / "latest.csv", [row])
+    _write_sample(
+        tmp_path / "aug.csv",
+        [row],
+    )
+    _write_sample(
+        tmp_path / "latest.csv",
+        [row],
+    )
 
-    result = consolidate_station_data(tmp_path)
+    result = consolidate_station_data(
+        tmp_path
+    )
     assert len(result) == 1
 
 
 def test_station_star_schema_keeps_fact_grain() -> None:
     frame = pd.DataFrame(
         {
-            "regiao": ["NE", "NE"],
+            "regiao": [
+                "NE",
+                "NE",
+            ],
             "uf": ["CE", "CE"],
-            "municipio": ["FORTALEZA", "FORTALEZA"],
-            "revenda": ["POSTO A", "POSTO A"],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO A",
+            ],
             "cnpj_revenda": [
                 "00.000.000/0001-00",
                 "00.000.000/0001-00",
             ],
-            "produto": ["GASOLINA", "ETANOL"],
+            "produto": [
+                "GASOLINA",
+                "ETANOL",
+            ],
             "data_coleta": pd.to_datetime(
-                ["2026-09-20", "2026-09-20"]
+                [
+                    "2026-09-20",
+                    "2026-09-20",
+                ]
             ),
-            "preco_revenda": [6.10, 4.50],
+            "preco_revenda": [
+                6.10,
+                4.50,
+            ],
             "unidade_medida": [
                 "R$ / litro",
                 "R$ / litro",
             ],
-            "bandeira": ["BRANCA", "BRANCA"],
-            "fonte_arquivo": ["x.csv", "x.csv"],
+            "bandeira": [
+                "BRANCA",
+                "BRANCA",
+            ],
+            "fonte_arquivo": [
+                "x.csv",
+                "x.csv",
+            ],
         }
     )
 
-    tables = build_station_star_schema(frame)
+    tables = build_station_star_schema(
+        frame
+    )
 
-    assert len(tables["dim_posto"]) == 1
-    assert len(tables["dim_produto_posto"]) == 2
-    assert len(tables["fato_precos_postos"]) == 2
+    assert (
+        len(tables["dim_posto"])
+        == 1
+    )
+    assert (
+        len(
+            tables[
+                "dim_produto_posto"
+            ]
+        )
+        == 2
+    )
+    assert (
+        len(
+            tables[
+                "fato_precos_postos"
+            ]
+        )
+        == 2
+    )
