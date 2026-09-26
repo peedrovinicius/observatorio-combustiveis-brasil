@@ -29,6 +29,8 @@ Uso no projeto:
 
 Os arquivos são validados pelo conteúdo antes de serem aceitos como XLSX. Uma resposta HTML intermediária não é salva como planilha.
 
+Para cada escopo da série histórica, uma nova planilha válida substitui os arquivos locais antigos daquele mesmo escopo. A limpeza ocorre somente após a validação do novo download.
+
 ### Série Histórica de Preços de Combustíveis e de GLP
 
 https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis
@@ -42,6 +44,10 @@ Uso no projeto:
 - distribuição municipal de preços.
 
 O downloader identifica CSV, ZIP e XLSX pelo conteúdo real do arquivo. Isso cobre respostas do portal com `application/octet-stream` e impede que páginas HTML sejam tratadas como dados.
+
+Quando uma publicação já existe localmente, a substituição acontece somente depois de o novo conteúdo ser validado. O projeto remove apenas os artefatos pertencentes ao mesmo dataset lógico, incluindo versões antigas em CSV, ZIP e diretórios de extração. Arquivos de outros datasets são preservados.
+
+Os CSVs internos de um ZIP também são validados pelo conteúdo antes de serem gravados.
 
 ### Cadastro de revendedores varejistas
 

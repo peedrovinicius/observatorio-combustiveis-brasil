@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
 import unicodedata
 import zipfile
 from datetime import datetime, timezone
@@ -181,6 +182,24 @@ def _discover_2026_links(
     return discovered
 
 
+def _clear_dataset_artifacts(
+    root: Path,
+    stem: str,
+) -> None:
+    candidates = [
+        root / f"{stem}.csv",
+        root / f"{stem}.zip",
+        root / f"{stem}.xlsx",
+        root / stem,
+    ]
+
+    for path in candidates:
+        if path.is_dir():
+            shutil.rmtree(path)
+        elif path.exists():
+            path.unlink()
+
+
 def _extract_csvs(
     content: bytes,
     destination: Path,
@@ -210,12 +229,26 @@ def _extract_csvs(
                 )
             used_names.add(basename)
 
+            payload = archive.read(
+                info
+            )
+            kind = detect_download_kind(
+                payload,
+                basename,
+                "text/csv",
+            )
+            if kind != "csv":
+                raise ValueError(
+                    "ZIP da ANP contém arquivo "
+                    f"não reconhecido como CSV: {basename}"
+                )
+
             target = (
                 destination
                 / basename
             )
             target.write_bytes(
-                archive.read(info)
+                payload
             )
             extracted.append(target)
 
@@ -404,6 +437,12 @@ def main() -> None:
             RAW_OPEN_DATA_DIR
             / f"{stem}{suffix}"
         )
+
+        _clear_dataset_artifacts(
+            RAW_OPEN_DATA_DIR,
+            stem,
+        )
+
         raw_path.write_bytes(
             response.content
         )

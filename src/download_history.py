@@ -79,6 +79,20 @@ def _safe_filename(
     )[:160]
 
 
+def _clear_history_scope(
+    root: Path,
+    scope: str,
+) -> None:
+    prefix = (
+        f"historico_semanal_{scope}__"
+    )
+    for path in root.glob(
+        prefix + "*"
+    ):
+        if path.is_file():
+            path.unlink()
+
+
 def _discover_weekly_history_links(
     html: str,
 ) -> dict[str, str]:
@@ -382,6 +396,12 @@ def main() -> None:
             RAW_DIR
             / filename
         )
+
+        _clear_history_scope(
+            RAW_DIR,
+            scope,
+        )
+
         destination.write_bytes(
             response.content
         )

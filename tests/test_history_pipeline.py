@@ -7,6 +7,7 @@ from src.consolidate import (
     infer_geographic_level,
 )
 from src.download_history import (
+    _clear_history_scope,
     _discover_weekly_history_links,
 )
 from src.quality import build_quality_report
@@ -219,3 +220,46 @@ def test_quality_report_blocks_outside_2026() -> None:
 
     assert report["outside_2026_rows"] == 1
     assert report["status"] == "failed"
+
+
+
+def test_history_cleanup_replaces_only_same_scope(
+    tmp_path: Path,
+) -> None:
+    old_a = (
+        tmp_path
+        / "historico_semanal_brasil__antigo.xlsx"
+    )
+    old_b = (
+        tmp_path
+        / "historico_semanal_brasil__outro.xlsx"
+    )
+    other = (
+        tmp_path
+        / "historico_semanal_estados__dados.xlsx"
+    )
+    manifest = (
+        tmp_path
+        / "history_manifest.json"
+    )
+
+    for path in (
+        old_a,
+        old_b,
+        other,
+        manifest,
+    ):
+        path.write_text(
+            "conteudo",
+            encoding="utf-8",
+        )
+
+    _clear_history_scope(
+        tmp_path,
+        "brasil",
+    )
+
+    assert not old_a.exists()
+    assert not old_b.exists()
+    assert other.exists()
+    assert manifest.exists()
