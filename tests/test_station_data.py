@@ -15,6 +15,7 @@ from src.station_data import (
     source_priority,
     source_reference,
     station_identity,
+    station_key,
     transform_station_file,
 )
 
@@ -620,6 +621,14 @@ def test_station_dimension_is_stable_by_identity() -> None:
 
     assert len(dim_posto) == 1
     assert (
+        len(
+            dim_posto.iloc[0][
+                "posto_chave"
+            ]
+        )
+        == 64
+    )
+    assert (
         dim_posto.iloc[0]["revenda"]
         == "POSTO NOVO"
     )
@@ -636,3 +645,92 @@ def test_station_dimension_is_stable_by_identity() -> None:
         == 1
     )
     assert len(fact) == 2
+
+
+
+def test_station_key_is_stable_for_same_cnpj() -> None:
+    frame = pd.DataFrame(
+        {
+            "cnpj_revenda": [
+                "00.000.000/0001-00",
+                "00.000.000/0001-00",
+            ],
+            "uf": [
+                "CE",
+                "CE",
+            ],
+            "municipio": [
+                "FORTALEZA",
+                "CAUCAIA",
+            ],
+            "revenda": [
+                "NOME ANTIGO",
+                "NOME NOVO",
+            ],
+        }
+    )
+
+    keys = station_key(frame)
+
+    assert keys.iloc[0] == keys.iloc[1]
+    assert len(keys.iloc[0]) == 64
+
+
+def test_station_dimension_persists_unique_station_key() -> None:
+    frame = pd.DataFrame(
+        {
+            "uf": [
+                "CE",
+                "CE",
+            ],
+            "municipio": [
+                "FORTALEZA",
+                "CAUCAIA",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO B",
+            ],
+            "cnpj_revenda": [
+                "00.000.000/0001-00",
+                "00.000.000/0002-00",
+            ],
+            "produto": [
+                "GASOLINA",
+                "GASOLINA",
+            ],
+            "data_coleta": pd.to_datetime(
+                [
+                    "2026-09-20",
+                    "2026-09-20",
+                ]
+            ),
+            "preco_revenda": [
+                6.10,
+                6.20,
+            ],
+            "unidade_medida": [
+                "R$ / litro",
+                "R$ / litro",
+            ],
+            "fonte_arquivo": [
+                "x.csv",
+                "x.csv",
+            ],
+        }
+    )
+
+    dim_posto = (
+        build_station_star_schema(
+            frame
+        )["dim_posto"]
+    )
+
+    assert "posto_chave" in dim_posto.columns
+    assert dim_posto["posto_chave"].notna().all()
+    assert dim_posto["posto_chave"].is_unique
+    assert (
+        dim_posto[
+            "posto_chave"
+        ].str.len().eq(64).all()
+    )

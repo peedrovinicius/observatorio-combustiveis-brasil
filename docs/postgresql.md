@@ -52,32 +52,47 @@ Antes de abrir a conexão, a carga valida:
 - cabeçalhos duplicados;
 - colunas desconhecidas;
 - colunas obrigatórias de cada tabela;
-- compatibilidade entre os arquivos gerados e o schema PostgreSQL.
+- compatibilidade entre os arquivos gerados e o schema PostgreSQL;
+- presença da `posto_chave` determinística na dimensão de estabelecimentos.
 
 Depois disso, a carga:
 
-1. cria as estruturas SQL;
+1. cria ou atualiza as estruturas SQL;
 2. limpa a carga anterior de forma transacional;
-3. carrega dimensões e fatos por `COPY`;
-4. cria as views;
-5. confere a quantidade de registros nas duas fatos;
-6. confirma a transação somente após a validação.
+3. aplica as restrições finais da dimensão de postos;
+4. carrega dimensões e fatos por `COPY`;
+5. cria as views;
+6. confere a quantidade de registros nas duas fatos;
+7. confirma a transação somente após a validação.
+
+A evolução de `dim_posto` é compatível com uma base local criada por versões anteriores do projeto. A coluna `posto_chave` é adicionada quando ausente e passa a ser obrigatória depois da limpeza da carga anterior, antes da importação dos novos dados.
+
+## Integridade da dimensão de postos
+
+`dim_posto` possui:
+
+- `posto_id` como chave substituta usada pela tabela fato;
+- `posto_chave` como chave técnica determinística de 64 caracteres;
+- restrição de unicidade para `posto_chave`;
+- atributos cadastrais mais recentes observados para cada identidade.
+
+A chave técnica é derivada da identidade do estabelecimento e permite que o PostgreSQL também impeça duplicação lógica de postos, em vez de depender apenas do processamento em Python.
 
 ## Tabelas principais
 
 ### Agregados oficiais
 
-- `dim_data`
-- `dim_produto`
-- `dim_localidade`
-- `fato_precos_semanais`
+- `dim_data`;
+- `dim_produto`;
+- `dim_localidade`;
+- `fato_precos_semanais`.
 
 ### Preços por estabelecimento
 
-- `dim_data_coleta`
-- `dim_produto_posto`
-- `dim_posto`
-- `fato_precos_postos`
+- `dim_data_coleta`;
+- `dim_produto_posto`;
+- `dim_posto`;
+- `fato_precos_postos`.
 
 ## Power BI
 

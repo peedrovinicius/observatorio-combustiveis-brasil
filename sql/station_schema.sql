@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS dim_produto_posto (
 
 CREATE TABLE IF NOT EXISTS dim_posto (
     posto_id BIGINT PRIMARY KEY,
+    posto_chave CHAR(64) NOT NULL,
     cnpj_revenda VARCHAR(30),
     revenda VARCHAR(255),
     bandeira VARCHAR(180),
@@ -53,6 +54,12 @@ CREATE INDEX IF NOT EXISTS idx_postos_produto
 
 CREATE INDEX IF NOT EXISTS idx_postos_posto
     ON fato_precos_postos(posto_id);
+
+ALTER TABLE dim_posto
+    ADD COLUMN IF NOT EXISTS posto_chave CHAR(64);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_dim_posto_chave
+    ON dim_posto(posto_chave);
 
 CREATE INDEX IF NOT EXISTS idx_dim_posto_geo
     ON dim_posto(uf, municipio, bandeira);

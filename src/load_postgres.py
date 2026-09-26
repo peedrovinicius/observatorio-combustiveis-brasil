@@ -75,6 +75,7 @@ TABLE_COLUMNS = {
     },
     "dim_posto": {
         "posto_id",
+        "posto_chave",
         "cnpj_revenda",
         "revenda",
         "bandeira",
@@ -113,6 +114,7 @@ REQUIRED_TABLE_COLUMNS = {
     "dim_produto_posto": TABLE_COLUMNS["dim_produto_posto"],
     "dim_posto": {
         "posto_id",
+        "posto_chave",
         "uf",
         "municipio",
     },
@@ -277,6 +279,16 @@ def _truncate_tables(
     connection.execute(statement)
 
 
+def _finalize_station_constraints(
+    connection: psycopg.Connection,
+) -> None:
+    connection.execute(
+        "ALTER TABLE dim_posto "
+        "ALTER COLUMN posto_chave "
+        "SET NOT NULL"
+    )
+
+
 def _validate_database(
     connection: psycopg.Connection,
 ) -> dict[str, int]:
@@ -325,6 +337,9 @@ def main() -> None:
 
         print("Limpando carga anterior...")
         _truncate_tables(connection)
+        _finalize_station_constraints(
+            connection
+        )
 
         print("Carregando CSVs...")
         for table, path in LOAD_PLAN:

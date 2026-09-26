@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import unicodedata
@@ -170,6 +171,21 @@ def station_identity(
         "fallback:" + fallback,
     )
     return identity
+
+
+def station_key(
+    frame: pd.DataFrame,
+) -> pd.Series:
+    identity = station_identity(
+        frame
+    )
+    return identity.map(
+        lambda value: hashlib.sha256(
+            str(value).encode(
+                "utf-8"
+            )
+        ).hexdigest()
+    ).astype("string")
 
 
 def source_priority(source: object) -> int:
@@ -685,6 +701,11 @@ def build_station_star_schema(
             working
         )
     )
+    working["_posto_chave"] = (
+        station_key(
+            working
+        )
+    )
     if "fonte_arquivo" in working.columns:
         working["_source_priority"] = (
             working["fonte_arquivo"]
@@ -719,6 +740,7 @@ def build_station_star_schema(
         latest_station[
             [
                 "_posto_identidade",
+                "_posto_chave",
                 *posto_cols,
             ]
         ]
@@ -744,10 +766,19 @@ def build_station_star_schema(
         ]
     ].copy()
 
-    dim_posto = dim_posto.drop(
-        columns=[
-            "_posto_identidade"
-        ]
+    dim_posto = (
+        dim_posto.drop(
+            columns=[
+                "_posto_identidade"
+            ]
+        )
+        .rename(
+            columns={
+                "_posto_chave": (
+                    "posto_chave"
+                )
+            }
+        )
     )
 
     fact = working.merge(

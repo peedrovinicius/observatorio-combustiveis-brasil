@@ -117,3 +117,34 @@ def test_csv_contract_rejects_missing_required_columns(
         match="colunas obrigatórias ausentes",
     ):
         validate_csv_contracts()
+
+
+
+def test_dim_posto_contract_requires_station_key(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "dim_posto.csv"
+    path.write_text(
+        "posto_id,uf,municipio\n"
+        "1,CE,FORTALEZA\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [
+            (
+                "dim_posto",
+                path,
+            )
+        ],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="posto_chave",
+    ):
+        validate_csv_contracts()

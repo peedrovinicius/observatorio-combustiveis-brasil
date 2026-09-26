@@ -86,6 +86,8 @@ Quando o CNPJ está disponível, ele é a identidade principal do estabeleciment
 
 A `dim_posto` usa uma estratégia SCD tipo 1 simples: mantém um único registro por identidade e conserva os atributos da observação mais recente disponível. O histórico de preços permanece integral na fato e continua ligado ao mesmo `posto_id`.
 
+Além da chave substituta `posto_id`, a dimensão persiste `posto_chave`, uma chave técnica determinística SHA-256 com 64 caracteres derivada da identidade do estabelecimento. Ela é reproduzível entre execuções e possui restrição de unicidade no PostgreSQL. A identidade textual completa não precisa ser usada como índice, evitando chaves excessivamente largas.
+
 Quando o CNPJ não está disponível, o projeto usa uma identidade de fallback baseada em UF, município, revenda, logradouro e número. Nesse caso, mudanças nesses atributos podem representar uma nova identidade, pois não há uma chave cadastral mais forte disponível na fonte.
 
 Essa decisão evita inflar contagens de estabelecimentos no PostgreSQL e no Power BI por simples alterações cadastrais.
