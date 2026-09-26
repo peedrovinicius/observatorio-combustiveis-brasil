@@ -39,4 +39,6 @@ docs/resultados-2026.md
 assets/snapshot/
 ```
 
-O script não executa `git add`, `git commit` ou `git push`. Os resultados devem ser revisados antes de entrar no histórico.
+O snapshot também atualiza localmente a seção de resultados do `README.md`, apontando para os gráficos reais gerados.
+
+O script não executa `git add`, `git commit` ou `git push`. Revise o relatório, os gráficos e o diff do README antes de versionar.

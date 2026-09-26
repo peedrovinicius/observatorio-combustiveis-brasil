@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .config import PROJECT_ROOT, REPORTS_DIR
+from .publish_readme import update_readme_results
 
 GENERATED_DIR = PROJECT_ROOT / "assets" / "generated"
 SNAPSHOT_DIR = PROJECT_ROOT / "assets" / "snapshot"
@@ -88,10 +89,15 @@ def main() -> None:
         SNAPSHOT_DIR,
         RESULTS_DOC,
     )
+    update_readme_results(
+        PROJECT_ROOT / "README.md",
+        RESULTS_DOC,
+    )
 
     print(
-        "Snapshot criado. Revise docs/resultados-2026.md "
-        "e assets/snapshot/ antes de versionar."
+        "Snapshot criado e README atualizado localmente. "
+        "Revise docs/resultados-2026.md, assets/snapshot/ e o diff do README "
+        "antes de versionar."
     )
 
 

@@ -100,6 +100,7 @@ observatorio-combustiveis-brasil/
 │   ├── load_postgres.py
 │   ├── database.py
 │   ├── pipeline.py
+│   ├── publish_readme.py
 │   ├── quality.py
 │   ├── reporting.py
 │   ├── station_data.py
@@ -128,7 +129,7 @@ Para também gerar um snapshot revisável dos resultados:
 powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1 -Snapshot
 ```
 
-O snapshot produz `docs/resultados-2026.md` e copia os gráficos para `assets/snapshot/`. Nenhum commit ou push é feito automaticamente.
+O snapshot produz `docs/resultados-2026.md`, copia os gráficos para `assets/snapshot/` e atualiza localmente a seção de resultados do README. Nenhum commit ou push é feito automaticamente.
 
 ## Execução manual
 
