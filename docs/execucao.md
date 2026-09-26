@@ -182,3 +182,10 @@ Cada lote é primeiro gravado em staging. Depois, os CSVs anteriores do diretór
 Se uma escrita no staging ou a instalação de qualquer arquivo falhar, o snapshot anterior do diretório permanece disponível ou é restaurado integralmente.
 
 Arquivos não CSV presentes nesses diretórios não são removidos pela rotina.
+
+
+## Publicação transacional do relatório visual
+
+A etapa final do pipeline trata os cinco PNGs gerados e `reports/insights_2026.md` como um único bundle lógico.
+
+Todos os arquivos são produzidos em staging e validados antes da substituição. Uma falha durante a geração não altera o bundle anterior. Uma falha durante a instalação aciona rollback dos gráficos e do relatório de insights.

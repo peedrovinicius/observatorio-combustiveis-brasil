@@ -49,6 +49,7 @@ A suíte verifica, entre outros pontos:
 - consistência das consultas SQL por posto com a regra de última coleta por produto;
 - regra mínima de amostra por bandeira no SQL;
 - geração de gráficos;
+- publicação transacional do bundle visual com rollback;
 - geração de placeholders visuais para recortes vazios ou sem gasolina comum;
 - publicação de snapshot e README;
 - construção do relatório web;

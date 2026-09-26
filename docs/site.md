@@ -38,3 +38,12 @@ A ausência de dados em um recorte não faz o relatório visual falhar e não au
 Quando tendência mensal, gasolina comum, relação etanol/gasolina ou uma análise por posto não possui amostra utilizável, o pipeline gera uma imagem informativa indicando a indisponibilidade daquele recorte.
 
 Isso mantém o conjunto de cinco arquivos visuais estável para snapshot e site sem fabricar métricas ou trocar silenciosamente o produto analisado.
+
+
+## Publicação do relatório visual
+
+Os cinco gráficos em `assets/generated/` e `reports/insights_2026.md` são gerados primeiro em staging.
+
+A publicação só começa depois que os cinco PNGs esperados e o Markdown de insights existem. O diretório visual anterior e o insight anterior são mantidos em backup temporário durante a troca.
+
+Se a instalação de qualquer parte falhar, o novo conteúdo parcial é removido e o snapshot visual anterior é restaurado. Os relatórios de qualidade presentes em `reports/` não participam da troca e não são removidos.

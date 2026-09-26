@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import tempfile
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -832,6 +834,196 @@ def _read_json(
     )
 
 
+def _remove_path(
+    path: Path,
+) -> None:
+    if path.is_dir():
+        shutil.rmtree(
+            path
+        )
+    elif path.exists():
+        path.unlink()
+
+
+def _publish_report_bundle(
+    staged_assets: Path,
+    staged_insights: Path,
+    assets_dir: Path,
+    insights_path: Path,
+) -> None:
+    if (
+        not staged_assets.is_dir()
+    ):
+        raise FileNotFoundError(
+            "Diretório de gráficos em "
+            "staging não encontrado."
+        )
+    if (
+        not staged_insights.is_file()
+    ):
+        raise FileNotFoundError(
+            "Relatório de insights em "
+            "staging não encontrado."
+        )
+
+    required_images = {
+        "tendencia_brasil_2026.png",
+        "ranking_ufs_gasolina.png",
+        "etanol_gasolina_municipios.png",
+        "dispersao_municipios_postos.png",
+        "mediana_bandeiras_postos.png",
+    }
+    staged_image_paths = [
+        path
+        for path in staged_assets.iterdir()
+        if path.is_file()
+    ]
+    staged_images = {
+        path.name
+        for path in staged_image_paths
+    }
+    if staged_images != required_images:
+        missing = sorted(
+            required_images
+            - staged_images
+        )
+        extra = sorted(
+            staged_images
+            - required_images
+        )
+        details: list[str] = []
+        if missing:
+            details.append(
+                "ausentes: "
+                + ", ".join(
+                    missing
+                )
+            )
+        if extra:
+            details.append(
+                "inesperados: "
+                + ", ".join(
+                    extra
+                )
+            )
+        raise ValueError(
+            "Conjunto de gráficos inválido"
+            + (
+                ": "
+                + "; ".join(details)
+                if details
+                else ""
+            )
+        )
+
+    empty_images = sorted(
+        path.name
+        for path in staged_image_paths
+        if path.stat().st_size <= 0
+    )
+    if empty_images:
+        raise ValueError(
+            "Gráficos vazios no staging: "
+            + ", ".join(
+                empty_images
+            )
+        )
+
+    if (
+        staged_insights.stat().st_size
+        <= 0
+    ):
+        raise ValueError(
+            "Relatório de insights vazio "
+            "no staging."
+        )
+
+    assets_dir.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    insights_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    backup_root = (
+        staged_assets.parent
+        / "backup"
+    )
+    backup_root.mkdir(
+        exist_ok=False
+    )
+    backup_assets = (
+        backup_root
+        / "generated"
+    )
+    backup_insights = (
+        backup_root
+        / insights_path.name
+    )
+
+    had_assets = (
+        assets_dir.exists()
+    )
+    had_insights = (
+        insights_path.exists()
+    )
+    installed_assets = False
+    installed_insights = False
+
+    try:
+        if had_assets:
+            shutil.move(
+                str(assets_dir),
+                str(backup_assets),
+            )
+        if had_insights:
+            shutil.move(
+                str(insights_path),
+                str(backup_insights),
+            )
+
+        shutil.move(
+            str(staged_assets),
+            str(assets_dir),
+        )
+        installed_assets = True
+
+        shutil.move(
+            str(staged_insights),
+            str(insights_path),
+        )
+        installed_insights = True
+    except Exception:
+        if installed_insights:
+            _remove_path(
+                insights_path
+            )
+        if installed_assets:
+            _remove_path(
+                assets_dir
+            )
+
+        if (
+            had_insights
+            and backup_insights.exists()
+        ):
+            shutil.move(
+                str(backup_insights),
+                str(insights_path),
+            )
+        if (
+            had_assets
+            and backup_assets.exists()
+        ):
+            shutil.move(
+                str(backup_assets),
+                str(assets_dir),
+            )
+        raise
+
+
 def main() -> None:
     kpis_path = (
         ANALYTICS_DIR
@@ -901,41 +1093,6 @@ def main() -> None:
         )
     )
 
-    ASSETS_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-    REPORTS_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    plot_monthly_trend(
-        monthly,
-        ASSETS_DIR
-        / "tendencia_brasil_2026.png",
-    )
-    plot_state_ranking(
-        ranking,
-        ASSETS_DIR
-        / "ranking_ufs_gasolina.png",
-    )
-    plot_ethanol_gasoline(
-        ratio,
-        ASSETS_DIR
-        / "etanol_gasolina_municipios.png",
-    )
-    plot_station_municipality_dispersion(
-        station_distribution,
-        ASSETS_DIR
-        / "dispersao_municipios_postos.png",
-    )
-    plot_station_brand_median(
-        station_brands,
-        ASSETS_DIR
-        / "mediana_bandeiras_postos.png",
-    )
-
     markdown = (
         build_insights_markdown(
             kpis,
@@ -954,10 +1111,60 @@ def main() -> None:
         REPORTS_DIR
         / "insights_2026.md"
     )
-    output.write_text(
-        markdown,
-        encoding="utf-8",
-    )
+
+    with tempfile.TemporaryDirectory(
+        prefix=".report_stage_",
+        dir=PROJECT_ROOT,
+    ) as temporary:
+        stage_root = Path(
+            temporary
+        )
+        staged_assets = (
+            stage_root
+            / "generated"
+        )
+        staged_assets.mkdir()
+        staged_insights = (
+            stage_root
+            / "insights_2026.md"
+        )
+
+        plot_monthly_trend(
+            monthly,
+            staged_assets
+            / "tendencia_brasil_2026.png",
+        )
+        plot_state_ranking(
+            ranking,
+            staged_assets
+            / "ranking_ufs_gasolina.png",
+        )
+        plot_ethanol_gasoline(
+            ratio,
+            staged_assets
+            / "etanol_gasolina_municipios.png",
+        )
+        plot_station_municipality_dispersion(
+            station_distribution,
+            staged_assets
+            / "dispersao_municipios_postos.png",
+        )
+        plot_station_brand_median(
+            station_brands,
+            staged_assets
+            / "mediana_bandeiras_postos.png",
+        )
+        staged_insights.write_text(
+            markdown,
+            encoding="utf-8",
+        )
+
+        _publish_report_bundle(
+            staged_assets,
+            staged_insights,
+            ASSETS_DIR,
+            output,
+        )
 
     print(
         "Relatório: "

@@ -1,9 +1,12 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
+import src.reporting as reporting_module
 from src.reporting import (
     _location_label,
+    _publish_report_bundle,
     _select_common_gasoline,
     build_insights_markdown,
     plot_ethanol_gasoline,
@@ -261,3 +264,412 @@ def test_ethanol_gasoline_chart_handles_empty_data(
 
     assert output.exists()
     assert output.stat().st_size > 0
+
+
+
+def _create_report_stage(
+    root: Path,
+) -> tuple[Path, Path]:
+    assets = (
+        root
+        / "generated"
+    )
+    assets.mkdir(
+        parents=True,
+    )
+    for filename in [
+        "tendencia_brasil_2026.png",
+        "ranking_ufs_gasolina.png",
+        "etanol_gasolina_municipios.png",
+        "dispersao_municipios_postos.png",
+        "mediana_bandeiras_postos.png",
+    ]:
+        (
+            assets
+            / filename
+        ).write_bytes(
+            b"novo"
+        )
+
+    insights = (
+        root
+        / "insights_2026.md"
+    )
+    insights.write_text(
+        "insights novos",
+        encoding="utf-8",
+    )
+    return (
+        assets,
+        insights,
+    )
+
+
+def test_publish_report_bundle_replaces_visual_snapshot(
+    tmp_path: Path,
+) -> None:
+    stage = (
+        tmp_path
+        / "stage"
+    )
+    stage.mkdir()
+    staged_assets, staged_insights = (
+        _create_report_stage(
+            stage
+        )
+    )
+
+    assets = (
+        tmp_path
+        / "assets"
+        / "generated"
+    )
+    assets.mkdir(
+        parents=True,
+    )
+    (
+        assets
+        / "antigo.png"
+    ).write_bytes(
+        b"antigo"
+    )
+
+    insights = (
+        tmp_path
+        / "reports"
+        / "insights_2026.md"
+    )
+    insights.parent.mkdir()
+    insights.write_text(
+        "insights antigos",
+        encoding="utf-8",
+    )
+
+    _publish_report_bundle(
+        staged_assets,
+        staged_insights,
+        assets,
+        insights,
+    )
+
+    assert not (
+        assets
+        / "antigo.png"
+    ).exists()
+    assert len(
+        list(
+            assets.glob(
+                "*.png"
+            )
+        )
+    ) == 5
+    assert (
+        insights.read_text(
+            encoding="utf-8"
+        )
+        == "insights novos"
+    )
+
+
+def test_publish_report_bundle_rejects_incomplete_stage_before_replacement(
+    tmp_path: Path,
+) -> None:
+    staged_assets = (
+        tmp_path
+        / "stage"
+        / "generated"
+    )
+    staged_assets.mkdir(
+        parents=True,
+    )
+    (
+        staged_assets
+        / "tendencia_brasil_2026.png"
+    ).write_bytes(
+        b"novo"
+    )
+    staged_insights = (
+        tmp_path
+        / "stage"
+        / "insights_2026.md"
+    )
+    staged_insights.write_text(
+        "novo",
+        encoding="utf-8",
+    )
+
+    assets = (
+        tmp_path
+        / "assets"
+        / "generated"
+    )
+    assets.mkdir(
+        parents=True,
+    )
+    old = (
+        assets
+        / "antigo.png"
+    )
+    old.write_bytes(
+        b"antigo"
+    )
+    insights = (
+        tmp_path
+        / "reports"
+        / "insights_2026.md"
+    )
+    insights.parent.mkdir()
+    insights.write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Conjunto de gráficos inválido",
+    ):
+        _publish_report_bundle(
+            staged_assets,
+            staged_insights,
+            assets,
+            insights,
+        )
+
+    assert old.exists()
+    assert (
+        insights.read_text(
+            encoding="utf-8"
+        )
+        == "antigo"
+    )
+
+
+def test_publish_report_bundle_install_failure_restores_previous_snapshot(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stage = (
+        tmp_path
+        / "stage"
+    )
+    stage.mkdir()
+    staged_assets, staged_insights = (
+        _create_report_stage(
+            stage
+        )
+    )
+
+    assets = (
+        tmp_path
+        / "assets"
+        / "generated"
+    )
+    assets.mkdir(
+        parents=True,
+    )
+    old_image = (
+        assets
+        / "antigo.png"
+    )
+    old_image.write_bytes(
+        b"antigo"
+    )
+
+    insights = (
+        tmp_path
+        / "reports"
+        / "insights_2026.md"
+    )
+    insights.parent.mkdir()
+    insights.write_text(
+        "insights antigos",
+        encoding="utf-8",
+    )
+
+    original_move = (
+        reporting_module.shutil.move
+    )
+
+    def failing_move(
+        source: str,
+        destination: str,
+    ):
+        source_path = Path(
+            source
+        )
+        destination_path = Path(
+            destination
+        )
+        if (
+            source_path.name
+            == "insights_2026.md"
+            and destination_path
+            == insights
+        ):
+            raise OSError(
+                "falha simulada"
+            )
+        return original_move(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        reporting_module.shutil,
+        "move",
+        failing_move,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="falha simulada",
+    ):
+        _publish_report_bundle(
+            staged_assets,
+            staged_insights,
+            assets,
+            insights,
+        )
+
+    assert old_image.exists()
+    assert (
+        old_image.read_bytes()
+        == b"antigo"
+    )
+    assert (
+        insights.read_text(
+            encoding="utf-8"
+        )
+        == "insights antigos"
+    )
+
+
+
+def test_publish_report_bundle_rejects_empty_image_before_replacement(
+    tmp_path: Path,
+) -> None:
+    stage = (
+        tmp_path
+        / "stage"
+    )
+    stage.mkdir()
+    staged_assets, staged_insights = (
+        _create_report_stage(
+            stage
+        )
+    )
+    (
+        staged_assets
+        / "ranking_ufs_gasolina.png"
+    ).write_bytes(
+        b""
+    )
+
+    assets = (
+        tmp_path
+        / "assets"
+        / "generated"
+    )
+    assets.mkdir(
+        parents=True,
+    )
+    old = (
+        assets
+        / "antigo.png"
+    )
+    old.write_bytes(
+        b"antigo"
+    )
+    insights = (
+        tmp_path
+        / "reports"
+        / "insights_2026.md"
+    )
+    insights.parent.mkdir()
+    insights.write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Gráficos vazios",
+    ):
+        _publish_report_bundle(
+            staged_assets,
+            staged_insights,
+            assets,
+            insights,
+        )
+
+    assert old.exists()
+    assert (
+        insights.read_text(
+            encoding="utf-8"
+        )
+        == "antigo"
+    )
+
+
+def test_publish_report_bundle_rejects_empty_insights_before_replacement(
+    tmp_path: Path,
+) -> None:
+    stage = (
+        tmp_path
+        / "stage"
+    )
+    stage.mkdir()
+    staged_assets, staged_insights = (
+        _create_report_stage(
+            stage
+        )
+    )
+    staged_insights.write_text(
+        "",
+        encoding="utf-8",
+    )
+
+    assets = (
+        tmp_path
+        / "assets"
+        / "generated"
+    )
+    assets.mkdir(
+        parents=True,
+    )
+    old = (
+        assets
+        / "antigo.png"
+    )
+    old.write_bytes(
+        b"antigo"
+    )
+    insights = (
+        tmp_path
+        / "reports"
+        / "insights_2026.md"
+    )
+    insights.parent.mkdir()
+    insights.write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Relatório de insights vazio",
+    ):
+        _publish_report_bundle(
+            staged_assets,
+            staged_insights,
+            assets,
+            insights,
+        )
+
+    assert old.exists()
+    assert (
+        insights.read_text(
+            encoding="utf-8"
+        )
+        == "antigo"
+    )
