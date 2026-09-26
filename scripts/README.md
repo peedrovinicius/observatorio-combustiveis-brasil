@@ -32,13 +32,16 @@ Também inicia o PostgreSQL via Docker Compose e carrega os dois modelos dimensi
 powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1 -Snapshot
 ```
 
-Também cria:
+Também cria ou atualiza:
 
 ```text
 docs/resultados-2026.md
+docs/index.html
+docs/assets/
 assets/snapshot/
+README.md
 ```
 
-O snapshot também atualiza localmente a seção de resultados do `README.md`, apontando para os gráficos reais gerados.
+O `README.md` recebe uma seção visual com os gráficos reais e `docs/index.html` vira um relatório web estático baseado nos mesmos dados processados.
 
-O script não executa `git add`, `git commit` ou `git push`. Revise o relatório, os gráficos e o diff do README antes de versionar.
+O script não executa `git add`, `git commit` ou `git push`. Revise os resultados e o diff antes de versionar.

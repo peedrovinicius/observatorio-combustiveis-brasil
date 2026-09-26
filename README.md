@@ -105,6 +105,7 @@ observatorio-combustiveis-brasil/
 │   ├── reporting.py
 │   ├── station_data.py
 │   ├── station_quality.py
+│   ├── site.py
 │   ├── snapshot.py
 │   └── transform.py
 ├── tests/
@@ -129,7 +130,7 @@ Para também gerar um snapshot revisável dos resultados:
 powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1 -Snapshot
 ```
 
-O snapshot produz `docs/resultados-2026.md`, copia os gráficos para `assets/snapshot/` e atualiza localmente a seção de resultados do README. Nenhum commit ou push é feito automaticamente.
+O snapshot produz `docs/resultados-2026.md`, `docs/index.html`, copia os gráficos para `assets/snapshot/` e `docs/assets/`, e atualiza localmente a seção de resultados do README. Nenhum commit ou push é feito automaticamente.
 
 ## Execução manual
 
@@ -193,6 +194,12 @@ O segundo relatório mede também cobertura de UFs, municípios, produtos, CNPJ 
 
 Após o processamento, o pipeline gera automaticamente três gráficos em `assets/generated/` e o relatório `reports/insights_2026.md`. Esses arquivos são derivados das tabelas processadas e não contêm valores analíticos fixados manualmente no código.
 
+## Relatório web estático
+
+O snapshot também gera `docs/index.html`, com KPIs, ranking por UF, qualidade e gráficos reais. A página é estática, sem backend, e fica pronta para publicação a partir da pasta `docs/` após revisão.
+
+Veja [`docs/site.md`](docs/site.md).
+
 ## Saídas analíticas
 
 Além do modelo estrela, o pipeline gera:
@@ -248,7 +255,7 @@ Indicadores derivados são explicitamente identificados. Veja [`docs/kpis.md`](d
 
 ## Status
 
-**ETL agregado e por posto, validação, dois modelos dimensionais, PostgreSQL reproduzível, SQL, KPIs e geração visual automática implementados.**
+**ETL agregado e por posto, validação, dois modelos dimensionais, PostgreSQL reproduzível, SQL, KPIs, snapshots e relatório web estático implementados.**
 
 A próxima etapa é executar o runner local contra os arquivos oficiais, revisar o snapshot real de 2026 e então consolidar o dashboard final.
 

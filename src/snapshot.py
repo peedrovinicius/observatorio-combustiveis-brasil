@@ -6,10 +6,13 @@ from pathlib import Path
 
 from .config import PROJECT_ROOT, REPORTS_DIR
 from .publish_readme import update_readme_results
+from .site import build_site
 
 GENERATED_DIR = PROJECT_ROOT / "assets" / "generated"
 SNAPSHOT_DIR = PROJECT_ROOT / "assets" / "snapshot"
 RESULTS_DOC = PROJECT_ROOT / "docs" / "resultados-2026.md"
+DOCS_DIR = PROJECT_ROOT / "docs"
+ANALYTICS_DIR = PROJECT_ROOT / "data" / "processed" / "analytics"
 
 SNAPSHOT_IMAGES = [
     "tendencia_brasil_2026.png",
@@ -89,15 +92,24 @@ def main() -> None:
         SNAPSHOT_DIR,
         RESULTS_DOC,
     )
+
+    build_site(
+        ANALYTICS_DIR / "kpis_brasil_2026.csv",
+        ANALYTICS_DIR / "ranking_ufs_ultima_semana.csv",
+        SNAPSHOT_DIR,
+        DOCS_DIR,
+        REPORTS_DIR / "quality_2026.json",
+        REPORTS_DIR / "quality_postos_2026.json",
+    )
+
     update_readme_results(
         PROJECT_ROOT / "README.md",
         RESULTS_DOC,
     )
 
     print(
-        "Snapshot criado e README atualizado localmente. "
-        "Revise docs/resultados-2026.md, assets/snapshot/ e o diff do README "
-        "antes de versionar."
+        "Snapshot criado, site estático gerado e README atualizado localmente. "
+        "Revise docs/, assets/snapshot/ e o diff do README antes de versionar."
     )
 
 
