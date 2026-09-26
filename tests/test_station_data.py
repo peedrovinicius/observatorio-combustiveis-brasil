@@ -6,9 +6,12 @@ from src.download_open_data import (
     _discover_2026_links,
 )
 from src.station_data import (
+    audit_prepared_station_frame,
     build_station_star_schema,
     consolidate_station_data,
+    consolidate_station_data_with_audit,
     deduplicate_station_rows,
+    prepare_station_file,
     source_priority,
     station_identity,
     transform_station_file,
@@ -39,30 +42,12 @@ def test_discovers_relevant_2026_open_data_links() -> None:
         for item in links
     }
 
-    assert (
-        "automotivos_2026_s1"
-        in datasets
-    )
-    assert (
-        "diesel_gnv_julho_2026"
-        in datasets
-    )
-    assert (
-        "diesel_gnv_junho_2026"
-        not in datasets
-    )
-    assert (
-        "etanol_gasolina_agosto_2026"
-        in datasets
-    )
-    assert (
-        "diesel_gnv_ultimas_4_semanas"
-        in datasets
-    )
-    assert (
-        "etanol_gasolina_ultimas_4_semanas"
-        in datasets
-    )
+    assert "automotivos_2026_s1" in datasets
+    assert "diesel_gnv_julho_2026" in datasets
+    assert "diesel_gnv_junho_2026" not in datasets
+    assert "etanol_gasolina_agosto_2026" in datasets
+    assert "diesel_gnv_ultimas_4_semanas" in datasets
+    assert "etanol_gasolina_ultimas_4_semanas" in datasets
     assert all(
         "glp" not in dataset
         for dataset in datasets
@@ -128,35 +113,12 @@ def test_transform_station_file_uses_official_schema(
         ]],
     )
 
-    result = transform_station_file(
-        path
-    )
+    result = transform_station_file(path)
 
-    assert (
-        result.loc[0, "uf"]
-        == "CE"
-    )
-    assert (
-        result.loc[
-            0,
-            "municipio",
-        ]
-        == "FORTALEZA"
-    )
-    assert (
-        result.loc[
-            0,
-            "preco_revenda",
-        ]
-        == 6.129
-    )
-    assert (
-        result.loc[
-            0,
-            "data_coleta",
-        ].year
-        == 2026
-    )
+    assert result.loc[0, "uf"] == "CE"
+    assert result.loc[0, "municipio"] == "FORTALEZA"
+    assert result.loc[0, "preco_revenda"] == 6.129
+    assert result.loc[0, "data_coleta"].year == 2026
 
 
 def test_station_identity_prefers_cnpj() -> None:
@@ -166,17 +128,13 @@ def test_station_identity_prefers_cnpj() -> None:
                 "00.000.000/0001-00"
             ],
             "uf": ["CE"],
-            "municipio": [
-                "FORTALEZA"
-            ],
+            "municipio": ["FORTALEZA"],
             "revenda": ["POSTO A"],
         }
     )
 
     assert (
-        station_identity(
-            frame
-        ).iloc[0]
+        station_identity(frame).iloc[0]
         == "cnpj:00000000000100"
     )
 
@@ -229,9 +187,7 @@ def test_deduplication_keeps_different_stations_without_cnpj() -> None:
         }
     )
 
-    result = deduplicate_station_rows(
-        frame
-    )
+    result = deduplicate_station_rows(frame)
 
     assert len(result) == 2
 
@@ -277,17 +233,10 @@ def test_deduplication_prefers_newer_source_when_price_changes() -> None:
         }
     )
 
-    result = deduplicate_station_rows(
-        frame
-    )
+    result = deduplicate_station_rows(frame)
 
     assert len(result) == 1
-    assert (
-        result.iloc[0][
-            "preco_revenda"
-        ]
-        == 6.20
-    )
+    assert result.iloc[0]["preco_revenda"] == 6.20
 
 
 def test_consolidation_removes_overlap(
@@ -325,6 +274,111 @@ def test_consolidation_removes_overlap(
         tmp_path
     )
     assert len(result) == 1
+
+
+def test_ingestion_audit_counts_rejected_rows(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "audit.csv"
+    _write_sample(
+        path,
+        [
+            [
+                "NE", "CE", "FORTALEZA", "POSTO A",
+                "00.000.000/0001-00", "RUA A", "1", "",
+                "CENTRO", "60000-000", "GASOLINA",
+                "20/09/2026", "6,10", "", "R$ / litro", "BRANCA",
+            ],
+            [
+                "NE", "CE", "FORTALEZA", "POSTO B",
+                "00.000.000/0002-00", "RUA B", "2", "",
+                "CENTRO", "60000-000", "GASOLINA",
+                "data-invalida", "6,20", "", "R$ / litro", "BRANCA",
+            ],
+            [
+                "NE", "CE", "FORTALEZA", "POSTO C",
+                "00.000.000/0003-00", "RUA C", "3", "",
+                "CENTRO", "60000-000", "GASOLINA",
+                "20/09/2025", "6,30", "", "R$ / litro", "BRANCA",
+            ],
+            [
+                "NE", "CE", "FORTALEZA", "POSTO D",
+                "00.000.000/0004-00", "RUA D", "4", "",
+                "CENTRO", "60000-000", "GASOLINA",
+                "20/09/2026", "0", "", "R$ / litro", "BRANCA",
+            ],
+        ],
+    )
+
+    prepared = prepare_station_file(path)
+    audit = audit_prepared_station_frame(
+        prepared,
+        path.name,
+    )
+
+    assert audit["linhas_origem"] == 4
+    assert audit["datas_invalidas"] == 1
+    assert audit["linhas_fora_2026"] == 1
+    assert audit["precos_nao_positivos"] == 1
+    assert (
+        audit[
+            "linhas_elegiveis_antes_deduplicacao"
+        ]
+        == 1
+    )
+    assert (
+        audit[
+            "linhas_excluidas_antes_deduplicacao"
+        ]
+        == 3
+    )
+
+
+def test_consolidation_audit_measures_overlap(
+    tmp_path: Path,
+) -> None:
+    older = [
+        "NE", "CE", "FORTALEZA", "POSTO TESTE",
+        "00.000.000/0001-00", "RUA A", "1", "",
+        "CENTRO", "60000-000", "GASOLINA",
+        "31/08/2026", "6,10", "", "R$ / litro", "BRANCA",
+    ]
+    newer = older.copy()
+    newer[12] = "6,20"
+
+    _write_sample(
+        tmp_path / "etanol_gasolina_agosto_2026.csv",
+        [older],
+    )
+    _write_sample(
+        tmp_path / "etanol_gasolina_ultimas_4_semanas.csv",
+        [newer],
+    )
+
+    frame, audit = (
+        consolidate_station_data_with_audit(
+            tmp_path
+        )
+    )
+
+    assert len(frame) == 1
+    assert (
+        frame.iloc[0]["preco_revenda"]
+        == 6.20
+    )
+    assert audit["grupos_sobrepostos"] == 1
+    assert (
+        audit[
+            "grupos_com_preco_divergente"
+        ]
+        == 1
+    )
+    assert (
+        audit[
+            "linhas_removidas_por_sobreposicao"
+        ]
+        == 1
+    )
 
 
 def test_station_star_schema_keeps_fact_grain() -> None:
@@ -380,10 +434,7 @@ def test_station_star_schema_keeps_fact_grain() -> None:
         frame
     )
 
-    assert (
-        len(tables["dim_posto"])
-        == 1
-    )
+    assert len(tables["dim_posto"]) == 1
     assert (
         len(
             tables[

@@ -21,7 +21,10 @@ def _valid_frame() -> pd.DataFrame:
                 "GASOLINA",
                 "ETANOL",
             ],
-            "preco_revenda": [6.10, 4.50],
+            "preco_revenda": [
+                6.10,
+                4.50,
+            ],
             "unidade_medida": [
                 "R$ / litro",
                 "R$ / litro",
@@ -50,19 +53,32 @@ def test_station_quality_passes_clean_data() -> None:
     assert report["status"] == "passed"
     assert report["ufs"] == 1
     assert report["municipios"] == 1
-    assert report["postos_distintos_cnpj"] == 1
+    assert (
+        report[
+            "postos_distintos_cnpj"
+        ]
+        == 1
+    )
 
 
-def test_station_quality_flags_duplicate_business_key() -> None:
-    frame = _valid_frame().iloc[[0, 0]].copy()
+def test_station_quality_blocks_duplicate_business_key() -> None:
+    frame = (
+        _valid_frame()
+        .iloc[[0, 0]]
+        .copy()
+    )
 
-    report = build_station_quality_report(frame)
+    report = build_station_quality_report(
+        frame
+    )
 
     assert (
-        report["duplicidades_chave_negocio"]
+        report[
+            "duplicidades_chave_negocio"
+        ]
         == 2
     )
-    assert report["status"] == "review"
+    assert report["status"] == "failed"
 
 
 def test_station_quality_does_not_merge_missing_cnpj_stations() -> None:
@@ -85,7 +101,10 @@ def test_station_quality_does_not_merge_missing_cnpj_stations() -> None:
                 "GASOLINA",
                 "GASOLINA",
             ],
-            "preco_revenda": [6.10, 6.10],
+            "preco_revenda": [
+                6.10,
+                6.10,
+            ],
             "unidade_medida": [
                 "R$ / litro",
                 "R$ / litro",
@@ -97,30 +116,43 @@ def test_station_quality_does_not_merge_missing_cnpj_stations() -> None:
         }
     )
 
-    report = build_station_quality_report(frame)
+    report = build_station_quality_report(
+        frame
+    )
 
     assert (
-        report["duplicidades_chave_negocio"]
+        report[
+            "duplicidades_chave_negocio"
+        ]
         == 0
     )
 
 
-def test_station_quality_flags_date_outside_2026() -> None:
+def test_station_quality_blocks_date_outside_2026() -> None:
     frame = _valid_frame()
-    frame.loc[0, "data_coleta"] = "2025-12-31"
+    frame.loc[
+        0,
+        "data_coleta",
+    ] = "2025-12-31"
 
-    report = build_station_quality_report(frame)
+    report = build_station_quality_report(
+        frame
+    )
 
     assert report["datas_fora_2026"] == 1
-    assert report["status"] == "review"
+    assert report["status"] == "failed"
 
 
 def test_station_quality_fails_without_required_column() -> None:
     frame = _valid_frame().drop(
-        columns=["preco_revenda"]
+        columns=[
+            "preco_revenda"
+        ]
     )
 
-    report = build_station_quality_report(frame)
+    report = build_station_quality_report(
+        frame
+    )
 
     assert report["status"] == "failed"
     assert "preco_revenda" in report[

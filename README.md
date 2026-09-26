@@ -35,6 +35,7 @@ A fonte principal é a Agência Nacional do Petróleo, Gás Natural e Biocombust
 - notebook de análise exploratória;
 - relatório web estático em `docs/`;
 - medidas DAX, tema e especificação visual para Power BI;
+- auditoria explícita de linhas excluídas e sobreposições entre fontes;
 - testes automatizados das regras centrais.
 
 ## Arquitetura de dados
@@ -92,6 +93,7 @@ data/processed/model_postos/
 data/processed/analytics/
 
 reports/quality_2026.json
+reports/station_ingestion_audit_2026.json
 reports/quality_postos_2026.json
 reports/insights_2026.md
 

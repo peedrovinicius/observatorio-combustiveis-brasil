@@ -49,21 +49,39 @@ def build_station_quality_report(
     )
 
     report["periodo_inicial"] = (
-        working["data_coleta"].min().date().isoformat()
-        if working["data_coleta"].notna().any()
+        working["data_coleta"]
+        .min()
+        .date()
+        .isoformat()
+        if working["data_coleta"]
+        .notna()
+        .any()
         else None
     )
     report["periodo_final"] = (
-        working["data_coleta"].max().date().isoformat()
-        if working["data_coleta"].notna().any()
+        working["data_coleta"]
+        .max()
+        .date()
+        .isoformat()
+        if working["data_coleta"]
+        .notna()
+        .any()
         else None
     )
-    report["ufs"] = int(working["uf"].dropna().nunique())
+    report["ufs"] = int(
+        working["uf"]
+        .dropna()
+        .nunique()
+    )
     report["municipios"] = int(
-        working["municipio"].dropna().nunique()
+        working["municipio"]
+        .dropna()
+        .nunique()
     )
     report["produtos"] = int(
-        working["produto"].dropna().nunique()
+        working["produto"]
+        .dropna()
+        .nunique()
     )
 
     if "cnpj_revenda" in working.columns:
@@ -73,7 +91,9 @@ def build_station_quality_report(
             .str.strip()
             .replace("", pd.NA)
         )
-        report["postos_distintos_cnpj"] = int(
+        report[
+            "postos_distintos_cnpj"
+        ] = int(
             cnpj.dropna().nunique()
         )
         report["cnpj_ausente"] = int(
@@ -87,35 +107,48 @@ def build_station_quality_report(
             .str.strip()
             .replace("", pd.NA)
         )
-        report["bandeira_ausente"] = int(
+        report[
+            "bandeira_ausente"
+        ] = int(
             bandeira.isna().sum()
         )
 
     report["datas_invalidas"] = int(
-        working["data_coleta"].isna().sum()
+        working["data_coleta"]
+        .isna()
+        .sum()
     )
     report["datas_fora_2026"] = int(
         (
-            working["data_coleta"].notna()
-            & ~working["data_coleta"].dt.year.eq(2026)
+            working["data_coleta"]
+            .notna()
+            & ~working[
+                "data_coleta"
+            ].dt.year.eq(2026)
         ).sum()
     )
     report["precos_invalidos"] = int(
         prices.isna().sum()
     )
-    report["precos_nao_positivos"] = int(
-        (prices <= 0).fillna(False).sum()
+    report[
+        "precos_nao_positivos"
+    ] = int(
+        (prices <= 0)
+        .fillna(False)
+        .sum()
     )
 
-    working["_posto_identidade"] = station_identity(
-        working
-    )
+    working[
+        "_posto_identidade"
+    ] = station_identity(working)
     keys = [
         column
         for column in BUSINESS_KEY
         if column in working.columns
     ]
-    report["duplicidades_chave_negocio"] = (
+    report[
+        "duplicidades_chave_negocio"
+    ] = (
         int(
             working.duplicated(
                 subset=keys,
@@ -126,9 +159,13 @@ def build_station_quality_report(
         else 0
     )
 
-    required_nulls: dict[str, int] = {}
+    required_nulls: dict[
+        str,
+        int,
+    ] = {}
     for column in sorted(
-        REQUIRED_COLUMNS - {"preco_revenda"}
+        REQUIRED_COLUMNS
+        - {"preco_revenda"}
     ):
         values = (
             working[column]
@@ -136,27 +173,36 @@ def build_station_quality_report(
             .str.strip()
             .replace("", pd.NA)
         )
-        required_nulls[column] = int(
+        required_nulls[
+            column
+        ] = int(
             values.isna().sum()
         )
 
-    report["nulos_campos_obrigatorios"] = (
-        required_nulls
-    )
+    report[
+        "nulos_campos_obrigatorios"
+    ] = required_nulls
 
     blocking_issues = [
         report["datas_invalidas"],
         report["datas_fora_2026"],
         report["precos_invalidos"],
-        report["precos_nao_positivos"],
-        report["duplicidades_chave_negocio"],
+        report[
+            "precos_nao_positivos"
+        ],
+        report[
+            "duplicidades_chave_negocio"
+        ],
         *required_nulls.values(),
     ]
 
     report["status"] = (
         "passed"
-        if all(value == 0 for value in blocking_issues)
-        else "review"
+        if all(
+            value == 0
+            for value in blocking_issues
+        )
+        else "failed"
     )
 
     return report
@@ -173,13 +219,20 @@ def main() -> None:
         STATION_OUTPUT,
         low_memory=False,
     )
-    report = build_station_quality_report(frame)
+    report = (
+        build_station_quality_report(
+            frame
+        )
+    )
 
     REPORTS_DIR.mkdir(
         parents=True,
         exist_ok=True,
     )
-    output = REPORTS_DIR / "quality_postos_2026.json"
+    output = (
+        REPORTS_DIR
+        / "quality_postos_2026.json"
+    )
     output.write_text(
         json.dumps(
             report,

@@ -1,15 +1,23 @@
 from __future__ import annotations
 
+import json
 import re
 import unicodedata
 from pathlib import Path
 
 import pandas as pd
 
-from .config import PROCESSED_DIR, RAW_OPEN_DATA_DIR
+from .config import (
+    PROCESSED_DIR,
+    RAW_OPEN_DATA_DIR,
+    REPORTS_DIR,
+)
 
 STATION_OUTPUT = PROCESSED_DIR / "precos_postos_2026.csv"
 STATION_MODEL_DIR = PROCESSED_DIR / "model_postos"
+STATION_INGESTION_AUDIT = (
+    REPORTS_DIR / "station_ingestion_audit_2026.json"
+)
 
 COLUMN_ALIASES = {
     "regiao_sigla": "regiao",
@@ -30,6 +38,15 @@ COLUMN_ALIASES = {
     "bandeira": "bandeira",
 }
 
+REQUIRED_SOURCE_COLUMNS = {
+    "uf",
+    "municipio",
+    "produto",
+    "data_coleta",
+    "preco_revenda",
+    "unidade_medida",
+}
+
 BUSINESS_KEY = [
     "data_coleta",
     "_posto_identidade",
@@ -47,9 +64,14 @@ FALLBACK_STATION_COLUMNS = [
 
 
 def _normalize_name(value: object) -> str:
-    text = unicodedata.normalize("NFKD", str(value).strip())
+    text = unicodedata.normalize(
+        "NFKD",
+        str(value).strip(),
+    )
     text = "".join(
-        char for char in text if not unicodedata.combining(char)
+        char
+        for char in text
+        if not unicodedata.combining(char)
     )
     text = re.sub(
         r"[^a-zA-Z0-9]+",
@@ -98,7 +120,11 @@ def station_identity(
         cnpj = (
             frame["cnpj_revenda"]
             .astype("string")
-            .str.replace(r"\D", "", regex=True)
+            .str.replace(
+                r"\D",
+                "",
+                regex=True,
+            )
             .str.strip()
         )
         cnpj = cnpj.mask(cnpj.eq(""))
@@ -146,9 +172,7 @@ def station_identity(
     return identity
 
 
-def source_priority(
-    source: object,
-) -> int:
+def source_priority(source: object) -> int:
     text = str(source).casefold()
     if "ultimas_4_semanas" in text:
         return 20
@@ -157,7 +181,10 @@ def source_priority(
         text,
     ):
         return 10
-    if "2026_s1" in text or "2026-01" in text:
+    if (
+        "2026_s1" in text
+        or "2026-01" in text
+    ):
         return 5
     return 0
 
@@ -166,8 +193,8 @@ def deduplicate_station_rows(
     frame: pd.DataFrame,
 ) -> pd.DataFrame:
     working = frame.copy()
-    working["_posto_identidade"] = station_identity(
-        working
+    working["_posto_identidade"] = (
+        station_identity(working)
     )
 
     if "fonte_arquivo" in working.columns:
@@ -239,12 +266,12 @@ def _read_csv(path: Path) -> pd.DataFrame:
             continue
 
     raise ValueError(
-        f"Não foi possível interpretar {path.name} "
-        "como CSV da ANP."
+        f"Não foi possível interpretar "
+        f"{path.name} como CSV da ANP."
     )
 
 
-def transform_station_file(
+def prepare_station_file(
     path: Path,
 ) -> pd.DataFrame:
     frame = _read_csv(path)
@@ -253,15 +280,10 @@ def transform_station_file(
         for column in frame.columns
     ]
 
-    required = {
-        "uf",
-        "municipio",
-        "produto",
-        "data_coleta",
-        "preco_revenda",
-        "unidade_medida",
-    }
-    missing = required - set(frame.columns)
+    missing = (
+        REQUIRED_SOURCE_COLUMNS
+        - set(frame.columns)
+    )
     if missing:
         raise ValueError(
             f"{path.name}: colunas obrigatórias "
@@ -278,8 +300,10 @@ def transform_station_file(
     )
 
     if "preco_compra" in frame.columns:
-        frame["preco_compra"] = _parse_decimal(
-            frame["preco_compra"]
+        frame["preco_compra"] = (
+            _parse_decimal(
+                frame["preco_compra"]
+            )
         )
 
     for column in (
@@ -304,28 +328,132 @@ def transform_station_file(
                 .str.strip()
             )
 
-    frame = frame.loc[
-        frame["data_coleta"]
-        .dt.year
-        .eq(2026)
-    ].copy()
-    frame = frame.dropna(
-        subset=[
-            "data_coleta",
-            "preco_revenda",
-        ]
-    )
-    frame = frame.loc[
-        frame["preco_revenda"].gt(0)
-    ].copy()
     frame["fonte_arquivo"] = path.name
-
     return frame
 
 
-def consolidate_station_data(
-    directory: Path = RAW_OPEN_DATA_DIR,
+def audit_prepared_station_frame(
+    frame: pd.DataFrame,
+    source_name: str,
+) -> dict[str, object]:
+    dates = frame["data_coleta"]
+    prices = frame["preco_revenda"]
+
+    valid_date = dates.notna()
+    in_2026 = (
+        valid_date
+        & dates.dt.year.eq(2026)
+    )
+    valid_price = prices.notna()
+    positive_price = (
+        valid_price
+        & prices.gt(0)
+    )
+    eligible = (
+        in_2026
+        & positive_price
+    )
+
+    return {
+        "fonte_arquivo": source_name,
+        "linhas_origem": int(len(frame)),
+        "datas_invalidas": int(
+            (~valid_date).sum()
+        ),
+        "linhas_fora_2026": int(
+            (
+                valid_date
+                & ~dates.dt.year.eq(2026)
+            ).sum()
+        ),
+        "precos_invalidos": int(
+            (~valid_price).sum()
+        ),
+        "precos_nao_positivos": int(
+            (
+                valid_price
+                & ~prices.gt(0)
+            ).sum()
+        ),
+        "linhas_elegiveis_antes_deduplicacao": int(
+            eligible.sum()
+        ),
+        "linhas_excluidas_antes_deduplicacao": int(
+            len(frame) - eligible.sum()
+        ),
+    }
+
+
+def clean_prepared_station_frame(
+    frame: pd.DataFrame,
 ) -> pd.DataFrame:
+    mask = (
+        frame["data_coleta"].notna()
+        & frame["data_coleta"].dt.year.eq(2026)
+        & frame["preco_revenda"].notna()
+        & frame["preco_revenda"].gt(0)
+    )
+    return frame.loc[mask].copy()
+
+
+def transform_station_file(
+    path: Path,
+) -> pd.DataFrame:
+    prepared = prepare_station_file(path)
+    return clean_prepared_station_frame(
+        prepared
+    )
+
+
+def _overlap_audit(
+    frame: pd.DataFrame,
+) -> dict[str, int]:
+    if frame.empty:
+        return {
+            "grupos_sobrepostos": 0,
+            "grupos_com_preco_divergente": 0,
+        }
+
+    working = frame.copy()
+    working["_posto_identidade"] = (
+        station_identity(working)
+    )
+    keys = [
+        key
+        for key in BUSINESS_KEY
+        if key in working.columns
+    ]
+
+    grouped = (
+        working.groupby(
+            keys,
+            dropna=False,
+        )["preco_revenda"]
+        .agg(
+            linhas="size",
+            precos_distintos="nunique",
+        )
+        .reset_index(drop=True)
+    )
+
+    return {
+        "grupos_sobrepostos": int(
+            grouped["linhas"].gt(1).sum()
+        ),
+        "grupos_com_preco_divergente": int(
+            (
+                grouped["linhas"].gt(1)
+                & grouped[
+                    "precos_distintos"
+                ].gt(1)
+            ).sum()
+        ),
+    }
+
+
+def consolidate_station_data_with_audit(
+    directory: Path = RAW_OPEN_DATA_DIR,
+) -> tuple[pd.DataFrame, dict[str, object]]:
     files = sorted(
         directory.rglob("*.csv")
     )
@@ -334,14 +462,35 @@ def consolidate_station_data(
             "Nenhum CSV de preços por posto encontrado."
         )
 
-    frames = [
-        transform_station_file(path)
-        for path in files
-    ]
+    frames: list[pd.DataFrame] = []
+    file_audits: list[
+        dict[str, object]
+    ] = []
+
+    for path in files:
+        prepared = prepare_station_file(
+            path
+        )
+        file_audits.append(
+            audit_prepared_station_frame(
+                prepared,
+                path.name,
+            )
+        )
+        frames.append(
+            clean_prepared_station_frame(
+                prepared
+            )
+        )
+
     combined = pd.concat(
         frames,
         ignore_index=True,
         sort=False,
+    )
+    rows_before_dedup = len(combined)
+    overlap = _overlap_audit(
+        combined
     )
 
     combined = deduplicate_station_rows(
@@ -362,11 +511,63 @@ def consolidate_station_data(
         if column in combined.columns
     ]
 
-    return combined.sort_values(
-        sort_columns,
-        kind="stable",
-        na_position="last",
-    ).reset_index(drop=True)
+    combined = (
+        combined.sort_values(
+            sort_columns,
+            kind="stable",
+            na_position="last",
+        )
+        .reset_index(drop=True)
+    )
+
+    audit = {
+        "arquivos_processados": len(files),
+        "linhas_origem": int(
+            sum(
+                item["linhas_origem"]
+                for item in file_audits
+            )
+        ),
+        "linhas_elegiveis_antes_deduplicacao": int(
+            rows_before_dedup
+        ),
+        "linhas_removidas_por_sobreposicao": int(
+            rows_before_dedup
+            - len(combined)
+        ),
+        **overlap,
+        "linhas_finais": int(
+            len(combined)
+        ),
+        "arquivos": file_audits,
+    }
+
+    invalid_total = sum(
+        int(item["datas_invalidas"])
+        + int(item["precos_invalidos"])
+        + int(
+            item["precos_nao_positivos"]
+        )
+        for item in file_audits
+    )
+    audit["status"] = (
+        "passed"
+        if invalid_total == 0
+        else "review"
+    )
+
+    return combined, audit
+
+
+def consolidate_station_data(
+    directory: Path = RAW_OPEN_DATA_DIR,
+) -> pd.DataFrame:
+    frame, _ = (
+        consolidate_station_data_with_audit(
+            directory
+        )
+    )
+    return frame
 
 
 def build_station_star_schema(
@@ -538,7 +739,9 @@ def build_station_star_schema(
 
 
 def main() -> None:
-    frame = consolidate_station_data()
+    frame, audit = (
+        consolidate_station_data_with_audit()
+    )
 
     PROCESSED_DIR.mkdir(
         parents=True,
@@ -547,6 +750,19 @@ def main() -> None:
     frame.to_csv(
         STATION_OUTPUT,
         index=False,
+        encoding="utf-8",
+    )
+
+    REPORTS_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    STATION_INGESTION_AUDIT.write_text(
+        json.dumps(
+            audit,
+            ensure_ascii=False,
+            indent=2,
+        ),
         encoding="utf-8",
     )
 
@@ -568,6 +784,10 @@ def main() -> None:
             f"{len(table):,} linhas"
         )
 
+    print(
+        "Auditoria de ingestão: "
+        f"{STATION_INGESTION_AUDIT.relative_to(PROCESSED_DIR.parent.parent)}"
+    )
     print(
         f"Observações por posto: "
         f"{len(frame):,}"
