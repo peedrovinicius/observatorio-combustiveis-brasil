@@ -21,6 +21,8 @@ A suíte verifica, entre outros pontos:
 - descoberta das fontes oficiais;
 - reconhecimento de CSV, ZIP e XLSX pelo conteúdo;
 - normalização de schema;
+- substituição segura de CSVs processados por escopo;
+- preservação da versão processada anterior quando a nova planilha é inválida;
 - datas e decimais;
 - consolidação de 2026;
 - qualidade agregada;

@@ -60,6 +60,10 @@ O pipeline:
 
 Cada tabela reconhecida gera um CSV em `data/processed/`.
 
+Antes de substituir arquivos processados de um escopo histórico, o pipeline lê a nova planilha e confirma que existe pelo menos uma aba reconhecível. Somente depois dessa validação são removidos CSVs antigos do mesmo escopo, como Brasil, regiões, estados ou municípios.
+
+Essa limpeza por escopo impede que uma mudança no nome remoto do XLSX deixe duas versões transformadas válidas sendo consolidadas ao mesmo tempo. Arquivos processados de outros escopos e produtos derivados do pipeline são preservados.
+
 ## 6. Consolidação de 2026
 
 A consolidação seleciona tabelas agregadas com preço médio de revenda e:

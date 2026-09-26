@@ -23,6 +23,11 @@ HEADER_HINTS = {
     "CNPJ DA REVENDA",
 }
 
+HISTORY_FILE_PATTERN = re.compile(
+    r"^historico_semanal_(.+?)__",
+    flags=re.IGNORECASE,
+)
+
 COLUMN_ALIASES = {
     "data_inicial": "data_inicial",
     "data_final": "data_final",
@@ -158,31 +163,101 @@ def read_excel_sheet(path: Path, sheet_name: str) -> pd.DataFrame:
     return frame
 
 
-def transform_workbook(path: Path) -> list[Path]:
-    workbook = pd.ExcelFile(path)
-    outputs: list[Path] = []
+def history_scope_from_path(
+    path: Path,
+) -> str | None:
+    match = HISTORY_FILE_PATTERN.match(
+        path.stem
+    )
+    if match is None:
+        return None
+    return match.group(1).casefold()
 
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+
+def clear_processed_history_scope(
+    directory: Path,
+    scope: str,
+) -> None:
+    prefix = (
+        f"historico_semanal_{scope}__"
+    )
+    for path in directory.glob(
+        prefix + "*.csv"
+    ):
+        if path.is_file():
+            path.unlink()
+
+
+def transform_workbook(
+    path: Path,
+) -> list[Path]:
+    workbook = pd.ExcelFile(path)
+    prepared: list[
+        tuple[str, pd.DataFrame]
+    ] = []
 
     for sheet_name in workbook.sheet_names:
         try:
-            frame = read_excel_sheet(path, sheet_name)
+            frame = read_excel_sheet(
+                path,
+                sheet_name,
+            )
         except ValueError:
             continue
 
         if frame.empty:
             continue
 
-        safe_sheet = re.sub(r"[^A-Za-z0-9_-]+", "_", sheet_name).strip("_").lower()
-        stem = re.sub(r"[^A-Za-z0-9_-]+", "_", path.stem).strip("_").lower()
-        output = PROCESSED_DIR / f"{stem}__{safe_sheet}.csv"
-        frame.to_csv(output, index=False, encoding="utf-8")
-        outputs.append(output)
-
-    if not outputs:
-        raise RuntimeError(
-            f"Nenhuma tabela reconhecida foi encontrada em {path.name}."
+        safe_sheet = re.sub(
+            r"[^A-Za-z0-9_-]+",
+            "_",
+            sheet_name,
+        ).strip("_").lower()
+        prepared.append(
+            (
+                safe_sheet,
+                frame,
+            )
         )
+
+    if not prepared:
+        raise RuntimeError(
+            "Nenhuma tabela reconhecida "
+            f"foi encontrada em {path.name}."
+        )
+
+    PROCESSED_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    scope = history_scope_from_path(
+        path
+    )
+    if scope is not None:
+        clear_processed_history_scope(
+            PROCESSED_DIR,
+            scope,
+        )
+
+    stem = re.sub(
+        r"[^A-Za-z0-9_-]+",
+        "_",
+        path.stem,
+    ).strip("_").lower()
+
+    outputs: list[Path] = []
+    for safe_sheet, frame in prepared:
+        output = (
+            PROCESSED_DIR
+            / f"{stem}__{safe_sheet}.csv"
+        )
+        frame.to_csv(
+            output,
+            index=False,
+            encoding="utf-8",
+        )
+        outputs.append(output)
 
     return outputs
 

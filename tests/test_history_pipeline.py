@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from src.consolidate import (
     build_analytics_table,
@@ -12,7 +13,13 @@ from src.download_history import (
     _discover_weekly_history_links,
 )
 from src.quality import build_quality_report
-from src.transform import parse_decimal_series
+import src.transform as transform_module
+from src.transform import (
+    clear_processed_history_scope,
+    history_scope_from_path,
+    parse_decimal_series,
+    transform_workbook,
+)
 
 
 def test_history_discovery_uses_post_2013_section() -> None:
@@ -373,3 +380,202 @@ def test_aggregate_ingestion_audit_counts_exclusions_and_dedup(
     )
     assert audit["linhas_finais"] == 1
     assert audit["status"] == "review"
+
+
+
+def test_history_scope_keeps_underscored_scope_name() -> None:
+    path = Path(
+        "historico_semanal_municipios_2026__dados.xlsx"
+    )
+
+    assert (
+        history_scope_from_path(
+            path
+        )
+        == "municipios_2026"
+    )
+
+
+def test_processed_history_cleanup_is_scope_specific(
+    tmp_path: Path,
+) -> None:
+    brazil_old = (
+        tmp_path
+        / "historico_semanal_brasil__antigo__dados.csv"
+    )
+    brazil_new = (
+        tmp_path
+        / "historico_semanal_brasil__novo__dados.csv"
+    )
+    states = (
+        tmp_path
+        / "historico_semanal_estados__dados__dados.csv"
+    )
+    consolidated = (
+        tmp_path
+        / "precos_semanais_2026.csv"
+    )
+
+    for path in (
+        brazil_old,
+        brazil_new,
+        states,
+        consolidated,
+    ):
+        path.write_text(
+            "conteudo",
+            encoding="utf-8",
+        )
+
+    clear_processed_history_scope(
+        tmp_path,
+        "brasil",
+    )
+
+    assert not brazil_old.exists()
+    assert not brazil_new.exists()
+    assert states.exists()
+    assert consolidated.exists()
+
+
+def _write_valid_history_workbook(
+    path: Path,
+) -> None:
+    frame = pd.DataFrame(
+        {
+            "Data Inicial": [
+                "04/01/2026",
+            ],
+            "Data Final": [
+                "10/01/2026",
+            ],
+            "Produto": [
+                "GASOLINA COMUM",
+            ],
+            "Preço Médio Revenda": [
+                "6,00",
+            ],
+        }
+    )
+    with pd.ExcelWriter(
+        path,
+        engine="openpyxl",
+    ) as writer:
+        frame.to_excel(
+            writer,
+            index=False,
+            sheet_name="Dados",
+        )
+
+
+def test_transform_replaces_stale_processed_scope_after_validation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    processed = (
+        tmp_path
+        / "processed"
+    )
+    processed.mkdir()
+
+    old = (
+        processed
+        / "historico_semanal_brasil__arquivo_antigo__dados.csv"
+    )
+    other_scope = (
+        processed
+        / "historico_semanal_estados__arquivo__dados.csv"
+    )
+    old.write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+    other_scope.write_text(
+        "preservar",
+        encoding="utf-8",
+    )
+
+    workbook = (
+        tmp_path
+        / "historico_semanal_brasil__arquivo_novo.xlsx"
+    )
+    _write_valid_history_workbook(
+        workbook
+    )
+
+    monkeypatch.setattr(
+        transform_module,
+        "PROCESSED_DIR",
+        processed,
+    )
+
+    outputs = transform_workbook(
+        workbook
+    )
+
+    assert not old.exists()
+    assert other_scope.exists()
+    assert len(outputs) == 1
+    assert outputs[0].exists()
+    assert (
+        outputs[0].name
+        == "historico_semanal_brasil__arquivo_novo__dados.csv"
+    )
+
+
+def test_transform_keeps_old_scope_when_new_workbook_is_invalid(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    processed = (
+        tmp_path
+        / "processed"
+    )
+    processed.mkdir()
+
+    old = (
+        processed
+        / "historico_semanal_brasil__arquivo_antigo__dados.csv"
+    )
+    old.write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+
+    workbook = (
+        tmp_path
+        / "historico_semanal_brasil__arquivo_invalido.xlsx"
+    )
+    with pd.ExcelWriter(
+        workbook,
+        engine="openpyxl",
+    ) as writer:
+        pd.DataFrame(
+            {
+                "coluna_sem_schema": [
+                    "x",
+                ]
+            }
+        ).to_excel(
+            writer,
+            index=False,
+            sheet_name="Invalida",
+        )
+
+    monkeypatch.setattr(
+        transform_module,
+        "PROCESSED_DIR",
+        processed,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "Nenhuma tabela reconhecida"
+        ),
+    ):
+        transform_workbook(
+            workbook
+        )
+
+    assert old.exists()
