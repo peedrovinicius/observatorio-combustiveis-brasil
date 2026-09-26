@@ -1,5 +1,23 @@
 # Notebooks
 
-Notebooks serão adicionados após a consolidação do primeiro dataset tratado.
+## 01 — Análise exploratória
 
-A lógica essencial de ingestão e transformação deve permanecer em `src/`, evitando que o projeto dependa de execução manual de células.
+[`01_analise_exploratoria.ipynb`](01_analise_exploratoria.ipynb) apresenta a primeira EDA reproduzível do projeto.
+
+O notebook cobre:
+
+- cobertura e granularidade dos dados;
+- evolução semanal no nível Brasil;
+- ranking de UFs na última semana;
+- relação etanol × gasolina por município;
+- cuidados metodológicos para não misturar níveis geográficos.
+
+Antes de abrir o notebook, execute:
+
+```bash
+python -m src.pipeline
+```
+
+Isso gera as tabelas em `data/processed/` utilizadas pela análise.
+
+O notebook não contém resultados digitados manualmente nem outputs persistidos. A lógica de ingestão, transformação, consolidação e validação permanece em `src/`, para que o projeto não dependa de execução manual de células.
