@@ -9,6 +9,7 @@ import pytest
 from src.download_open_data import (
     _clear_dataset_artifacts,
     _extract_csvs,
+    _replace_dataset_artifacts,
 )
 from src.file_formats import (
     UnsupportedDownloadError,
@@ -113,4 +114,385 @@ def test_zip_extraction_validates_inner_csv_content(
     assert not (
         destination
         / "dados.csv"
+    ).exists()
+
+
+
+def test_invalid_zip_replacement_preserves_previous_dataset(
+    tmp_path: Path,
+) -> None:
+    stem = (
+        "etanol_gasolina_setembro_2026"
+    )
+    old_zip = (
+        tmp_path
+        / f"{stem}.zip"
+    )
+    old_extract = (
+        tmp_path
+        / stem
+    )
+    old_zip.write_bytes(
+        b"versao-anterior"
+    )
+    old_extract.mkdir()
+    old_csv = (
+        old_extract
+        / "dados.csv"
+    )
+    old_csv.write_text(
+        "produto;preco\n"
+        "GASOLINA;6,00\n",
+        encoding="utf-8",
+    )
+
+    invalid = _zip_with_file(
+        "dados.csv",
+        (
+            b"<!doctype html>"
+            b"<html><body>erro</body></html>"
+        ),
+    )
+
+    with pytest.raises(
+        UnsupportedDownloadError,
+        match="HTML",
+    ):
+        _replace_dataset_artifacts(
+            tmp_path,
+            stem,
+            invalid,
+            "zip",
+        )
+
+    assert (
+        old_zip.read_bytes()
+        == b"versao-anterior"
+    )
+    assert old_csv.exists()
+    assert (
+        "GASOLINA;6,00"
+        in old_csv.read_text(
+            encoding="utf-8",
+        )
+    )
+
+
+def test_valid_zip_replacement_installs_only_new_dataset(
+    tmp_path: Path,
+) -> None:
+    stem = (
+        "etanol_gasolina_setembro_2026"
+    )
+    old_csv = (
+        tmp_path
+        / f"{stem}.csv"
+    )
+    old_zip = (
+        tmp_path
+        / f"{stem}.zip"
+    )
+    old_extract = (
+        tmp_path
+        / stem
+    )
+    unrelated = (
+        tmp_path
+        / "diesel_gnv_setembro_2026.csv"
+    )
+
+    old_csv.write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+    old_zip.write_bytes(
+        b"antigo"
+    )
+    old_extract.mkdir()
+    (
+        old_extract
+        / "antigo.csv"
+    ).write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+    unrelated.write_text(
+        "preservar",
+        encoding="utf-8",
+    )
+
+    content = _zip_with_file(
+        "dados_novos.csv",
+        (
+            b"produto;preco\n"
+            b"GASOLINA;6,10\n"
+        ),
+    )
+
+    raw_path, extracted = (
+        _replace_dataset_artifacts(
+            tmp_path,
+            stem,
+            content,
+            "zip",
+        )
+    )
+
+    assert raw_path == (
+        tmp_path
+        / f"{stem}.zip"
+    )
+    assert (
+        raw_path.read_bytes()
+        == content
+    )
+    assert not old_csv.exists()
+    assert unrelated.exists()
+    assert extracted == [
+        tmp_path
+        / stem
+        / "dados_novos.csv"
+    ]
+    assert extracted[0].exists()
+    assert not (
+        tmp_path
+        / stem
+        / "antigo.csv"
+    ).exists()
+
+
+def test_direct_csv_replacement_removes_previous_zip_artifacts(
+    tmp_path: Path,
+) -> None:
+    stem = (
+        "diesel_gnv_setembro_2026"
+    )
+    old_zip = (
+        tmp_path
+        / f"{stem}.zip"
+    )
+    old_extract = (
+        tmp_path
+        / stem
+    )
+    old_zip.write_bytes(
+        b"antigo"
+    )
+    old_extract.mkdir()
+    (
+        old_extract
+        / "dados.csv"
+    ).write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+
+    content = (
+        b"produto;preco\n"
+        b"DIESEL S10;6,20\n"
+    )
+
+    raw_path, extracted = (
+        _replace_dataset_artifacts(
+            tmp_path,
+            stem,
+            content,
+            "csv",
+        )
+    )
+
+    assert raw_path == (
+        tmp_path
+        / f"{stem}.csv"
+    )
+    assert (
+        raw_path.read_bytes()
+        == content
+    )
+    assert extracted == []
+    assert not old_zip.exists()
+    assert not old_extract.exists()
+
+
+
+def test_zip_rejects_case_insensitive_duplicate_names(
+    tmp_path: Path,
+) -> None:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(
+        buffer,
+        "w",
+    ) as archive:
+        archive.writestr(
+            "Dados.csv",
+            (
+                "produto;preco\n"
+                "GASOLINA;6,00\n"
+            ),
+        )
+        archive.writestr(
+            "dados.csv",
+            (
+                "produto;preco\n"
+                "ETANOL;4,50\n"
+            ),
+        )
+
+    destination = (
+        tmp_path
+        / "extract"
+    )
+    destination.mkdir()
+
+    with pytest.raises(
+        ValueError,
+        match="nome repetido",
+    ):
+        _extract_csvs(
+            buffer.getvalue(),
+            destination,
+        )
+
+
+def test_invalid_direct_csv_preserves_previous_dataset(
+    tmp_path: Path,
+) -> None:
+    stem = (
+        "diesel_gnv_outubro_2026"
+    )
+    old_csv = (
+        tmp_path
+        / f"{stem}.csv"
+    )
+    old_csv.write_text(
+        "produto;preco\n"
+        "DIESEL S10;6,20\n",
+        encoding="utf-8",
+    )
+
+    invalid = (
+        b"<!doctype html>"
+        b"<html><body>erro</body></html>"
+    )
+
+    with pytest.raises(
+        UnsupportedDownloadError,
+        match="HTML",
+    ):
+        _replace_dataset_artifacts(
+            tmp_path,
+            stem,
+            invalid,
+            "csv",
+        )
+
+    assert (
+        "DIESEL S10;6,20"
+        in old_csv.read_text(
+            encoding="utf-8",
+        )
+    )
+
+
+def test_install_failure_restores_previous_dataset(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stem = (
+        "etanol_gasolina_novembro_2026"
+    )
+    old_zip = (
+        tmp_path
+        / f"{stem}.zip"
+    )
+    old_extract = (
+        tmp_path
+        / stem
+    )
+    old_zip.write_bytes(
+        b"versao-anterior"
+    )
+    old_extract.mkdir()
+    old_csv = (
+        old_extract
+        / "dados.csv"
+    )
+    old_csv.write_text(
+        "produto;preco\n"
+        "GASOLINA;6,00\n",
+        encoding="utf-8",
+    )
+
+    content = _zip_with_file(
+        "dados_novos.csv",
+        (
+            b"produto;preco\n"
+            b"GASOLINA;6,10\n"
+        ),
+    )
+
+    import src.download_open_data as downloader
+
+    original_move = (
+        downloader.shutil.move
+    )
+
+    def failing_move(
+        source: str,
+        destination: str,
+    ):
+        source_path = Path(
+            source
+        )
+        destination_path = Path(
+            destination
+        )
+        if (
+            source_path.name
+            == stem
+            and source_path.parent.name.startswith(
+                ".dataset_stage_"
+            )
+            and destination_path
+            == tmp_path / stem
+        ):
+            raise OSError(
+                "falha simulada"
+            )
+        return original_move(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        downloader.shutil,
+        "move",
+        failing_move,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="falha simulada",
+    ):
+        _replace_dataset_artifacts(
+            tmp_path,
+            stem,
+            content,
+            "zip",
+        )
+
+    assert (
+        old_zip.read_bytes()
+        == b"versao-anterior"
+    )
+    assert old_csv.exists()
+    assert (
+        "GASOLINA;6,00"
+        in old_csv.read_text(
+            encoding="utf-8",
+        )
+    )
+    assert not (
+        old_extract
+        / "dados_novos.csv"
     ).exists()

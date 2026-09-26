@@ -45,9 +45,11 @@ Uso no projeto:
 
 O downloader identifica CSV, ZIP e XLSX pelo conteúdo real do arquivo. Isso cobre respostas do portal com `application/octet-stream` e impede que páginas HTML sejam tratadas como dados.
 
-Quando uma publicação já existe localmente, a substituição acontece somente depois de o novo conteúdo ser validado. O projeto remove apenas os artefatos pertencentes ao mesmo dataset lógico, incluindo versões antigas em CSV, ZIP e diretórios de extração. Arquivos de outros datasets são preservados.
+Quando uma publicação já existe localmente, a nova versão é preparada em staging antes de qualquer alteração no dataset anterior. Para ZIP, todos os CSVs internos são extraídos e validados no staging. Nomes de CSV que colidiriam em sistemas sem diferenciação entre maiúsculas e minúsculas também são rejeitados.
 
-Os CSVs internos de um ZIP também são validados pelo conteúdo antes de serem gravados.
+Somente depois de toda a preparação ter sucesso, os artefatos antigos do mesmo dataset lógico são movidos para backup temporário e a nova versão é instalada. Se a instalação falhar, o processo remove qualquer artefato novo já instalado e restaura o backup anterior.
+
+A substituição cobre mudanças entre CSV e ZIP, incluindo diretórios de extração. Arquivos de outros datasets são preservados.
 
 ### Cadastro de revendedores varejistas
 

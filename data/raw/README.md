@@ -15,13 +15,15 @@ A política é:
 
 ```text
 baixar
--> validar conteúdo
--> remover somente artefatos antigos do mesmo dataset
--> gravar nova fonte
+-> validar conteúdo externo
+-> preparar e validar todo o dataset em staging
+-> guardar a versão anterior em backup temporário
+-> instalar a nova versão
+-> restaurar a anterior se a instalação falhar
 -> atualizar manifesto
 ```
 
-Na camada por posto, isso cobre mudanças entre CSV e ZIP e também limpa diretórios de extração antigos.
+Na camada por posto, isso cobre mudanças entre CSV e ZIP e também substitui diretórios de extração antigos. Um CSV interno inválido em um ZIP não remove a última versão válida do dataset.
 
 Na série histórica agregada, a limpeza é feita por escopo, como Brasil, regiões, estados e municípios.
 

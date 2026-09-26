@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import shutil
+import tempfile
 import unicodedata
 import zipfile
 from datetime import datetime, timezone
@@ -182,22 +183,40 @@ def _discover_2026_links(
     return discovered
 
 
-def _clear_dataset_artifacts(
+def _dataset_artifact_candidates(
     root: Path,
     stem: str,
-) -> None:
-    candidates = [
+) -> list[Path]:
+    return [
         root / f"{stem}.csv",
         root / f"{stem}.zip",
         root / f"{stem}.xlsx",
         root / stem,
     ]
 
-    for path in candidates:
-        if path.is_dir():
-            shutil.rmtree(path)
-        elif path.exists():
-            path.unlink()
+
+def _remove_path(
+    path: Path,
+) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+    elif path.exists():
+        path.unlink()
+
+
+def _clear_dataset_artifacts(
+    root: Path,
+    stem: str,
+) -> None:
+    for path in (
+        _dataset_artifact_candidates(
+            root,
+            stem,
+        )
+    ):
+        _remove_path(
+            path
+        )
 
 
 def _extract_csvs(
@@ -222,12 +241,20 @@ def _extract_csvs(
             basename = Path(
                 info.filename
             ).name
-            if basename in used_names:
+            normalized_name = (
+                basename.casefold()
+            )
+            if (
+                normalized_name
+                in used_names
+            ):
                 raise ValueError(
                     "ZIP da ANP contém CSVs com "
                     f"nome repetido: {basename}"
                 )
-            used_names.add(basename)
+            used_names.add(
+                normalized_name
+            )
 
             payload = archive.read(
                 info
@@ -258,6 +285,194 @@ def _extract_csvs(
         )
 
     return extracted
+
+
+def _replace_dataset_artifacts(
+    root: Path,
+    stem: str,
+    content: bytes,
+    kind: str,
+) -> tuple[
+    Path,
+    list[Path],
+]:
+    if kind not in {
+        "csv",
+        "zip",
+    }:
+        raise ValueError(
+            "A camada por posto aceita "
+            "somente CSV ou ZIP."
+        )
+
+    suffix = extension_for_kind(
+        kind
+    )
+    detected_kind = (
+        detect_download_kind(
+            content,
+            f"{stem}{suffix}",
+            "",
+        )
+    )
+    if detected_kind != kind:
+        raise ValueError(
+            "O formato detectado não corresponde "
+            f"ao tipo esperado: {kind}."
+        )
+
+    root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with tempfile.TemporaryDirectory(
+        prefix=".dataset_stage_",
+        dir=root,
+    ) as temporary:
+        stage_root = Path(
+            temporary
+        )
+        staged_raw = (
+            stage_root
+            / f"{stem}{suffix}"
+        )
+        staged_raw.write_bytes(
+            content
+        )
+
+        staged_extract: (
+            Path
+            | None
+        ) = None
+        extracted_names: list[
+            str
+        ] = []
+
+        if kind == "zip":
+            staged_extract = (
+                stage_root
+                / stem
+            )
+            staged_extract.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+            staged_paths = (
+                _extract_csvs(
+                    content,
+                    staged_extract,
+                )
+            )
+            extracted_names = [
+                path.name
+                for path
+                in staged_paths
+            ]
+
+        backup_root = (
+            stage_root
+            / "backup"
+        )
+        backup_root.mkdir()
+
+        backed_up: list[
+            tuple[
+                Path,
+                Path,
+            ]
+        ] = []
+        installed: list[
+            Path
+        ] = []
+
+        try:
+            for existing in (
+                _dataset_artifact_candidates(
+                    root,
+                    stem,
+                )
+            ):
+                if not existing.exists():
+                    continue
+
+                backup = (
+                    backup_root
+                    / existing.name
+                )
+                shutil.move(
+                    str(existing),
+                    str(backup),
+                )
+                backed_up.append(
+                    (
+                        existing,
+                        backup,
+                    )
+                )
+
+            raw_path = (
+                root
+                / staged_raw.name
+            )
+            shutil.move(
+                str(staged_raw),
+                str(raw_path),
+            )
+            installed.append(
+                raw_path
+            )
+
+            extracted: list[
+                Path
+            ] = []
+            if (
+                staged_extract
+                is not None
+            ):
+                extract_dir = (
+                    root
+                    / stem
+                )
+                shutil.move(
+                    str(
+                        staged_extract
+                    ),
+                    str(
+                        extract_dir
+                    ),
+                )
+                installed.append(
+                    extract_dir
+                )
+                extracted = [
+                    extract_dir
+                    / name
+                    for name
+                    in extracted_names
+                ]
+
+            return (
+                raw_path,
+                extracted,
+            )
+        except Exception:
+            for path in reversed(
+                installed
+            ):
+                _remove_path(
+                    path
+                )
+
+            for original, backup in reversed(
+                backed_up
+            ):
+                if backup.exists():
+                    shutil.move(
+                        str(backup),
+                        str(original),
+                    )
+            raise
 
 
 def _download_resource(
@@ -413,10 +628,6 @@ def main() -> None:
                 "",
             ),
         )
-        suffix = extension_for_kind(
-            kind
-        )
-
         if kind == "xlsx":
             raise RuntimeError(
                 "A camada aberta por posto esperava CSV ou ZIP, "
@@ -433,42 +644,24 @@ def main() -> None:
                 "_",
             ),
         )
-        raw_path = (
-            RAW_OPEN_DATA_DIR
-            / f"{stem}{suffix}"
-        )
 
-        _clear_dataset_artifacts(
-            RAW_OPEN_DATA_DIR,
-            stem,
-        )
-
-        raw_path.write_bytes(
-            response.content
-        )
-
-        extracted: list[str] = []
-        if kind == "zip":
-            extract_dir = (
-                RAW_OPEN_DATA_DIR
-                / stem
+        raw_path, extracted_paths = (
+            _replace_dataset_artifacts(
+                RAW_OPEN_DATA_DIR,
+                stem,
+                response.content,
+                kind,
             )
-            extract_dir.mkdir(
-                parents=True,
-                exist_ok=True,
+        )
+        extracted = [
+            str(
+                path.relative_to(
+                    RAW_OPEN_DATA_DIR
+                )
             )
-            extracted = [
-                str(
-                    path.relative_to(
-                        RAW_OPEN_DATA_DIR
-                    )
-                )
-                for path
-                in _extract_csvs(
-                    response.content,
-                    extract_dir,
-                )
-            ]
+            for path
+            in extracted_paths
+        ]
 
         records.append(
             {
