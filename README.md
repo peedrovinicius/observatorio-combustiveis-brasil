@@ -2,262 +2,141 @@
 
 # Observatório de Combustíveis Brasil
 
-**Pipeline de Data Analytics para preços de combustíveis com dados públicos oficiais da ANP**
+**Data Analytics de preços de combustíveis com dados públicos oficiais da ANP**
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![Pandas](https://img.shields.io/badge/Pandas-2.x-150458?logo=pandas&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Modelo%20Estrela-4169E1?logo=postgresql&logoColor=white)
 ![Power BI](https://img.shields.io/badge/Power%20BI-Dashboard-F2C811?logo=powerbi&logoColor=black)
-![Data](https://img.shields.io/badge/Dados-ANP.gov.br-0B6E4F)
+![Fonte](https://img.shields.io/badge/Fonte-ANP.gov.br-0B6E4F)
 
 </div>
 
-## Visão geral
+## Sobre o projeto
 
-O projeto analisa a evolução e a distribuição dos preços de combustíveis no Brasil a partir de dados públicos da Agência Nacional do Petróleo, Gás Natural e Biocombustíveis (ANP).
+O Observatório de Combustíveis Brasil analisa como os preços de combustíveis variam em 2026 entre períodos, produtos e localidades.
 
-O fluxo foi desenhado como um projeto de Data Analytics reproduzível: aquisição, rastreabilidade, inspeção, tratamento, validação, consolidação, modelagem dimensional, SQL, KPIs, relatórios visuais e preparação para Power BI.\n\n<p align="center">\n  <img src="assets/architecture.svg" alt="Arquitetura analítica do projeto" width="100%" />\n</p>
+A fonte principal é a Agência Nacional do Petróleo, Gás Natural e Biocombustíveis (ANP). O projeto cobre o fluxo completo de Data Analytics, desde a aquisição e validação dos dados até modelagem dimensional, SQL, KPIs, relatório web e preparação para Power BI.
 
-## Pergunta analítica
+<p align="center">
+  <img src="assets/architecture.svg" alt="Arquitetura analítica do projeto" width="100%" />
+</p>
 
-**Como os preços dos combustíveis variam em 2026 ao longo do tempo e entre Brasil, regiões, estados, municípios e produtos?**
+## O que o projeto entrega
 
-## Pipeline
-
-```mermaid
-flowchart LR
-    A[ANP<br/>Série histórica] --> B[Download<br/>Python]
-    B --> C[Raw<br/>Originais]
-    C --> D[Inspeção<br/>Schema]
-    D --> E[Transformação<br/>Pandas]
-    E --> F[Consolidação<br/>2026]
-    F --> G[Qualidade<br/>Checks]
-    G --> H[Modelo estrela]
-    H --> I[KPIs e tabelas<br/>analíticas]
-    I --> J[PostgreSQL<br/>Views e queries]
-    J --> K[Power BI<br/>Dashboard]
-```
-
-## Implementado
-
-- descoberta automática dos arquivos semanais oficiais;
-- coleta para Brasil, regiões, estados e municípios de 2026;
-- coleta da base aberta por posto, com data, produto, preço, estabelecimento e bandeira;
-- manifesto com URL, horário, tamanho e SHA-256;
-- inspeção de schema e valores ausentes;
-- detecção automática de cabeçalho;
-- padronização de datas, colunas e valores monetários;
-- consolidação da série de 2026;
-- identificação do nível geográfico;
-- validações de qualidade separadas para agregados e observações por posto;
-- modelo estrela agregado com três dimensões e uma fato;
-- segundo modelo estrela no grão por posto, preservando a separação entre agregados oficiais e observações individuais;
-- DDL PostgreSQL, views e consultas analíticas;
-- ambiente PostgreSQL reproduzível com Docker Compose;
-- carga transacional dos dois modelos via PostgreSQL COPY;
-- KPIs nacionais por produto;
-- tendência mensal derivada das observações semanais;
-- rankings por UF e município;
-- relação etanol × gasolina comum;
-- medidas DAX e especificação inicial do dashboard;
-- geração automática de relatório de insights e gráficos a partir dos dados processados;
+- ingestão reproduzível de dados oficiais da ANP;
+- rastreabilidade com origem, horário, tamanho e SHA-256;
+- tratamento e validação com Python e pandas;
+- série agregada para Brasil, regiões, estados e municípios;
+- segunda camada no grão por posto, produto e data de coleta;
+- dois modelos estrela separados por granularidade;
+- PostgreSQL com DDL, views e consultas analíticas;
+- KPIs, rankings, tendência e relação etanol/gasolina;
+- notebook de análise exploratória;
+- relatório web estático em `docs/`;
+- medidas DAX, tema e especificação visual para Power BI;
 - testes automatizados das regras centrais.
 
-## Estrutura
+## Arquitetura de dados
 
-```text
-observatorio-combustiveis-brasil/
-├── data/
-│   ├── raw/
-│   └── processed/
-├── docs/
-│   ├── dicionario-dados.md
-│   ├── fontes.md
-│   ├── kpis.md
-│   ├── metodologia.md
-│   └── modelo-dados.md
-├── assets/
-│   ├── architecture.svg
-│   └── generated/
-├── notebooks/
-├── powerbi/
-│   ├── medidas.dax
-│   └── README.md
-├── reports/
-├── scripts/
-│   ├── README.md
-│   └── run_local.ps1
-├── docker-compose.yml
-├── .env.example
-├── sql/
-├── src/
-│   ├── analytics.py
-│   ├── build_model.py
-│   ├── consolidate.py
-│   ├── download_history.py
-│   ├── download_open_data.py
-│   ├── inspect_raw.py
-│   ├── load_postgres.py
-│   ├── database.py
-│   ├── pipeline.py
-│   ├── publish_readme.py
-│   ├── quality.py
-│   ├── reporting.py
-│   ├── station_data.py
-│   ├── station_quality.py
-│   ├── site.py
-│   ├── snapshot.py
-│   └── transform.py
-├── tests/
-├── .gitignore
-├── requirements.txt
-└── README.md
-```
+O projeto mantém dois grãos analíticos separados para não misturar conceitos diferentes:
 
-## Execução local recomendada
+| Camada | Grão | Uso principal |
+| --- | --- | --- |
+| Agregados oficiais | período × produto × localidade | indicadores publicados e comparações geográficas |
+| Preços por posto | data da coleta × posto × produto | dispersão, bandeira, revenda e distribuição de preços |
 
-No Windows, o projeto pode ser executado com um único comando:
+Os detalhes estão em [`docs/modelo-dados.md`](docs/modelo-dados.md) e [`docs/dados-abertos-postos.md`](docs/dados-abertos-postos.md).
+
+## Stack
+
+| Área | Tecnologia |
+| --- | --- |
+| Extração e transformação | Python, pandas, requests |
+| Qualidade | validações próprias, pytest |
+| Banco de dados | PostgreSQL |
+| Modelagem | modelo estrela |
+| Análise | Python, SQL, Jupyter |
+| Visualização | Power BI, Matplotlib |
+| Ambiente local | Docker Compose |
+| Publicação visual | HTML e CSS estáticos |
+
+## Execução rápida
+
+No Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1
 ```
 
-Esse fluxo cria o ambiente virtual quando necessário, instala dependências, executa os testes e roda o pipeline completo.
-
-Para também gerar um snapshot revisável dos resultados:
+Para gerar também o snapshot revisável dos resultados:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1 -Snapshot
 ```
 
-O snapshot produz `docs/resultados-2026.md`, `docs/index.html`, copia os gráficos para `assets/snapshot/` e `docs/assets/`, e atualiza localmente a seção de resultados do README. Nenhum commit ou push é feito automaticamente.
+O snapshot cria o relatório de resultados, os gráficos, o relatório web estático e atualiza localmente a seção visual do README. Nenhum commit ou push é feito automaticamente.
 
-## Execução manual
+Instruções completas: [`docs/execucao.md`](docs/execucao.md).
 
-```bash
-python -m venv .venv
-```
-
-No Windows PowerShell:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python -m src.pipeline
-pytest
-
-docker compose up -d postgres
-python -m src.load_postgres
-```
-
-O pipeline executa onze etapas:
-
-```text
-1. download da série agregada
-2. download dos dados abertos por posto
-3. inspeção dos arquivos brutos agregados
-4. transformação da série agregada
-5. consolidação da série agregada 2026
-6. validação de qualidade agregada
-7. construção do modelo estrela agregado
-8. construção da camada por posto
-9. validação de qualidade por posto
-10. geração das tabelas analíticas
-11. geração do relatório e dos gráficos
-```
-
-## PostgreSQL
-
-Depois de gerar os datasets, o banco local pode ser iniciado e carregado com:
-
-```powershell
-docker compose up -d postgres
-python -m src.load_postgres
-```
-
-A carga cria e popula os dois modelos dimensionais, recria as views e valida as tabelas fato antes de confirmar a transação.
-
-Veja [`docs/postgresql.md`](docs/postgresql.md).
-
-## Relatórios de qualidade
+## Saídas analíticas
 
 O pipeline gera localmente:
 
 ```text
+data/processed/precos_semanais_2026.csv
+data/processed/precos_postos_2026.csv
+
+data/processed/model/
+data/processed/model_postos/
+data/processed/analytics/
+
 reports/quality_2026.json
 reports/quality_postos_2026.json
+reports/insights_2026.md
+
+assets/generated/
+assets/snapshot/
+
+docs/resultados-2026.md
+docs/index.html
 ```
 
-O segundo relatório mede também cobertura de UFs, municípios, produtos, CNPJ e bandeira, além de datas, preços e duplicidades.
+Os datasets brutos e processados não são versionados. Eles podem ser reconstruídos pelas fontes e pelo código do repositório.
 
-## Saídas visuais
+## Power BI
 
-Após o processamento, o pipeline gera automaticamente três gráficos em `assets/generated/` e o relatório `reports/insights_2026.md`. Esses arquivos são derivados das tabelas processadas e não contêm valores analíticos fixados manualmente no código.
+O dashboard foi especificado em cinco páginas:
 
-## Relatório web estático
+1. **Visão Geral**: KPIs e evolução semanal
+2. **Geografia**: UFs e municípios
+3. **Tendência**: comportamento temporal
+4. **Mercado por Posto**: distribuição, bandeiras e revendas
+5. **Etanol × Gasolina**: relação observada por município
 
-O snapshot também gera `docs/index.html`, com KPIs, ranking por UF, qualidade e gráficos reais. A página é estática, sem backend, e fica pronta para publicação a partir da pasta `docs/` após revisão.
-
-Veja [`docs/site.md`](docs/site.md).
-
-## Saídas analíticas
-
-Além do modelo estrela, o pipeline gera:
-
-```text
-data/processed/analytics/
-├── kpis_brasil_2026.csv
-├── tendencia_mensal_brasil_2026.csv
-├── ranking_ufs_ultima_semana.csv
-├── ranking_municipios_ultima_semana.csv
-└── etanol_gasolina_ultima_semana.csv
-```
-
-Essas tabelas são derivadas dos dados processados e não são mantidas manualmente.
-
-## Duas camadas de dados
-
-O projeto mantém dois grãos analíticos separados:
-
-- **agregado oficial:** período × produto × localidade, usado para indicadores oficiais;
-- **por posto:** data da coleta × estabelecimento × produto, usado para dispersão, bandeira e comparação entre revendas.
-
-A documentação da camada por estabelecimento está em [`docs/dados-abertos-postos.md`](docs/dados-abertos-postos.md).
-
-## Dashboard planejado
-
-O Power BI terá cinco páginas principais:
-
-1. **Visão Geral**: preço atual, variação, amplitude, postos e evolução semanal;
-2. **Geografia**: comparação entre UFs e municípios;
-3. **Tendência**: evolução semanal e indicador mensal derivado;
-4. **Mercado por posto**: distribuição, mediana, bandeiras e preços observados;
-5. **Etanol × Gasolina**: relação observada entre os dois combustíveis.
-
-A especificação e as medidas DAX estão em [`powerbi/README.md`](powerbi/README.md).
+Tema, medidas DAX e layout: [`powerbi/`](powerbi/).
 
 ## Metodologia
 
-O projeto preserva os agregados oficiais publicados pela ANP. Não tratamos uma média simples das médias municipais como equivalente ao indicador nacional oficial.
+O projeto preserva os agregados oficiais da ANP e não trata uma média simples das médias municipais como equivalente ao indicador nacional oficial.
 
-Indicadores derivados são explicitamente identificados. Veja [`docs/kpis.md`](docs/kpis.md) e [`docs/metodologia.md`](docs/metodologia.md).
+Indicadores derivados são identificados como cálculos do projeto. Valores extremos são sinalizados para revisão, não removidos automaticamente.
 
-## Princípios
+Documentação:
 
-- somente dados públicos reais;
-- raw imutável;
-- origem rastreável;
-- transformação reproduzível;
-- validação antes da visualização;
-- nenhuma métrica digitada manualmente;
-- nenhuma remoção automática de outliers;
-- separação entre dado bruto, tratado e analítico.
+- [Fontes](docs/fontes.md)
+- [Metodologia](docs/metodologia.md)
+- [Dicionário de dados](docs/dicionario-dados.md)
+- [KPIs](docs/kpis.md)
+- [Modelo de dados](docs/modelo-dados.md)
+- [PostgreSQL](docs/postgresql.md)
+- [Relatório web](docs/site.md)
 
 ## Status
 
-**ETL agregado e por posto, validação, dois modelos dimensionais, PostgreSQL reproduzível, SQL, KPIs, snapshots e relatório web estático implementados.**
+Pipeline agregado e por posto, validação, modelos dimensionais, PostgreSQL, SQL, KPIs, notebook, snapshots e relatório web estático implementados.
 
-A próxima etapa é executar o runner local contra os arquivos oficiais, revisar o snapshot real de 2026 e então consolidar o dashboard final.
+A publicação de métricas e gráficos no README ocorre somente depois da execução e revisão do snapshot com os dados oficiais.
 
 ## Licença
 
