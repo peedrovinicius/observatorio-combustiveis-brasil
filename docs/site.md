@@ -9,6 +9,8 @@ A página inclui:
 - ranking por UF;
 - cobertura e qualidade;
 - gráficos de UF e etanol/gasolina;
+- dispersão municipal dos preços observados por posto;
+- comparação de mediana por bandeira com proteção contra amostra pequena;
 - links para metodologia e resultados completos.
 
 ## Geração
@@ -20,5 +22,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1 -Snapshot
 O site é totalmente estático e não depende de backend.
 
 Os valores exibidos são lidos das saídas analíticas do pipeline. Não existem métricas fictícias ou preenchidas manualmente no HTML.
+
+As visualizações por estabelecimento usam somente a camada por posto e não são apresentadas como equivalentes aos agregados oficiais da ANP.
 
 A pasta `docs/` fica pronta para ser usada como origem de uma publicação estática do repositório, após revisão dos resultados gerados.

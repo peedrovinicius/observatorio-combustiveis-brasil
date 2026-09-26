@@ -4,10 +4,21 @@ from pathlib import Path
 
 from .config import PROJECT_ROOT
 
-README_PATH = PROJECT_ROOT / "README.md"
-RESULTS_DOC = PROJECT_ROOT / "docs" / "resultados-2026.md"
-START_MARKER = "<!-- RESULTS:START -->"
-END_MARKER = "<!-- RESULTS:END -->"
+README_PATH = (
+    PROJECT_ROOT
+    / "README.md"
+)
+RESULTS_DOC = (
+    PROJECT_ROOT
+    / "docs"
+    / "resultados-2026.md"
+)
+START_MARKER = (
+    "<!-- RESULTS:START -->"
+)
+END_MARKER = (
+    "<!-- RESULTS:END -->"
+)
 
 
 def build_results_block() -> str:
@@ -28,6 +39,11 @@ Os resultados abaixo são gerados pelo pipeline a partir das fontes públicas of
   <img src="assets/snapshot/etanol_gasolina_municipios.png" alt="Relação entre etanol e gasolina por município" width="47%" />
 </p>
 
+<p align="center">
+  <img src="assets/snapshot/dispersao_municipios_postos.png" alt="Dispersão dos preços observados por município" width="47%" />
+  <img src="assets/snapshot/mediana_bandeiras_postos.png" alt="Mediana dos preços observados por bandeira" width="47%" />
+</p>
+
 {END_MARKER}"""
 
 
@@ -37,36 +53,78 @@ def update_readme_results(
 ) -> None:
     if not results_doc.exists():
         raise FileNotFoundError(
-            "O relatório docs/resultados-2026.md ainda não existe. "
+            "O relatório docs/resultados-2026.md "
+            "ainda não existe. "
             "Gere o snapshot antes de atualizar o README."
         )
 
-    content = readme_path.read_text(encoding="utf-8")
-    block = build_results_block()
+    content = (
+        readme_path
+        .read_text(
+            encoding="utf-8"
+        )
+    )
+    block = (
+        build_results_block()
+    )
 
-    if START_MARKER in content and END_MARKER in content:
-        before = content.split(START_MARKER, 1)[0].rstrip()
-        after = content.split(END_MARKER, 1)[1].lstrip()
-        updated = before + "\n\n" + block + "\n\n" + after
+    if (
+        START_MARKER
+        in content
+        and END_MARKER
+        in content
+    ):
+        before = (
+            content
+            .split(
+                START_MARKER,
+                1,
+            )[0]
+            .rstrip()
+        )
+        after = (
+            content
+            .split(
+                END_MARKER,
+                1,
+            )[1]
+            .lstrip()
+        )
+        updated = (
+            before
+            + "\n\n"
+            + block
+            + "\n\n"
+            + after
+        )
     else:
-        anchor = "## Saídas analíticas"
+        anchor = (
+            "## Saídas analíticas"
+        )
         if anchor not in content:
             raise ValueError(
-                "Não foi encontrado um ponto seguro para inserir os resultados."
+                "Não foi encontrado um ponto seguro "
+                "para inserir os resultados."
             )
         updated = content.replace(
             anchor,
-            block + "\n\n" + anchor,
+            block
+            + "\n\n"
+            + anchor,
             1,
         )
 
-    readme_path.write_text(updated, encoding="utf-8")
+    readme_path.write_text(
+        updated,
+        encoding="utf-8",
+    )
 
 
 def main() -> None:
     update_readme_results()
     print(
-        "README atualizado localmente com os gráficos do snapshot. "
+        "README atualizado localmente "
+        "com os gráficos do snapshot. "
         "Revise o diff antes de versionar."
     )
 

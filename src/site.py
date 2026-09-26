@@ -3,57 +3,120 @@ from __future__ import annotations
 import html
 import json
 import shutil
-from datetime import datetime, timezone
+from datetime import (
+    datetime,
+    timezone,
+)
 from pathlib import Path
 
 import pandas as pd
 
-from .config import PROCESSED_DIR, PROJECT_ROOT, REPORTS_DIR
+from .config import (
+    PROCESSED_DIR,
+    PROJECT_ROOT,
+    REPORTS_DIR,
+)
 
-ANALYTICS_DIR = PROCESSED_DIR / "analytics"
-DOCS_DIR = PROJECT_ROOT / "docs"
-DOCS_ASSETS_DIR = DOCS_DIR / "assets"
-SNAPSHOT_DIR = PROJECT_ROOT / "assets" / "snapshot"
+ANALYTICS_DIR = (
+    PROCESSED_DIR
+    / "analytics"
+)
+DOCS_DIR = (
+    PROJECT_ROOT
+    / "docs"
+)
+SNAPSHOT_DIR = (
+    PROJECT_ROOT
+    / "assets"
+    / "snapshot"
+)
 
 SITE_IMAGES = [
     "tendencia_brasil_2026.png",
     "ranking_ufs_gasolina.png",
     "etanol_gasolina_municipios.png",
+    "dispersao_municipios_postos.png",
+    "mediana_bandeiras_postos.png",
 ]
 
 
-def _currency(value: object) -> str:
+def _currency(
+    value: object,
+) -> str:
     if pd.isna(value):
         return "n/d"
-    return f"R$ {float(value):.2f}".replace(".", ",")
+    return (
+        f"R$ {float(value):.2f}"
+        .replace(".", ",")
+    )
 
 
-def _percent(value: object) -> str:
+def _percent(
+    value: object,
+) -> str:
     if pd.isna(value):
         return "n/d"
-    return f"{float(value):+.2f}%".replace(".", ",")
+    return (
+        f"{float(value):+.2f}%"
+        .replace(".", ",")
+    )
 
 
-def _read_json(path: Path) -> dict[str, object] | None:
+def _read_json(
+    path: Path,
+) -> dict[str, object] | None:
     if not path.exists():
         return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
 
 
-def _common_gasoline(products: pd.Series) -> str | None:
-    values = [str(value) for value in products.dropna().unique()]
+def _common_gasoline(
+    products: pd.Series,
+) -> str | None:
+    values = [
+        str(value)
+        for value
+        in products.dropna().unique()
+    ]
     for value in values:
         upper = value.upper()
-        if "GASOLINA" in upper and "ADITIV" not in upper:
+        if (
+            "GASOLINA"
+            in upper
+            and "ADITIV"
+            not in upper
+        ):
             return value
-    return values[0] if values else None
+    return (
+        values[0]
+        if values
+        else None
+    )
 
 
-def _kpi_cards(kpis: pd.DataFrame) -> str:
+def _kpi_cards(
+    kpis: pd.DataFrame,
+) -> str:
     cards: list[str] = []
 
-    for _, row in kpis.sort_values("produto", kind="stable").iterrows():
-        product = html.escape(str(row["produto"]))
+    for _, row in (
+        kpis.sort_values(
+            "produto",
+            kind="stable",
+        )
+        .iterrows()
+    ):
+        product = html.escape(
+            str(
+                row[
+                    "produto"
+                ]
+            )
+        )
         cards.append(
             f"""
             <article class="card">
@@ -73,23 +136,47 @@ def _kpi_cards(kpis: pd.DataFrame) -> str:
     return "\n".join(cards)
 
 
-def _ranking_rows(ranking: pd.DataFrame) -> tuple[str, str]:
-    product = _common_gasoline(ranking["produto"])
+def _ranking_rows(
+    ranking: pd.DataFrame,
+) -> tuple[str, str]:
+    product = (
+        _common_gasoline(
+            ranking["produto"]
+        )
+    )
     if product is None:
-        return "", "Produto indisponível"
+        return (
+            "",
+            "Produto indisponível",
+        )
 
-    frame = ranking.loc[ranking["produto"].eq(product)].copy()
-    frame = frame.sort_values(
-        "preco_medio_revenda",
-        ascending=False,
-        kind="stable",
-    ).head(10)
+    frame = (
+        ranking.loc[
+            ranking[
+                "produto"
+            ].eq(product)
+        ]
+        .copy()
+        .sort_values(
+            "preco_medio_revenda",
+            ascending=False,
+            kind="stable",
+        )
+        .head(10)
+    )
 
     rows: list[str] = []
     for _, row in frame.iterrows():
         label = row.get("uf")
-        if pd.isna(label) or str(label).strip() == "":
-            label = row.get("estado", "n/d")
+        if (
+            pd.isna(label)
+            or str(label).strip()
+            == ""
+        ):
+            label = row.get(
+                "estado",
+                "n/d",
+            )
         rows.append(
             "<tr>"
             f"<td>{html.escape(str(label))}</td>"
@@ -98,30 +185,59 @@ def _ranking_rows(ranking: pd.DataFrame) -> tuple[str, str]:
             "</tr>"
         )
 
-    return "\n".join(rows), str(product)
+    return (
+        "\n".join(rows),
+        str(product),
+    )
 
 
 def _quality_cards(
-    aggregate: dict[str, object] | None,
-    stations: dict[str, object] | None,
+    aggregate: (
+        dict[str, object]
+        | None
+    ),
+    stations: (
+        dict[str, object]
+        | None
+    ),
 ) -> str:
     aggregate_status = (
-        str(aggregate.get("status", "n/d"))
+        str(
+            aggregate.get(
+                "status",
+                "n/d",
+            )
+        )
         if aggregate
         else "n/d"
     )
     station_status = (
-        str(stations.get("status", "n/d"))
+        str(
+            stations.get(
+                "status",
+                "n/d",
+            )
+        )
         if stations
         else "n/d"
     )
     municipalities = (
-        str(stations.get("municipios", "n/d"))
+        str(
+            stations.get(
+                "municipios",
+                "n/d",
+            )
+        )
         if stations
         else "n/d"
     )
     establishments = (
-        str(stations.get("postos_distintos_cnpj", "n/d"))
+        str(
+            stations.get(
+                "postos_distintos_cnpj",
+                "n/d",
+            )
+        )
         if stations
         else "n/d"
     )
@@ -151,47 +267,96 @@ def build_site(
     ranking_path: Path,
     snapshot_dir: Path,
     docs_dir: Path,
-    aggregate_quality_path: Path | None = None,
-    station_quality_path: Path | None = None,
+    aggregate_quality_path: (
+        Path
+        | None
+    ) = None,
+    station_quality_path: (
+        Path
+        | None
+    ) = None,
 ) -> Path:
     required = [
         kpis_path,
         ranking_path,
-        *[snapshot_dir / filename for filename in SITE_IMAGES],
+        *[
+            snapshot_dir
+            / filename
+            for filename
+            in SITE_IMAGES
+        ],
     ]
-    missing = [path for path in required if not path.exists()]
+    missing = [
+        path
+        for path
+        in required
+        if not path.exists()
+    ]
     if missing:
-        formatted = "\n".join(f"- {path}" for path in missing)
+        formatted = "\n".join(
+            f"- {path}"
+            for path
+            in missing
+        )
         raise FileNotFoundError(
-            "Não foi possível construir o relatório web. "
+            "Não foi possível construir "
+            "o relatório web. "
             f"Arquivos ausentes:\n{formatted}"
         )
 
-    kpis = pd.read_csv(kpis_path)
-    ranking = pd.read_csv(ranking_path)
+    kpis = pd.read_csv(
+        kpis_path
+    )
+    ranking = pd.read_csv(
+        ranking_path
+    )
 
-    docs_dir.mkdir(parents=True, exist_ok=True)
-    assets_dir = docs_dir / "assets"
-    assets_dir.mkdir(parents=True, exist_ok=True)
+    docs_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    assets_dir = (
+        docs_dir
+        / "assets"
+    )
+    assets_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
 
     for filename in SITE_IMAGES:
         shutil.copy2(
-            snapshot_dir / filename,
-            assets_dir / filename,
+            snapshot_dir
+            / filename,
+            assets_dir
+            / filename,
         )
 
-    ranking_rows, ranking_product = _ranking_rows(ranking)
-    generated_at = datetime.now(timezone.utc).strftime(
-        "%Y-%m-%d %H:%M UTC"
+    ranking_rows, ranking_product = (
+        _ranking_rows(
+            ranking
+        )
+    )
+    generated_at = (
+        datetime.now(
+            timezone.utc
+        )
+        .strftime(
+            "%Y-%m-%d %H:%M UTC"
+        )
     )
 
     aggregate_quality = (
-        _read_json(aggregate_quality_path)
+        _read_json(
+            aggregate_quality_path
+        )
         if aggregate_quality_path
         else None
     )
     station_quality = (
-        _read_json(station_quality_path)
+        _read_json(
+            station_quality_path
+        )
         if station_quality_path
         else None
     )
@@ -297,6 +462,33 @@ def build_site(
       </figure>
     </section>
 
+    <section>
+      <div class="section-heading">
+        <p class="eyebrow">Mercado por posto</p>
+        <h2>Dispersão e bandeiras</h2>
+      </div>
+      <div class="two-column">
+        <figure class="panel">
+          <img
+            src="assets/dispersao_municipios_postos.png"
+            alt="Dispersão dos preços observados por município"
+          />
+          <figcaption>
+            Intervalo interquartil em municípios com pelo menos 3 postos.
+          </figcaption>
+        </figure>
+        <figure class="panel">
+          <img
+            src="assets/mediana_bandeiras_postos.png"
+            alt="Mediana dos preços observados por bandeira"
+          />
+          <figcaption>
+            Comparação exibida somente para bandeiras com amostra suficiente.
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
     <section class="method">
       <p class="eyebrow">Metodologia</p>
       <h2>Leitura responsável</h2>
@@ -323,21 +515,34 @@ def build_site(
 </html>
 """
 
-    output = docs_dir / "index.html"
-    output.write_text(page, encoding="utf-8")
+    output = (
+        docs_dir
+        / "index.html"
+    )
+    output.write_text(
+        page,
+        encoding="utf-8",
+    )
     return output
 
 
 def main() -> None:
     output = build_site(
-        ANALYTICS_DIR / "kpis_brasil_2026.csv",
-        ANALYTICS_DIR / "ranking_ufs_ultima_semana.csv",
+        ANALYTICS_DIR
+        / "kpis_brasil_2026.csv",
+        ANALYTICS_DIR
+        / "ranking_ufs_ultima_semana.csv",
         SNAPSHOT_DIR,
         DOCS_DIR,
-        REPORTS_DIR / "quality_2026.json",
-        REPORTS_DIR / "quality_postos_2026.json",
+        REPORTS_DIR
+        / "quality_2026.json",
+        REPORTS_DIR
+        / "quality_postos_2026.json",
     )
-    print(f"Relatório web: {output.relative_to(PROJECT_ROOT)}")
+    print(
+        "Relatório web: "
+        f"{output.relative_to(PROJECT_ROOT)}"
+    )
 
 
 if __name__ == "__main__":
