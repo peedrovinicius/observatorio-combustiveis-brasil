@@ -220,11 +220,11 @@ A documentação da camada por estabelecimento está em [`docs/dados-abertos-pos
 
 O Power BI terá cinco páginas principais:
 
-1. **Visão Geral** — preço atual, variação, amplitude, postos e evolução semanal;
-2. **Geografia** — comparação entre UFs e municípios;
-3. **Tendência** — evolução semanal e indicador mensal derivado;
-4. **Mercado por posto** — distribuição, mediana, bandeiras e preços observados;
-5. **Etanol × Gasolina** — relação observada entre os dois combustíveis.
+1. **Visão Geral**: preço atual, variação, amplitude, postos e evolução semanal;
+2. **Geografia**: comparação entre UFs e municípios;
+3. **Tendência**: evolução semanal e indicador mensal derivado;
+4. **Mercado por posto**: distribuição, mediana, bandeiras e preços observados;
+5. **Etanol × Gasolina**: relação observada entre os dois combustíveis.
 
 A especificação e as medidas DAX estão em [`powerbi/README.md`](powerbi/README.md).
 
