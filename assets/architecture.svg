@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="310" viewBox="0 0 1200 310" role="img" aria-labelledby="title desc">
+  <title id="title">Arquitetura do Observatório de Combustíveis Brasil</title>
+  <desc id="desc">Fluxo dos dados da ANP até Python, qualidade, modelos dimensionais, PostgreSQL, análises e Power BI.</desc>
+  <rect width="1200" height="310" fill="#ffffff"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#111111">
+    <text x="600" y="34" font-size="24" font-weight="700" text-anchor="middle">Arquitetura analítica</text>
+    <text x="600" y="58" font-size="14" text-anchor="middle">Dados públicos da ANP até análise e visualização</text>
+  </g>
+  <g stroke="#222222" stroke-width="2" fill="#ffffff">
+    <rect x="35" y="105" rx="10" width="140" height="78"/>
+    <rect x="215" y="105" rx="10" width="140" height="78"/>
+    <rect x="395" y="105" rx="10" width="140" height="78"/>
+    <rect x="575" y="78" rx="10" width="170" height="64"/>
+    <rect x="575" y="160" rx="10" width="170" height="64"/>
+    <rect x="785" y="105" rx="10" width="150" height="78"/>
+    <rect x="975" y="105" rx="10" width="180" height="78"/>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#111111" text-anchor="middle">
+    <text x="105" y="136" font-size="16" font-weight="700">ANP</text>
+    <text x="105" y="159" font-size="13">dados públicos</text>
+
+    <text x="285" y="136" font-size="16" font-weight="700">Python</text>
+    <text x="285" y="159" font-size="13">extração e ETL</text>
+
+    <text x="465" y="136" font-size="16" font-weight="700">Qualidade</text>
+    <text x="465" y="159" font-size="13">validação e rastreio</text>
+
+    <text x="660" y="105" font-size="15" font-weight="700">Fato agregada</text>
+    <text x="660" y="126" font-size="12">Brasil, região, UF e município</text>
+
+    <text x="660" y="187" font-size="15" font-weight="700">Fato por posto</text>
+    <text x="660" y="208" font-size="12">revenda, bandeira e preço</text>
+
+    <text x="860" y="136" font-size="16" font-weight="700">PostgreSQL</text>
+    <text x="860" y="159" font-size="13">modelo estrela e SQL</text>
+
+    <text x="1065" y="136" font-size="16" font-weight="700">Análise</text>
+    <text x="1065" y="158" font-size="13">KPIs, EDA e Power BI</text>
+  </g>
+  <g stroke="#222222" stroke-width="2" fill="none">
+    <path d="M175 144 H215"/>
+    <path d="M355 144 H395"/>
+    <path d="M535 144 H555 V110 H575"/>
+    <path d="M535 144 H555 V192 H575"/>
+    <path d="M745 110 H765 V144 H785"/>
+    <path d="M745 192 H765 V144 H785"/>
+    <path d="M935 144 H975"/>
+  </g>
+  <g fill="#222222">
+    <polygon points="212,139 220,144 212,149"/>
+    <polygon points="392,139 400,144 392,149"/>
+    <polygon points="572,105 580,110 572,115"/>
+    <polygon points="572,187 580,192 572,197"/>
+    <polygon points="782,139 790,144 782,149"/>
+    <polygon points="972,139 980,144 972,149"/>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#555555" font-size="12" text-anchor="middle">
+    <text x="600" y="274">Arquivos brutos preservados • transformações reproduzíveis • dois grãos analíticos separados</text>
+  </g>
+</svg>

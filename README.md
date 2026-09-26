@@ -16,7 +16,7 @@
 
 O projeto analisa a evolução e a distribuição dos preços de combustíveis no Brasil a partir de dados públicos da Agência Nacional do Petróleo, Gás Natural e Biocombustíveis (ANP).
 
-O fluxo foi desenhado como um projeto de Data Analytics reproduzível: aquisição, rastreabilidade, inspeção, tratamento, validação, consolidação, modelagem dimensional, SQL, KPIs e preparação para Power BI.
+O fluxo foi desenhado como um projeto de Data Analytics reproduzível: aquisição, rastreabilidade, inspeção, tratamento, validação, consolidação, modelagem dimensional, SQL, KPIs, relatórios visuais e preparação para Power BI.\n\n<p align="center">\n  <img src="assets/architecture.svg" alt="Arquitetura analítica do projeto" width="100%" />\n</p>
 
 ## Pergunta analítica
 
@@ -60,6 +60,7 @@ flowchart LR
 - rankings por UF e município;
 - relação etanol × gasolina comum;
 - medidas DAX e especificação inicial do dashboard;
+- geração automática de relatório de insights e gráficos a partir dos dados processados;
 - testes automatizados das regras centrais.
 
 ## Estrutura
@@ -75,6 +76,9 @@ observatorio-combustiveis-brasil/
 │   ├── kpis.md
 │   ├── metodologia.md
 │   └── modelo-dados.md
+├── assets/
+│   ├── architecture.svg
+│   └── generated/
 ├── notebooks/
 ├── powerbi/
 │   ├── medidas.dax
@@ -94,6 +98,7 @@ observatorio-combustiveis-brasil/
 │   ├── database.py
 │   ├── pipeline.py
 │   ├── quality.py
+│   ├── reporting.py
 │   ├── station_data.py
 │   ├── station_quality.py
 │   └── transform.py
@@ -121,7 +126,7 @@ docker compose up -d postgres
 python -m src.load_postgres
 ```
 
-O pipeline executa dez etapas:
+O pipeline executa onze etapas:
 
 ```text
 1. download da série agregada
@@ -134,6 +139,7 @@ O pipeline executa dez etapas:
 8. construção da camada por posto
 9. validação de qualidade por posto
 10. geração das tabelas analíticas
+11. geração do relatório e dos gráficos
 ```
 
 ## PostgreSQL
@@ -159,6 +165,10 @@ reports/quality_postos_2026.json
 ```
 
 O segundo relatório mede também cobertura de UFs, municípios, produtos, CNPJ e bandeira, além de datas, preços e duplicidades.
+
+## Saídas visuais
+
+Após o processamento, o pipeline gera automaticamente três gráficos em `assets/generated/` e o relatório `reports/insights_2026.md`. Esses arquivos são derivados das tabelas processadas e não contêm valores analíticos fixados manualmente no código.
 
 ## Saídas analíticas
 
@@ -214,7 +224,7 @@ Indicadores derivados são explicitamente identificados. Veja [`docs/kpis.md`](d
 
 ## Status
 
-**ETL agregado e por posto, validação, dois modelos dimensionais, PostgreSQL reproduzível, SQL e camada inicial de KPIs/Power BI implementados.**
+**ETL agregado e por posto, validação, dois modelos dimensionais, PostgreSQL reproduzível, SQL, KPIs e geração visual automática implementados.**
 
 A próxima etapa é executar o pipeline contra os arquivos oficiais, revisar os resultados reais e construir o arquivo do dashboard.
 
