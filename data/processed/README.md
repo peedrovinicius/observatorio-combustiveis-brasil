@@ -9,8 +9,8 @@ Os arquivos processados não são a fonte primária do projeto e podem ser recon
 
 Os CSVs intermediários da série histórica são mantidos de forma idempotente por escopo.
 
-Quando uma nova planilha válida de Brasil, regiões, estados ou municípios é transformada, os CSVs antigos daquele mesmo escopo são removidos antes da gravação das novas tabelas.
+Na execução completa, Brasil, regiões, estados e municípios são preparados antes de qualquer substituição. Todas as abas reconhecidas são convertidas primeiro para CSVs em staging.
 
-A limpeza ocorre apenas depois que a nova planilha possui pelo menos uma aba reconhecida. Uma fonte inválida não apaga a última transformação válida disponível.
+Somente depois de todo o lote estar pronto, os CSVs históricos anteriores são movidos para backup temporário e os novos arquivos são instalados. Se uma gravação ou instalação falhar, os arquivos novos já instalados são removidos e todos os CSVs históricos anteriores são restaurados.
 
-Arquivos de outros escopos e saídas derivadas, como `precos_semanais_2026.csv`, não são removidos por essa rotina.
+Uma planilha sem tabela reconhecível impede a substituição do lote inteiro. Arquivos derivados, como `precos_semanais_2026.csv`, e arquivos de outras camadas não são removidos por essa rotina.

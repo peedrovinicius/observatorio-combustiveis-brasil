@@ -23,8 +23,8 @@ A suíte verifica, entre outros pontos:
 - substituição transacional de datasets por posto com staging e restauração;
 - substituição transacional do lote histórico e do manifesto com rollback integral;
 - normalização de schema;
-- substituição segura de CSVs processados por escopo;
-- preservação da versão processada anterior quando a nova planilha é inválida;
+- substituição transacional do lote de CSVs processados;
+- preservação integral do lote processado anterior quando uma planilha é inválida ou a instalação falha;
 - datas e decimais;
 - consolidação de 2026;
 - qualidade agregada;

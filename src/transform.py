@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import shutil
+import tempfile
 import unicodedata
 from pathlib import Path
 
@@ -188,13 +190,31 @@ def clear_processed_history_scope(
             path.unlink()
 
 
-def transform_workbook(
+def _prepare_workbook_outputs(
     path: Path,
-) -> list[Path]:
+) -> tuple[
+    str | None,
+    list[
+        tuple[
+            str,
+            pd.DataFrame,
+        ]
+    ],
+]:
     workbook = pd.ExcelFile(path)
     prepared: list[
-        tuple[str, pd.DataFrame]
+        tuple[
+            str,
+            pd.DataFrame,
+        ]
     ] = []
+    used_names: set[str] = set()
+
+    stem = re.sub(
+        r"[^A-Za-z0-9_-]+",
+        "_",
+        path.stem,
+    ).strip("_").lower()
 
     for sheet_name in workbook.sheet_names:
         try:
@@ -213,9 +233,23 @@ def transform_workbook(
             "_",
             sheet_name,
         ).strip("_").lower()
+        filename = (
+            f"{stem}__{safe_sheet}.csv"
+        )
+        normalized = (
+            filename.casefold()
+        )
+        if normalized in used_names:
+            raise ValueError(
+                "A planilha gera nomes de CSV "
+                f"duplicados: {filename}"
+            )
+        used_names.add(
+            normalized
+        )
         prepared.append(
             (
-                safe_sheet,
+                filename,
                 frame,
             )
         )
@@ -226,41 +260,241 @@ def transform_workbook(
             f"foi encontrada em {path.name}."
         )
 
-    PROCESSED_DIR.mkdir(
+    return (
+        history_scope_from_path(
+            path
+        ),
+        prepared,
+    )
+
+
+def _processed_scope_files(
+    directory: Path,
+    scope: str,
+) -> list[Path]:
+    prefix = (
+        f"historico_semanal_{scope}__"
+    )
+    return sorted(
+        path
+        for path in directory.glob(
+            prefix + "*.csv"
+        )
+        if path.is_file()
+    )
+
+
+def _replace_processed_batch(
+    directory: Path,
+    prepared_batches: list[
+        tuple[
+            str | None,
+            list[
+                tuple[
+                    str,
+                    pd.DataFrame,
+                ]
+            ],
+        ]
+    ],
+) -> list[Path]:
+    if not prepared_batches:
+        raise ValueError(
+            "Lote processado vazio."
+        )
+
+    history_scopes = [
+        scope
+        for scope, _
+        in prepared_batches
+        if scope is not None
+    ]
+    if len(history_scopes) != len(
+        set(history_scopes)
+    ):
+        raise ValueError(
+            "Lote processado contém "
+            "escopos históricos duplicados."
+        )
+
+    filenames = [
+        filename
+        for _, outputs
+        in prepared_batches
+        for filename, _
+        in outputs
+    ]
+    normalized_names = [
+        filename.casefold()
+        for filename
+        in filenames
+    ]
+    if len(normalized_names) != len(
+        set(normalized_names)
+    ):
+        raise ValueError(
+            "Lote processado contém "
+            "nomes de CSV duplicados."
+        )
+
+    directory.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    scope = history_scope_from_path(
-        path
+    with tempfile.TemporaryDirectory(
+        prefix=".processed_stage_",
+        dir=directory,
+    ) as temporary:
+        stage_root = Path(
+            temporary
+        )
+        staged: list[
+            Path
+        ] = []
+
+        for _, outputs in (
+            prepared_batches
+        ):
+            for filename, frame in outputs:
+                target = (
+                    stage_root
+                    / filename
+                )
+                frame.to_csv(
+                    target,
+                    index=False,
+                    encoding="utf-8",
+                )
+                staged.append(
+                    target
+                )
+
+        backup_root = (
+            stage_root
+            / "backup"
+        )
+        backup_root.mkdir()
+
+        existing_files: list[
+            Path
+        ] = []
+        for scope in history_scopes:
+            existing_files.extend(
+                _processed_scope_files(
+                    directory,
+                    scope,
+                )
+            )
+
+        backed_up: list[
+            tuple[
+                Path,
+                Path,
+            ]
+        ] = []
+        installed: list[
+            Path
+        ] = []
+
+        try:
+            for existing in existing_files:
+                backup = (
+                    backup_root
+                    / existing.name
+                )
+                shutil.move(
+                    str(existing),
+                    str(backup),
+                )
+                backed_up.append(
+                    (
+                        existing,
+                        backup,
+                    )
+                )
+
+            outputs: list[
+                Path
+            ] = []
+            for staged_file in staged:
+                destination = (
+                    directory
+                    / staged_file.name
+                )
+                if (
+                    destination.exists()
+                    and destination
+                    not in existing_files
+                ):
+                    raise FileExistsError(
+                        "Saída processada já existe "
+                        "fora do escopo substituído: "
+                        f"{destination.name}"
+                    )
+
+                shutil.move(
+                    str(staged_file),
+                    str(destination),
+                )
+                installed.append(
+                    destination
+                )
+                outputs.append(
+                    destination
+                )
+
+            return outputs
+        except Exception:
+            for path in reversed(
+                installed
+            ):
+                if path.exists():
+                    path.unlink()
+
+            for original, backup in reversed(
+                backed_up
+            ):
+                if backup.exists():
+                    shutil.move(
+                        str(backup),
+                        str(original),
+                    )
+            raise
+
+
+def transform_workbook(
+    path: Path,
+) -> list[Path]:
+    scope, prepared = (
+        _prepare_workbook_outputs(
+            path
+        )
     )
-    if scope is not None:
-        clear_processed_history_scope(
-            PROCESSED_DIR,
-            scope,
+    return _replace_processed_batch(
+        PROCESSED_DIR,
+        [
+            (
+                scope,
+                prepared,
+            )
+        ],
+    )
+
+
+def transform_workbooks(
+    paths: list[Path],
+) -> list[Path]:
+    prepared_batches = [
+        _prepare_workbook_outputs(
+            path
         )
-
-    stem = re.sub(
-        r"[^A-Za-z0-9_-]+",
-        "_",
-        path.stem,
-    ).strip("_").lower()
-
-    outputs: list[Path] = []
-    for safe_sheet, frame in prepared:
-        output = (
-            PROCESSED_DIR
-            / f"{stem}__{safe_sheet}.csv"
-        )
-        frame.to_csv(
-            output,
-            index=False,
-            encoding="utf-8",
-        )
-        outputs.append(output)
-
-    return outputs
-
+        for path in paths
+    ]
+    return _replace_processed_batch(
+        PROCESSED_DIR,
+        prepared_batches,
+    )
 
 def main() -> None:
     excel_files = sorted(
@@ -275,14 +509,18 @@ def main() -> None:
             "Execute primeiro: python -m src.download_history"
         )
 
-    total = 0
-    for path in excel_files:
-        outputs = transform_workbook(path)
-        for output in outputs:
-            total += 1
-            print(f"Gerado: {output.relative_to(PROCESSED_DIR.parent.parent)}")
+    outputs = transform_workbooks(
+        excel_files
+    )
+    for output in outputs:
+        print(
+            "Gerado: "
+            f"{output.relative_to(PROCESSED_DIR.parent.parent)}"
+        )
 
-    print(f"\nTabelas processadas: {total}")
+    print(
+        f"\nTabelas processadas: {len(outputs)}"
+    )
 
 
 if __name__ == "__main__":

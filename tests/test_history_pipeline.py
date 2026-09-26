@@ -21,6 +21,7 @@ from src.transform import (
     history_scope_from_path,
     parse_decimal_series,
     transform_workbook,
+    transform_workbooks,
 )
 
 
@@ -937,4 +938,322 @@ def test_history_batch_rejects_filename_outside_scope(
                 )
             ],
             "{}",
+        )
+
+
+
+def test_transform_batch_invalid_workbook_preserves_all_processed_scopes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    processed = (
+        tmp_path
+        / "processed"
+    )
+    processed.mkdir()
+
+    old_brazil = (
+        processed
+        / "historico_semanal_brasil__antigo__dados.csv"
+    )
+    old_states = (
+        processed
+        / "historico_semanal_estados__antigo__dados.csv"
+    )
+    old_brazil.write_text(
+        "brasil-antigo",
+        encoding="utf-8",
+    )
+    old_states.write_text(
+        "estados-antigo",
+        encoding="utf-8",
+    )
+
+    brazil = (
+        tmp_path
+        / "historico_semanal_brasil__novo.xlsx"
+    )
+    states = (
+        tmp_path
+        / "historico_semanal_estados__invalido.xlsx"
+    )
+    _write_valid_history_workbook(
+        brazil
+    )
+    with pd.ExcelWriter(
+        states,
+        engine="openpyxl",
+    ) as writer:
+        pd.DataFrame(
+            {
+                "sem_schema": [
+                    "x",
+                ]
+            }
+        ).to_excel(
+            writer,
+            index=False,
+            sheet_name="Invalida",
+        )
+
+    monkeypatch.setattr(
+        transform_module,
+        "PROCESSED_DIR",
+        processed,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Nenhuma tabela reconhecida",
+    ):
+        transform_workbooks(
+            [
+                brazil,
+                states,
+            ]
+        )
+
+    assert (
+        old_brazil.read_text(
+            encoding="utf-8"
+        )
+        == "brasil-antigo"
+    )
+    assert (
+        old_states.read_text(
+            encoding="utf-8"
+        )
+        == "estados-antigo"
+    )
+
+
+def test_transform_batch_replaces_multiple_scopes_together(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    processed = (
+        tmp_path
+        / "processed"
+    )
+    processed.mkdir()
+
+    old_brazil = (
+        processed
+        / "historico_semanal_brasil__antigo__dados.csv"
+    )
+    old_states = (
+        processed
+        / "historico_semanal_estados__antigo__dados.csv"
+    )
+    derived = (
+        processed
+        / "precos_semanais_2026.csv"
+    )
+    old_brazil.write_text(
+        "brasil-antigo",
+        encoding="utf-8",
+    )
+    old_states.write_text(
+        "estados-antigo",
+        encoding="utf-8",
+    )
+    derived.write_text(
+        "preservar",
+        encoding="utf-8",
+    )
+
+    brazil = (
+        tmp_path
+        / "historico_semanal_brasil__novo.xlsx"
+    )
+    states = (
+        tmp_path
+        / "historico_semanal_estados__novo.xlsx"
+    )
+    _write_valid_history_workbook(
+        brazil
+    )
+    _write_valid_history_workbook(
+        states
+    )
+
+    monkeypatch.setattr(
+        transform_module,
+        "PROCESSED_DIR",
+        processed,
+    )
+
+    outputs = transform_workbooks(
+        [
+            brazil,
+            states,
+        ]
+    )
+
+    assert len(outputs) == 2
+    assert all(
+        path.exists()
+        for path in outputs
+    )
+    assert not old_brazil.exists()
+    assert not old_states.exists()
+    assert derived.exists()
+
+
+def test_transform_batch_install_failure_restores_all_processed_scopes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    processed = (
+        tmp_path
+        / "processed"
+    )
+    processed.mkdir()
+
+    old_brazil = (
+        processed
+        / "historico_semanal_brasil__antigo__dados.csv"
+    )
+    old_states = (
+        processed
+        / "historico_semanal_estados__antigo__dados.csv"
+    )
+    old_brazil.write_text(
+        "brasil-antigo",
+        encoding="utf-8",
+    )
+    old_states.write_text(
+        "estados-antigo",
+        encoding="utf-8",
+    )
+
+    brazil = (
+        tmp_path
+        / "historico_semanal_brasil__novo.xlsx"
+    )
+    states = (
+        tmp_path
+        / "historico_semanal_estados__novo.xlsx"
+    )
+    _write_valid_history_workbook(
+        brazil
+    )
+    _write_valid_history_workbook(
+        states
+    )
+
+    monkeypatch.setattr(
+        transform_module,
+        "PROCESSED_DIR",
+        processed,
+    )
+
+    original_move = (
+        transform_module.shutil.move
+    )
+
+    def failing_move(
+        source: str,
+        destination: str,
+    ):
+        source_path = Path(
+            source
+        )
+        destination_path = Path(
+            destination
+        )
+        if (
+            "historico_semanal_estados__novo__dados.csv"
+            == source_path.name
+            and destination_path.parent
+            == processed
+        ):
+            raise OSError(
+                "falha simulada"
+            )
+        return original_move(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        transform_module.shutil,
+        "move",
+        failing_move,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="falha simulada",
+    ):
+        transform_workbooks(
+            [
+                brazil,
+                states,
+            ]
+        )
+
+    assert (
+        old_brazil.read_text(
+            encoding="utf-8"
+        )
+        == "brasil-antigo"
+    )
+    assert (
+        old_states.read_text(
+            encoding="utf-8"
+        )
+        == "estados-antigo"
+    )
+    assert not (
+        processed
+        / "historico_semanal_brasil__novo__dados.csv"
+    ).exists()
+    assert not (
+        processed
+        / "historico_semanal_estados__novo__dados.csv"
+    ).exists()
+
+
+def test_transform_rejects_duplicate_normalized_sheet_names(
+    tmp_path: Path,
+) -> None:
+    workbook = (
+        tmp_path
+        / "historico_semanal_brasil__duplicado.xlsx"
+    )
+    frame = pd.DataFrame(
+        {
+            "Data Inicial": [
+                "04/01/2026",
+            ],
+            "Produto": [
+                "GASOLINA COMUM",
+            ],
+            "Preço Médio Revenda": [
+                6.0,
+            ],
+        }
+    )
+    with pd.ExcelWriter(
+        workbook,
+        engine="openpyxl",
+    ) as writer:
+        frame.to_excel(
+            writer,
+            index=False,
+            sheet_name="Dados 1",
+        )
+        frame.to_excel(
+            writer,
+            index=False,
+            sheet_name="Dados-1",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="nomes de CSV duplicados",
+    ):
+        transform_workbook(
+            workbook
         )

@@ -60,9 +60,11 @@ O pipeline:
 
 Cada tabela reconhecida gera um CSV em `data/processed/`.
 
-Antes de substituir arquivos processados de um escopo histórico, o pipeline lê a nova planilha e confirma que existe pelo menos uma aba reconhecível. Somente depois dessa validação são removidos CSVs antigos do mesmo escopo, como Brasil, regiões, estados ou municípios.
+Antes de substituir arquivos processados, o pipeline lê todas as planilhas históricas e confirma que cada uma possui pelo menos uma aba reconhecível. Os CSVs novos são produzidos em staging antes de qualquer alteração em `data/processed/`.
 
-Essa limpeza por escopo impede que uma mudança no nome remoto do XLSX deixe duas versões transformadas válidas sendo consolidadas ao mesmo tempo. Arquivos processados de outros escopos e produtos derivados do pipeline são preservados.
+Brasil, regiões, estados e municípios são então substituídos como um único lote. Os CSVs históricos anteriores ficam em backup temporário até a instalação terminar. Em caso de falha, o lote anterior completo é restaurado.
+
+Essa estratégia impede mistura entre transformações de execuções diferentes e também evita que uma mudança no nome remoto do XLSX deixe versões antigas sendo consolidadas junto com as novas.
 
 ## 6. Consolidação de 2026
 
