@@ -140,3 +140,21 @@ A carga reforça também as chaves naturais das dimensões antes do `COPY`.
 `dim_produto_posto` exige unidade de medida e usa unicidade lógica por produto e unidade.
 
 Essas restrições são aplicadas depois do `TRUNCATE`, permitindo atualizar bancos locais antigos sem falhar por duplicidades legadas que serão descartadas pela nova carga.
+
+
+## Execução dos arquivos SQL
+
+Os arquivos de schema e views são divididos em comandos por um parser local do projeto, sem dependência adicional.
+
+O separador reconhece pontos e vírgulas estruturais e preserva corretamente pontos e vírgulas presentes em:
+
+- strings SQL, incluindo strings de escape do PostgreSQL;
+- identificadores entre aspas;
+- comentários de linha;
+- comentários em bloco, inclusive aninhados;
+- blocos PostgreSQL delimitados por `$$` ou `$tag$`.
+
+Isso permite evoluir os scripts com blocos `DO`, funções e textos contendo ponto e vírgula sem quebrar a carga em comandos incompletos.
+
+
+Se um arquivo terminar com string, identificador, comentário em bloco ou delimitador `$tag$` aberto, a carga falha antes de executar o trecho incompleto.

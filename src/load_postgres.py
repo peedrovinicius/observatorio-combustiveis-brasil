@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import re
 from pathlib import Path
 
 import psycopg
@@ -208,17 +209,264 @@ def validate_input_files() -> None:
     validate_csv_contracts()
 
 
+DOLLAR_QUOTE_PATTERN = re.compile(
+    r"\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$"
+)
+
+
+def _split_sql_statements(
+    script: str,
+) -> list[str]:
+    statements: list[str] = []
+    current: list[str] = []
+    index = 0
+    length = len(script)
+    state = "normal"
+    dollar_tag: str | None = None
+    block_depth = 0
+    has_code = False
+    backslash_escaped_string = False
+
+    while index < length:
+        char = script[index]
+        next_char = (
+            script[index + 1]
+            if index + 1 < length
+            else ""
+        )
+
+        if state == "line_comment":
+            current.append(char)
+            index += 1
+            if char == "\n":
+                state = "normal"
+            continue
+
+        if state == "block_comment":
+            if (
+                char == "/"
+                and next_char == "*"
+            ):
+                current.extend(
+                    [char, next_char]
+                )
+                block_depth += 1
+                index += 2
+                continue
+            if (
+                char == "*"
+                and next_char == "/"
+            ):
+                current.extend(
+                    [char, next_char]
+                )
+                block_depth -= 1
+                index += 2
+                if block_depth == 0:
+                    state = "normal"
+                continue
+
+            current.append(char)
+            index += 1
+            continue
+
+        if state == "single_quote":
+            current.append(char)
+
+            if (
+                backslash_escaped_string
+                and char == "\\"
+                and next_char
+            ):
+                current.append(
+                    next_char
+                )
+                index += 2
+                continue
+
+            if char == "'":
+                if next_char == "'":
+                    current.append(
+                        next_char
+                    )
+                    index += 2
+                    continue
+                state = "normal"
+                backslash_escaped_string = False
+
+            index += 1
+            continue
+
+        if state == "double_quote":
+            current.append(char)
+            if char == '"':
+                if next_char == '"':
+                    current.append(
+                        next_char
+                    )
+                    index += 2
+                    continue
+                state = "normal"
+
+            index += 1
+            continue
+
+        if state == "dollar_quote":
+            if (
+                dollar_tag
+                and script.startswith(
+                    dollar_tag,
+                    index,
+                )
+            ):
+                current.append(
+                    dollar_tag
+                )
+                index += len(
+                    dollar_tag
+                )
+                state = "normal"
+                dollar_tag = None
+                continue
+
+            current.append(char)
+            index += 1
+            continue
+
+        if (
+            char == "-"
+            and next_char == "-"
+        ):
+            current.extend(
+                [char, next_char]
+            )
+            index += 2
+            state = "line_comment"
+            continue
+
+        if (
+            char == "/"
+            and next_char == "*"
+        ):
+            current.extend(
+                [char, next_char]
+            )
+            index += 2
+            state = "block_comment"
+            block_depth = 1
+            continue
+
+        if char == "'":
+            previous = (
+                script[index - 1]
+                if index > 0
+                else ""
+            )
+            before_previous = (
+                script[index - 2]
+                if index > 1
+                else ""
+            )
+            backslash_escaped_string = (
+                previous in {"E", "e"}
+                and (
+                    index == 1
+                    or not (
+                        before_previous.isalnum()
+                        or before_previous == "_"
+                    )
+                )
+            )
+            current.append(char)
+            index += 1
+            state = "single_quote"
+            has_code = True
+            continue
+
+        if char == '"':
+            current.append(char)
+            index += 1
+            state = "double_quote"
+            has_code = True
+            continue
+
+        if char == "$":
+            match = (
+                DOLLAR_QUOTE_PATTERN.match(
+                    script,
+                    index,
+                )
+            )
+            if match is not None:
+                dollar_tag = (
+                    match.group(0)
+                )
+                current.append(
+                    dollar_tag
+                )
+                index = match.end()
+                state = "dollar_quote"
+                has_code = True
+                continue
+
+        if char == ";":
+            if has_code:
+                statement = "".join(
+                    current
+                ).strip()
+                if statement:
+                    statements.append(
+                        statement
+                    )
+            current = []
+            has_code = False
+            index += 1
+            continue
+
+        current.append(char)
+        if not char.isspace():
+            has_code = True
+        index += 1
+
+    if state in {
+        "single_quote",
+        "double_quote",
+        "block_comment",
+        "dollar_quote",
+    }:
+        raise ValueError(
+            "Arquivo SQL incompleto: "
+            f"delimitador não encerrado ({state})."
+        )
+
+    if has_code:
+        statement = "".join(
+            current
+        ).strip()
+        if statement:
+            statements.append(
+                statement
+            )
+
+    return statements
+
+
 def _execute_sql_file(
     connection: psycopg.Connection,
     path: Path,
 ) -> None:
-    script = path.read_text(encoding="utf-8")
+    script = path.read_text(
+        encoding="utf-8"
+    )
 
-    for statement in script.split(";"):
-        statement = statement.strip()
-        if not statement:
-            continue
-        connection.execute(statement)
+    for statement in (
+        _split_sql_statements(
+            script
+        )
+    ):
+        connection.execute(
+            statement
+        )
 
 
 def _copy_csv(

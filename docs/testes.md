@@ -39,6 +39,7 @@ A suíte verifica, entre outros pontos:
 - contrato dos CSVs com PostgreSQL;
 - unicidade do grão das duas tabelas fato no PostgreSQL;
 - unicidade natural de localidade e produto por posto no PostgreSQL;
+- separação segura de comandos SQL com strings, comentários e blocos PostgreSQL;
 - consistência das consultas SQL agregadas com a última semana por produto;
 - última semana comparável para etanol e gasolina comum;
 - consistência das consultas SQL por posto com a regra de última coleta por produto;

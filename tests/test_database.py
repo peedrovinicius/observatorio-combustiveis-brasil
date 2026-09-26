@@ -6,6 +6,7 @@ from src.load_postgres import (
     LOAD_PLAN,
     _finalize_model_constraints,
     _read_csv_header,
+    _split_sql_statements,
     required_files,
     validate_csv_contracts,
     validate_input_files,
@@ -286,3 +287,155 @@ def test_station_product_dimension_requires_unit() -> None:
         "unidade_medida VARCHAR(40) NOT NULL"
         in schema
     )
+
+
+
+def test_sql_splitter_preserves_semicolons_inside_literals() -> None:
+    script = (
+        "SELECT 'a;b' AS texto;\n"
+        'SELECT "col;una" FROM tabela;'
+    )
+
+    statements = (
+        _split_sql_statements(
+            script
+        )
+    )
+
+    assert statements == [
+        "SELECT 'a;b' AS texto",
+        'SELECT "col;una" FROM tabela',
+    ]
+
+
+def test_sql_splitter_ignores_semicolons_in_comments() -> None:
+    script = (
+        "-- comentário ; interno\n"
+        "SELECT 1;\n"
+        "/* bloco ; comentário */\n"
+        "SELECT 2;"
+    )
+
+    statements = (
+        _split_sql_statements(
+            script
+        )
+    )
+
+    assert len(statements) == 2
+    assert "SELECT 1" in statements[0]
+    assert "SELECT 2" in statements[1]
+
+
+def test_sql_splitter_preserves_postgres_dollar_block() -> None:
+    script = (
+        "DO $$\n"
+        "BEGIN\n"
+        "    PERFORM 1;\n"
+        "    PERFORM 2;\n"
+        "END\n"
+        "$$;\n"
+        "SELECT 3;"
+    )
+
+    statements = (
+        _split_sql_statements(
+            script
+        )
+    )
+
+    assert len(statements) == 2
+    assert "PERFORM 1;" in statements[0]
+    assert "PERFORM 2;" in statements[0]
+    assert statements[1] == "SELECT 3"
+
+
+def test_sql_splitter_supports_tagged_dollar_quote() -> None:
+    script = (
+        "SELECT $texto$a;b$texto$;\n"
+        "SELECT 2;"
+    )
+
+    assert (
+        _split_sql_statements(
+            script
+        )
+        == [
+            "SELECT $texto$a;b$texto$",
+            "SELECT 2",
+        ]
+    )
+
+
+def test_sql_splitter_supports_nested_block_comments() -> None:
+    script = (
+        "/* externo ; "
+        "/* interno ; */ "
+        "fim */\n"
+        "SELECT 1;"
+    )
+
+    statements = (
+        _split_sql_statements(
+            script
+        )
+    )
+
+    assert len(statements) == 1
+    assert "SELECT 1" in statements[0]
+
+
+def test_sql_splitter_supports_escape_strings() -> None:
+    script = (
+        "SELECT E'abc\\\'def;ghi';\n"
+        "SELECT 2;"
+    )
+
+    statements = (
+        _split_sql_statements(
+            script
+        )
+    )
+
+    assert len(statements) == 2
+    assert (
+        "abc\\'def;ghi"
+        in statements[0]
+    )
+    assert statements[1] == "SELECT 2"
+
+
+def test_sql_splitter_drops_comment_only_tail() -> None:
+    script = (
+        "SELECT 1;\n"
+        "-- comentário final ;"
+    )
+
+    assert (
+        _split_sql_statements(
+            script
+        )
+        == ["SELECT 1"]
+    )
+
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        "SELECT 'texto;",
+        'SELECT "coluna;',
+        "/* comentário sem fim",
+        "DO $$ BEGIN PERFORM 1;",
+    ],
+)
+def test_sql_splitter_rejects_unclosed_delimiters(
+    script: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="delimitador não encerrado",
+    ):
+        _split_sql_statements(
+            script
+        )
