@@ -189,6 +189,20 @@ def source_priority(source: object) -> int:
     return 0
 
 
+def source_reference(
+    path: Path,
+    source_root: Path | None = None,
+) -> str:
+    if source_root is not None:
+        try:
+            return path.relative_to(
+                source_root
+            ).as_posix()
+        except ValueError:
+            pass
+    return path.name
+
+
 def deduplicate_station_rows(
     frame: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -273,6 +287,7 @@ def _read_csv(path: Path) -> pd.DataFrame:
 
 def prepare_station_file(
     path: Path,
+    source_root: Path | None = None,
 ) -> pd.DataFrame:
     frame = _read_csv(path)
     frame.columns = [
@@ -328,7 +343,12 @@ def prepare_station_file(
                 .str.strip()
             )
 
-    frame["fonte_arquivo"] = path.name
+    frame["fonte_arquivo"] = (
+        source_reference(
+            path,
+            source_root,
+        )
+    )
     return frame
 
 
@@ -469,12 +489,18 @@ def consolidate_station_data_with_audit(
 
     for path in files:
         prepared = prepare_station_file(
-            path
+            path,
+            source_root=directory,
+        )
+        source_name = str(
+            prepared[
+                "fonte_arquivo"
+            ].iloc[0]
         )
         file_audits.append(
             audit_prepared_station_frame(
                 prepared,
-                path.name,
+                source_name,
             )
         )
         frames.append(

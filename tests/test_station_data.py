@@ -13,6 +13,7 @@ from src.station_data import (
     deduplicate_station_rows,
     prepare_station_file,
     source_priority,
+    source_reference,
     station_identity,
     transform_station_file,
 )
@@ -450,4 +451,96 @@ def test_station_star_schema_keeps_fact_grain() -> None:
             ]
         )
         == 2
+    )
+
+
+
+def test_source_reference_preserves_dataset_directory(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "open_data"
+    source_dir = (
+        root
+        / "etanol_gasolina_ultimas_4_semanas"
+    )
+    source_dir.mkdir(parents=True)
+    path = source_dir / "dados.csv"
+    path.write_text(
+        "x",
+        encoding="utf-8",
+    )
+
+    assert (
+        source_reference(
+            path,
+            root,
+        )
+        == "etanol_gasolina_ultimas_4_semanas/dados.csv"
+    )
+
+
+def test_consolidation_uses_parent_dataset_for_priority(
+    tmp_path: Path,
+) -> None:
+    monthly_dir = (
+        tmp_path
+        / "etanol_gasolina_agosto_2026"
+    )
+    latest_dir = (
+        tmp_path
+        / "etanol_gasolina_ultimas_4_semanas"
+    )
+    monthly_dir.mkdir()
+    latest_dir.mkdir()
+
+    older = [
+        "NE",
+        "CE",
+        "FORTALEZA",
+        "POSTO TESTE",
+        "00.000.000/0001-00",
+        "RUA A",
+        "1",
+        "",
+        "CENTRO",
+        "60000-000",
+        "GASOLINA",
+        "31/08/2026",
+        "6,10",
+        "",
+        "R$ / litro",
+        "BRANCA",
+    ]
+    newer = older.copy()
+    newer[12] = "6,25"
+
+    _write_sample(
+        monthly_dir / "dados.csv",
+        [older],
+    )
+    _write_sample(
+        latest_dir / "dados.csv",
+        [newer],
+    )
+
+    frame, audit = (
+        consolidate_station_data_with_audit(
+            tmp_path
+        )
+    )
+
+    assert len(frame) == 1
+    assert (
+        frame.iloc[0]["preco_revenda"]
+        == 6.25
+    )
+    assert (
+        frame.iloc[0]["fonte_arquivo"]
+        == "etanol_gasolina_ultimas_4_semanas/dados.csv"
+    )
+    assert (
+        audit[
+            "grupos_com_preco_divergente"
+        ]
+        == 1
     )
