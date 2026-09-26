@@ -49,7 +49,7 @@ flowchart LR
 - padronização de datas, colunas e valores monetários;
 - consolidação da série de 2026;
 - identificação do nível geográfico;
-- validações de qualidade;
+- validações de qualidade separadas para agregados e observações por posto;
 - modelo estrela agregado com três dimensões e uma fato;
 - segundo modelo estrela no grão por posto, preservando a separação entre agregados oficiais e observações individuais;
 - DDL PostgreSQL, views e consultas analíticas;
@@ -95,6 +95,7 @@ observatorio-combustiveis-brasil/
 │   ├── pipeline.py
 │   ├── quality.py
 │   ├── station_data.py
+│   ├── station_quality.py
 │   └── transform.py
 ├── tests/
 ├── .gitignore
@@ -120,7 +121,7 @@ docker compose up -d postgres
 python -m src.load_postgres
 ```
 
-O pipeline executa nove etapas:
+O pipeline executa dez etapas:
 
 ```text
 1. download da série agregada
@@ -131,7 +132,8 @@ O pipeline executa nove etapas:
 6. validação de qualidade agregada
 7. construção do modelo estrela agregado
 8. construção da camada por posto
-9. geração das tabelas analíticas
+9. validação de qualidade por posto
+10. geração das tabelas analíticas
 ```
 
 ## PostgreSQL
@@ -146,6 +148,17 @@ python -m src.load_postgres
 A carga cria e popula os dois modelos dimensionais, recria as views e valida as tabelas fato antes de confirmar a transação.
 
 Veja [`docs/postgresql.md`](docs/postgresql.md).
+
+## Relatórios de qualidade
+
+O pipeline gera localmente:
+
+```text
+reports/quality_2026.json
+reports/quality_postos_2026.json
+```
+
+O segundo relatório mede também cobertura de UFs, municípios, produtos, CNPJ e bandeira, além de datas, preços e duplicidades.
 
 ## Saídas analíticas
 
