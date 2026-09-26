@@ -123,3 +123,26 @@ data_coleta_id + produto_posto_id + posto_id
 Como `produto_posto_id` já representa produto e unidade de medida, esse conjunto identifica uma observação única de preço por estabelecimento na data.
 
 As restrições do banco são defesa em profundidade. A deduplicação e a validação continuam ocorrendo antes da modelagem.
+
+
+## Unicidade das dimensões naturais
+
+Além das chaves substitutas usadas nos relacionamentos, o PostgreSQL protege identidades naturais das dimensões.
+
+Para `dim_localidade`, a identidade lógica é:
+
+```text
+nivel_geografico + regiao + uf + estado + municipio
+```
+
+Como campos geográficos ficam vazios em níveis mais amplos, o índice único normaliza valores nulos antes da comparação. Isso impede, por exemplo, duas linhas equivalentes para o nível Brasil com chaves substitutas diferentes.
+
+Para `dim_produto_posto`, a identidade lógica é:
+
+```text
+produto + unidade_medida
+```
+
+A unidade de medida é obrigatória nessa dimensão, em linha com a validação da camada por posto.
+
+Essas restrições complementam o `drop_duplicates` executado na modelagem Python e impedem duplicação lógica caso um CSV seja alterado ou uma carga seja executada fora do fluxo esperado.

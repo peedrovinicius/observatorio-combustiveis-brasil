@@ -59,7 +59,7 @@ Depois disso, a carga:
 
 1. cria ou atualiza as estruturas SQL;
 2. limpa a carga anterior de forma transacional;
-3. aplica as restrições finais da dimensão de postos e dos grãos das tabelas fato;
+3. aplica as restrições finais das dimensões naturais e dos grãos das tabelas fato;
 4. carrega dimensões e fatos por `COPY`;
 5. cria as views;
 6. confere a quantidade de registros nas duas fatos;
@@ -129,3 +129,14 @@ data_coleta_id + produto_posto_id + posto_id
 ```
 
 Na fato agregada, unidade de medida nula é normalizada no índice com `COALESCE`, impedindo duplicidades que uma restrição SQL comum poderia aceitar por tratar valores nulos como distintos.
+
+
+## Integridade das dimensões
+
+A carga reforça também as chaves naturais das dimensões antes do `COPY`.
+
+`dim_localidade` usa um índice único sobre nível geográfico, região, UF, estado e município, normalizando valores nulos. Isso é necessário porque níveis como Brasil e região possuem naturalmente atributos geográficos não preenchidos.
+
+`dim_produto_posto` exige unidade de medida e usa unicidade lógica por produto e unidade.
+
+Essas restrições são aplicadas depois do `TRUNCATE`, permitindo atualizar bancos locais antigos sem falhar por duplicidades legadas que serão descartadas pela nova carga.

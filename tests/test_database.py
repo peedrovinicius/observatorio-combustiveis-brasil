@@ -217,3 +217,72 @@ def test_station_schema_declares_unique_fact_grain() -> None:
         "    )"
         in schema
     )
+
+
+
+def test_finalize_model_constraints_protects_dimension_keys() -> None:
+    connection = (
+        _RecordingConnection()
+    )
+
+    _finalize_model_constraints(
+        connection
+    )
+
+    sql = "\n".join(
+        connection.statements
+    )
+
+    assert (
+        "ALTER TABLE dim_produto_posto "
+        "ALTER COLUMN unidade_medida "
+        "SET NOT NULL"
+        in sql
+    )
+    assert (
+        "ux_dim_localidade_natural"
+        in sql
+    )
+    assert (
+        "COALESCE(regiao, '')"
+        in sql
+    )
+    assert (
+        "COALESCE(uf, '')"
+        in sql
+    )
+    assert (
+        "COALESCE(estado, '')"
+        in sql
+    )
+    assert (
+        "COALESCE(municipio, '')"
+        in sql
+    )
+    assert (
+        "ux_dim_produto_posto_natural"
+        in sql
+    )
+    assert (
+        "produto, COALESCE(unidade_medida, '')"
+        in sql
+    )
+
+
+def test_station_product_dimension_requires_unit() -> None:
+    from src.config import (
+        PROJECT_ROOT,
+    )
+
+    schema = (
+        PROJECT_ROOT
+        / "sql"
+        / "station_schema.sql"
+    ).read_text(
+        encoding="utf-8",
+    )
+
+    assert (
+        "unidade_medida VARCHAR(40) NOT NULL"
+        in schema
+    )

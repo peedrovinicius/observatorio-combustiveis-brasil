@@ -288,6 +288,29 @@ def _finalize_model_constraints(
         "SET NOT NULL"
     )
     connection.execute(
+        "ALTER TABLE dim_produto_posto "
+        "ALTER COLUMN unidade_medida "
+        "SET NOT NULL"
+    )
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS "
+        "ux_dim_localidade_natural "
+        "ON dim_localidade ("
+        "nivel_geografico, "
+        "COALESCE(regiao, ''), "
+        "COALESCE(uf, ''), "
+        "COALESCE(estado, ''), "
+        "COALESCE(municipio, '')"
+        ")"
+    )
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS "
+        "ux_dim_produto_posto_natural "
+        "ON dim_produto_posto ("
+        "produto, COALESCE(unidade_medida, '')"
+        ")"
+    )
+    connection.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS "
         "ux_fato_precos_semanais_grain "
         "ON fato_precos_semanais ("

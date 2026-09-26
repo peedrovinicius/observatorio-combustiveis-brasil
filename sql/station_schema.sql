@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS dim_data_coleta (
 CREATE TABLE IF NOT EXISTS dim_produto_posto (
     produto_posto_id BIGINT PRIMARY KEY,
     produto VARCHAR(150) NOT NULL,
-    unidade_medida VARCHAR(40),
+    unidade_medida VARCHAR(40) NOT NULL,
     UNIQUE (produto, unidade_medida)
 );
 
