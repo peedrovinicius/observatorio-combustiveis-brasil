@@ -2,6 +2,8 @@
 
 ## Camada agregada oficial
 
+Os exports analíticos agregados só são gerados quando a série consolidada passa pela validação de qualidade. A execução direta de `python -m src.analytics` repete essa validação antes de escrever arquivos em `data/processed/analytics/`.
+
 ### Preço atual
 
 Último preço médio de revenda publicado para a combinação de produto e nível geográfico selecionada.

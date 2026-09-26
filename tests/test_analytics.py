@@ -1,10 +1,12 @@
 import pandas as pd
+import pytest
 
 from src.analytics import (
     build_brazil_kpis,
     build_ethanol_gasoline_ratio,
     build_latest_state_ranking,
     build_monthly_brazil,
+    build_validated_analytics_exports,
 )
 
 
@@ -187,3 +189,37 @@ def test_analytics_returns_stable_empty_schemas() -> None:
     assert "variacao_mensal_pct" in monthly.columns
     assert states.empty
     assert "ranking_mais_caro" in states.columns
+
+
+
+def test_validated_aggregate_analytics_accepts_clean_data() -> None:
+    exports = (
+        build_validated_analytics_exports(
+            _sample()
+        )
+    )
+
+    assert (
+        not exports[
+            "kpis_brasil_2026"
+        ].empty
+    )
+
+
+def test_validated_aggregate_analytics_blocks_invalid_data() -> None:
+    frame = _sample()
+    frame.loc[
+        0,
+        "preco_medio_revenda",
+    ] = 0
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "falhou na validação "
+            "de qualidade"
+        ),
+    ):
+        build_validated_analytics_exports(
+            frame
+        )

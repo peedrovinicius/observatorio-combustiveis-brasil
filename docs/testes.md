@@ -28,8 +28,10 @@ A suíte verifica, entre outros pontos:
 - precedência entre publicações sobrepostas;
 - auditoria de exclusões agregadas e por posto;
 - modelo estrela agregado;
+- barreira de qualidade antes da modelagem agregada;
 - modelo estrela por posto;
 - KPIs agregados;
+- barreira de qualidade antes dos analytics agregados;
 - análises por estabelecimento;
 - barreira de qualidade antes dos analytics por posto;
 - contrato dos CSVs com PostgreSQL;

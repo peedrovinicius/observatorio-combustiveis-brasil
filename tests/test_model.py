@@ -1,6 +1,10 @@
 import pandas as pd
+import pytest
 
-from src.build_model import build_star_schema
+from src.build_model import (
+    build_star_schema,
+    build_validated_star_schema,
+)
 
 
 def test_star_schema_builds_dimensions_and_fact() -> None:
@@ -50,3 +54,74 @@ def test_star_schema_builds_dimensions_and_fact() -> None:
     assert fact["data_id"].notna().all()
     assert fact["produto_id"].notna().all()
     assert fact["localidade_id"].notna().all()
+
+
+
+def test_validated_star_schema_blocks_invalid_aggregate_data() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "data_final": [
+                "2026-01-10",
+            ],
+            "nivel_geografico": [
+                "brasil",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                0,
+            ],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "falhou na validação "
+            "de qualidade"
+        ),
+    ):
+        build_validated_star_schema(
+            frame
+        )
+
+
+def test_validated_star_schema_accepts_clean_aggregate_data() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "data_final": [
+                "2026-01-10",
+            ],
+            "nivel_geografico": [
+                "brasil",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+        }
+    )
+
+    tables = (
+        build_validated_star_schema(
+            frame
+        )
+    )
+
+    assert (
+        len(
+            tables[
+                "fato_precos_semanais"
+            ]
+        )
+        == 1
+    )

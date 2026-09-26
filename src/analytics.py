@@ -4,6 +4,7 @@ import pandas as pd
 
 from .config import PROCESSED_DIR
 from .consolidate import OUTPUT_NAME
+from .quality import build_quality_report
 
 ANALYTICS_DIR = PROCESSED_DIR / "analytics"
 
@@ -505,6 +506,23 @@ def build_analytics_exports(
     }
 
 
+def build_validated_analytics_exports(
+    frame: pd.DataFrame,
+) -> dict[str, pd.DataFrame]:
+    report = build_quality_report(
+        frame
+    )
+    if report["status"] != "passed":
+        raise ValueError(
+            "A série agregada falhou na validação "
+            "de qualidade e não pode gerar analytics."
+        )
+
+    return build_analytics_exports(
+        frame
+    )
+
+
 def main() -> None:
     source = PROCESSED_DIR / OUTPUT_NAME
     if not source.exists():
@@ -518,7 +536,14 @@ def main() -> None:
         source,
         low_memory=False,
     )
-    exports = build_analytics_exports(frame)
+    try:
+        exports = build_validated_analytics_exports(
+            frame
+        )
+    except ValueError as exc:
+        raise SystemExit(
+            str(exc)
+        ) from exc
 
     ANALYTICS_DIR.mkdir(
         parents=True,

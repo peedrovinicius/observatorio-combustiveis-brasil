@@ -145,3 +145,22 @@ ingestão e deduplicação
 Se a validação detectar data inválida, data fora de 2026, preço inválido, preço não positivo, campo obrigatório ausente ou duplicidade na chave de negócio, o pipeline encerra antes de gerar `model_postos/`.
 
 Os módulos `src.build_station_model` e `src.station_analytics` repetem a validação antes de produzir modelo ou métricas, mesmo quando executados manualmente.
+
+
+## Barreira de qualidade agregada
+
+A série consolidada de 2026 também é protegida quando os módulos são executados fora do pipeline.
+
+A ordem segura é:
+
+```text
+consolidação agregada
+-> auditoria de ingestão
+-> quality_2026.json
+-> modelo estrela agregado
+-> analytics agregados
+```
+
+Os módulos `src.build_model` e `src.analytics` recalculam a qualidade da série consolidada antes de gerar dimensões, fato ou KPIs.
+
+Se houver inconsistência bloqueante, a execução manual encerra antes de escrever novas saídas.

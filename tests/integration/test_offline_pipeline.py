@@ -3,8 +3,12 @@ from pathlib import Path
 import pandas as pd
 
 import src.transform as transform_module
-from src.analytics import build_analytics_exports
-from src.build_model import build_star_schema
+from src.analytics import (
+    build_validated_analytics_exports,
+)
+from src.build_model import (
+    build_validated_star_schema,
+)
 from src.consolidate import build_analytics_table
 from src.quality import build_quality_report
 from src.reporting import (
@@ -327,7 +331,7 @@ def test_offline_pipeline_reaches_models_analytics_and_charts(
     )
 
     aggregate_model = (
-        build_star_schema(
+        build_validated_star_schema(
             aggregate
         )
     )
@@ -341,7 +345,7 @@ def test_offline_pipeline_reaches_models_analytics_and_charts(
     )
 
     aggregate_analytics = (
-        build_analytics_exports(
+        build_validated_analytics_exports(
             aggregate
         )
     )

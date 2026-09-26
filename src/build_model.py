@@ -4,6 +4,7 @@ import pandas as pd
 
 from .config import PROCESSED_DIR
 from .consolidate import OUTPUT_NAME
+from .quality import build_quality_report
 
 MODEL_DIR = PROCESSED_DIR / "model"
 
@@ -139,13 +140,37 @@ def build_star_schema(frame: pd.DataFrame) -> dict[str, pd.DataFrame]:
     }
 
 
+def build_validated_star_schema(
+    frame: pd.DataFrame,
+) -> dict[str, pd.DataFrame]:
+    report = build_quality_report(
+        frame
+    )
+    if report["status"] != "passed":
+        raise ValueError(
+            "A série agregada falhou na validação "
+            "de qualidade e não pode ser modelada."
+        )
+
+    return build_star_schema(
+        frame
+    )
+
+
 def main() -> None:
     source = PROCESSED_DIR / OUTPUT_NAME
     if not source.exists():
         raise SystemExit(f"Tabela consolidada não encontrada: {source}")
 
     frame = pd.read_csv(source, low_memory=False)
-    tables = build_star_schema(frame)
+    try:
+        tables = build_validated_star_schema(
+            frame
+        )
+    except ValueError as exc:
+        raise SystemExit(
+            str(exc)
+        ) from exc
 
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
