@@ -679,22 +679,51 @@ def build_station_star_schema(
         ]
         if column in working.columns
     ]
-    sort_cols = [
-        column
-        for column in [
-            "uf",
-            "municipio",
-            "cnpj_revenda",
-            "revenda",
-        ]
-        if column in posto_cols
-    ]
+
+    working["_posto_identidade"] = (
+        station_identity(
+            working
+        )
+    )
+    if "fonte_arquivo" in working.columns:
+        working["_source_priority"] = (
+            working["fonte_arquivo"]
+            .map(source_priority)
+            .astype("Int64")
+        )
+    else:
+        working["_source_priority"] = 0
+
+    working["_source_order"] = range(
+        len(working)
+    )
+    latest_station = (
+        working.sort_values(
+            [
+                "data_coleta",
+                "_source_priority",
+                "_source_order",
+            ],
+            kind="stable",
+        )
+        .drop_duplicates(
+            subset=[
+                "_posto_identidade"
+            ],
+            keep="last",
+        )
+        .copy()
+    )
 
     dim_posto = (
-        working[posto_cols]
-        .drop_duplicates()
+        latest_station[
+            [
+                "_posto_identidade",
+                *posto_cols,
+            ]
+        ]
         .sort_values(
-            sort_cols,
+            "_posto_identidade",
             kind="stable",
         )
         .reset_index(drop=True)
@@ -706,6 +735,19 @@ def build_station_star_schema(
             1,
             len(dim_posto) + 1,
         ),
+    )
+
+    posto_lookup = dim_posto[
+        [
+            "_posto_identidade",
+            "posto_id",
+        ]
+    ].copy()
+
+    dim_posto = dim_posto.drop(
+        columns=[
+            "_posto_identidade"
+        ]
     )
 
     fact = working.merge(
@@ -724,8 +766,8 @@ def build_station_star_schema(
         validate="many_to_one",
     )
     fact = fact.merge(
-        dim_posto,
-        on=posto_cols,
+        posto_lookup,
+        on="_posto_identidade",
         how="left",
         validate="many_to_one",
     )

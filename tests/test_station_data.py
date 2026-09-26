@@ -544,3 +544,95 @@ def test_consolidation_uses_parent_dataset_for_priority(
         ]
         == 1
     )
+
+
+
+def test_station_dimension_is_stable_by_identity() -> None:
+    frame = pd.DataFrame(
+        {
+            "regiao": [
+                "NE",
+                "NE",
+            ],
+            "uf": [
+                "CE",
+                "CE",
+            ],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "revenda": [
+                "POSTO ANTIGO",
+                "POSTO NOVO",
+            ],
+            "cnpj_revenda": [
+                "00.000.000/0001-00",
+                "00.000.000/0001-00",
+            ],
+            "produto": [
+                "GASOLINA",
+                "GASOLINA",
+            ],
+            "data_coleta": pd.to_datetime(
+                [
+                    "2026-01-10",
+                    "2026-09-20",
+                ]
+            ),
+            "preco_revenda": [
+                6.00,
+                6.30,
+            ],
+            "unidade_medida": [
+                "R$ / litro",
+                "R$ / litro",
+            ],
+            "bandeira": [
+                "BANDEIRA ANTIGA",
+                "BANDEIRA NOVA",
+            ],
+            "logradouro": [
+                "RUA ANTIGA",
+                "RUA NOVA",
+            ],
+            "numero": [
+                "10",
+                "20",
+            ],
+            "fonte_arquivo": [
+                "automotivos_2026_s1/dados.csv",
+                "etanol_gasolina_ultimas_4_semanas/dados.csv",
+            ],
+        }
+    )
+
+    tables = build_station_star_schema(
+        frame
+    )
+
+    dim_posto = tables[
+        "dim_posto"
+    ]
+    fact = tables[
+        "fato_precos_postos"
+    ]
+
+    assert len(dim_posto) == 1
+    assert (
+        dim_posto.iloc[0]["revenda"]
+        == "POSTO NOVO"
+    )
+    assert (
+        dim_posto.iloc[0]["bandeira"]
+        == "BANDEIRA NOVA"
+    )
+    assert (
+        dim_posto.iloc[0]["logradouro"]
+        == "RUA NOVA"
+    )
+    assert (
+        fact["posto_id"].nunique()
+        == 1
+    )
+    assert len(fact) == 2

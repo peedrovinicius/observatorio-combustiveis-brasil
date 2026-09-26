@@ -67,4 +67,25 @@ A mesma estrutura também permite criar filtros consistentes por período, produ
 
 ## Dados por posto
 
-Os registros por posto revendedor têm grão diferente dos dados agregados e, por isso, não serão misturados na mesma fato. Quando incorporados, formarão uma segunda tabela fato específica para observações por estabelecimento.
+Os registros por posto revendedor têm grão diferente dos dados agregados e, por isso, permanecem em uma segunda tabela fato específica para observações por estabelecimento.
+
+O modelo por posto é composto por:
+
+- `dim_data_coleta`;
+- `dim_produto_posto`;
+- `dim_posto`;
+- `fato_precos_postos`.
+
+O grão da fato por posto é:
+
+**data da coleta × posto × produto × unidade de medida**
+
+### Identidade estável do posto
+
+Quando o CNPJ está disponível, ele é a identidade principal do estabelecimento. Todas as observações do mesmo CNPJ apontam para o mesmo `posto_id`, mesmo que atributos cadastrais como nome, bandeira ou endereço mudem entre coletas.
+
+A `dim_posto` usa uma estratégia SCD tipo 1 simples: mantém um único registro por identidade e conserva os atributos da observação mais recente disponível. O histórico de preços permanece integral na fato e continua ligado ao mesmo `posto_id`.
+
+Quando o CNPJ não está disponível, o projeto usa uma identidade de fallback baseada em UF, município, revenda, logradouro e número. Nesse caso, mudanças nesses atributos podem representar uma nova identidade, pois não há uma chave cadastral mais forte disponível na fonte.
+
+Essa decisão evita inflar contagens de estabelecimentos no PostgreSQL e no Power BI por simples alterações cadastrais.
