@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment
+.env
+
+# Raw and processed datasets
+# Keep data provenance/documentation in Git, not large downloaded files.
+data/raw/*
+!data/raw/README.md
+data/processed/*
+!data/processed/README.md
+
+# Power BI temporary files
+*.pbix
+*.pbit
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
