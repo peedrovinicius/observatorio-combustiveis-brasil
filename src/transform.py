@@ -69,6 +69,27 @@ def normalize_column(value: object) -> str:
     return COLUMN_ALIASES.get(text, text)
 
 
+def parse_decimal_series(series: pd.Series) -> pd.Series:
+    def parse(value: object) -> float | None:
+        if pd.isna(value):
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+
+        text = str(value).strip().replace("R$", "").replace(" ", "")
+        if not text:
+            return None
+        if "," in text:
+            text = text.replace(".", "").replace(",", ".")
+
+        try:
+            return float(text)
+        except ValueError:
+            return None
+
+    return series.map(parse)
+
+
 def detect_header_row(path: Path, sheet_name: str, max_rows: int = 30) -> int:
     preview = pd.read_excel(path, sheet_name=sheet_name, header=None, nrows=max_rows)
 
@@ -110,7 +131,9 @@ def read_excel_sheet(path: Path, sheet_name: str) -> pd.DataFrame:
 
     for column in ("data_inicial", "data_final", "data_coleta"):
         if column in frame.columns:
-            frame[column] = pd.to_datetime(frame[column], errors="coerce").dt.date
+            frame[column] = pd.to_datetime(
+                frame[column], errors="coerce", dayfirst=True
+            ).dt.date
 
     for column in (
         "preco_medio_revenda",
@@ -122,14 +145,7 @@ def read_excel_sheet(path: Path, sheet_name: str) -> pd.DataFrame:
         "preco_compra",
     ):
         if column in frame.columns:
-            if frame[column].dtype == "object":
-                frame[column] = (
-                    frame[column]
-                    .astype(str)
-                    .str.replace(".", "", regex=False)
-                    .str.replace(",", ".", regex=False)
-                )
-            frame[column] = pd.to_numeric(frame[column], errors="coerce")
+            frame[column] = parse_decimal_series(frame[column])
 
     if "postos_pesquisados" in frame.columns:
         frame["postos_pesquisados"] = pd.to_numeric(
@@ -181,7 +197,7 @@ def main() -> None:
     if not excel_files:
         raise SystemExit(
             "Nenhuma planilha encontrada em data/raw. "
-            "Execute primeiro: python -m src.download_anp"
+            "Execute primeiro: python -m src.download_history"
         )
 
     total = 0

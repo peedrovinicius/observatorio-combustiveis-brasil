@@ -18,7 +18,10 @@ def _inspect_excel(path: Path) -> dict[str, object]:
             "rows": int(frame.shape[0]),
             "columns": int(frame.shape[1]),
             "column_names": [str(column) for column in frame.columns],
-            "nulls": {str(k): int(v) for k, v in frame.isna().sum().items()},
+            "nulls": {
+                str(key): int(value)
+                for key, value in frame.isna().sum().items()
+            },
         }
 
     return {"type": "excel", "sheets": sheets}
@@ -51,7 +54,10 @@ def _inspect_csv(path: Path) -> dict[str, object]:
         "rows": int(frame.shape[0]),
         "columns": int(frame.shape[1]),
         "column_names": [str(column) for column in frame.columns],
-        "nulls": {str(k): int(v) for k, v in frame.isna().sum().items()},
+        "nulls": {
+            str(key): int(value)
+            for key, value in frame.isna().sum().items()
+        },
     }
 
 
@@ -68,15 +74,22 @@ def main() -> None:
     files = [
         path
         for path in RAW_DIR.iterdir()
-        if path.is_file() and path.name not in {"README.md", "manifest.json"}
+        if path.is_file()
+        and path.name != "README.md"
+        and path.suffix.lower() != ".json"
     ]
 
     if not files:
-        raise SystemExit("Nenhum arquivo bruto encontrado. Execute python -m src.download_anp.")
+        raise SystemExit(
+            "Nenhum arquivo bruto encontrado. Execute python -m src.download_history."
+        )
 
     report = {path.name: inspect(path) for path in sorted(files)}
     output = RAW_DIR / "inspection.json"
-    output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    output.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     print(f"\nRelatório salvo em: {output}")
 

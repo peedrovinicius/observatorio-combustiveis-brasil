@@ -2,62 +2,105 @@
 
 ## 1. Aquisição
 
-Os dados são obtidos diretamente de páginas oficiais da ANP. O script de extração identifica os links da publicação semanal mais recente e preserva os arquivos originais.
+A série principal é obtida diretamente da página oficial da ANP para o Levantamento de Preços.
 
-## 2. Camada raw
+Para 2026, o pipeline histórico localiza dinamicamente os arquivos semanais modernos publicados para:
 
-A camada `data/raw/` contém os arquivos exatamente como recebidos. Nenhuma transformação é permitida nesta etapa.
+- Brasil;
+- regiões;
+- estados;
+- municípios de 2026.
 
-## 3. Inspeção
+Os links não são fixados manualmente no código. A descoberta é feita a partir da estrutura atual da página oficial, reduzindo a dependência de nomes de arquivo.
 
-Antes do tratamento são verificados:
+## 2. Rastreabilidade
 
-- formato do arquivo;
-- planilhas disponíveis, quando aplicável;
-- quantidade de linhas e colunas;
-- nomes das colunas;
-- tipos inferidos;
-- valores ausentes;
-- duplicidades potenciais.
+Cada download registra:
 
-## 4. Transformação
+- URL da página de origem;
+- URL descoberta;
+- URL final após redirecionamentos;
+- data e hora da coleta em UTC;
+- nome local;
+- tipo de conteúdo;
+- tamanho em bytes;
+- hash SHA-256.
 
-A etapa seguinte deverá padronizar nomes de colunas, datas, textos, identificadores geográficos e valores monetários. Regras de transformação serão registradas em código e documentadas.
+O manifesto histórico é salvo em `data/raw/history_manifest.json`.
 
-## 5. Qualidade
+## 3. Camada raw
 
-Validações previstas:
+A camada `data/raw/` contém os arquivos exatamente como recebidos da ANP.
 
-- preços não negativos;
-- datas válidas;
-- UF dentro do domínio oficial;
-- produto dentro do domínio observado;
-- consistência entre município e UF;
-- identificação de duplicidades;
-- registro de nulos por coluna;
-- análise de outliers sem remoção automática.
+Arquivos brutos nunca são alterados.
 
-Valores extremos não serão descartados sem justificativa documentada.
+## 4. Inspeção
 
-## 6. Modelo analítico
+Antes do tratamento são registrados:
 
-A camada SQL utilizará uma tabela fato de preços e dimensões para data, produto, localidade, posto e bandeira. O modelo será refinado após a inspeção do schema real das fontes.
+- formato;
+- abas da planilha;
+- número de linhas e colunas;
+- nomes originais das colunas;
+- quantidade de valores ausentes.
 
-## 7. Indicadores
+O relatório local é salvo em `data/raw/inspection.json`.
 
-Indicadores iniciais:
+## 5. Transformação
 
-- média;
-- mediana;
-- mínimo;
-- máximo;
-- amplitude;
-- desvio padrão;
-- coeficiente de variação;
-- variação absoluta e percentual;
-- quantidade de observações;
-- quantidade de estabelecimentos pesquisados.
+O pipeline:
 
-## 8. Reprodutibilidade
+1. detecta automaticamente a linha real do cabeçalho;
+2. remove colunas sem nome;
+3. padroniza nomes de campos;
+4. converte datas;
+5. converte preços com suporte a vírgula decimal brasileira e ponto decimal;
+6. preserva campos adicionais publicados pela ANP;
+7. adiciona identificação do arquivo e da planilha de origem.
 
-Nenhum resultado analítico será digitado manualmente. Tabelas, métricas e visuais devem ser derivados dos dados processados pelo pipeline.
+Cada tabela reconhecida gera um CSV em `data/processed/`.
+
+## 6. Consolidação de 2026
+
+A consolidação seleciona tabelas agregadas com preço médio de revenda e:
+
+- filtra registros de 2026;
+- identifica o nível geográfico;
+- adiciona ano, mês e semana ISO;
+- alinha schemas;
+- remove duplicidades pela chave analítica disponível;
+- gera `data/processed/precos_semanais_2026.csv`.
+
+## 7. Qualidade
+
+A validação verifica:
+
+- presença de colunas obrigatórias;
+- preços ausentes ou inválidos;
+- preços não positivos;
+- duplicidades pela chave de negócio;
+- preço mínimo maior que preço máximo.
+
+O resultado é classificado como:
+
+- `passed`: nenhuma inconsistência bloqueante ou de revisão encontrada;
+- `review`: há registros que precisam de inspeção;
+- `failed`: faltam campos essenciais para a análise.
+
+Nenhum outlier é removido automaticamente.
+
+## 8. Agregação
+
+A metodologia oficial deve ser respeitada. A média municipal pode ser calculada por média aritmética simples, enquanto os níveis estadual, regional e nacional publicados pela ANP possuem metodologia própria de ponderação.
+
+Por isso, o projeto preserva os agregados oficiais e não trata uma média simples das médias municipais como equivalente ao indicador nacional oficial.
+
+## 9. Reprodutibilidade
+
+A execução completa pode ser iniciada por:
+
+```bash
+python -m src.pipeline
+```
+
+Resultados analíticos não devem ser digitados manualmente. Métricas e visuais devem ser derivados das camadas processadas pelo pipeline.

@@ -2,7 +2,7 @@
 
 # Observatório de Combustíveis Brasil
 
-**Pipeline analítico de preços de combustíveis no Brasil com dados públicos oficiais da ANP**
+**Pipeline de Data Analytics para preços de combustíveis com dados públicos oficiais da ANP**
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![Pandas](https://img.shields.io/badge/Pandas-2.x-150458?logo=pandas&logoColor=white)
@@ -16,45 +16,41 @@
 
 O projeto analisa a evolução e a distribuição dos preços de combustíveis no Brasil a partir de dados públicos da Agência Nacional do Petróleo, Gás Natural e Biocombustíveis (ANP).
 
-O objetivo é construir um fluxo analítico reproduzível, cobrindo aquisição, rastreabilidade, tratamento, validação, modelagem, análise exploratória, SQL e visualização em Power BI.
+A proposta é construir um fluxo analítico reproduzível de ponta a ponta: aquisição, rastreabilidade, inspeção, tratamento, validação, consolidação, SQL e visualização em Power BI.
 
 ## Pergunta analítica
 
-**Como os preços dos combustíveis variam ao longo do tempo e entre regiões, estados, municípios, produtos e postos revendedores?**
+**Como os preços dos combustíveis variam em 2026 ao longo do tempo e entre Brasil, regiões, estados, municípios e produtos?**
 
-## Arquitetura
+## Pipeline
 
 ```mermaid
 flowchart LR
-    A[ANP<br/>Dados públicos] --> B[Extração<br/>Python]
+    A[ANP<br/>Série histórica] --> B[Download<br/>Python]
     B --> C[Raw<br/>Arquivos originais]
-    C --> D[Inspeção<br/>Schema e qualidade]
+    C --> D[Inspeção<br/>Schema]
     D --> E[Transformação<br/>Pandas]
-    E --> F[Processed<br/>CSV normalizado]
-    F --> G[Modelo dimensional<br/>SQL]
-    G --> H[Análise e Power BI]
+    E --> F[Consolidação<br/>2026]
+    F --> G[Qualidade<br/>Data checks]
+    G --> H[SQL<br/>Modelo analítico]
+    H --> I[Power BI<br/>Dashboard]
 ```
 
-## Escopo analítico
+## O que já está implementado
 
-- evolução semanal, mensal e anual dos preços;
-- preço médio, mediano, mínimo e máximo;
-- amplitude, desvio padrão e coeficiente de variação;
-- comparação entre Brasil, regiões, UFs e municípios;
-- comparação entre produtos;
-- distribuição de preços por posto e bandeira, quando disponível;
-- diferença de cada localidade em relação à média nacional;
-- análise da relação entre preços de etanol e gasolina;
-- identificação e documentação de valores extremos;
-- acompanhamento da cobertura da pesquisa ao longo do tempo.
-
-## Fontes oficiais
-
-A base principal é o Levantamento de Preços de Combustíveis da ANP. A página das últimas pesquisas foi atualizada em 25/09/2026 e publica, no topo, a semana de 20/09/2026 a 26/09/2026.
-
-O projeto também utilizará a série histórica oficial e poderá incorporar dados cadastrais dos revendedores para enriquecimento analítico.
-
-As fontes e regras de rastreabilidade estão em [`docs/fontes.md`](docs/fontes.md), e o dicionário de campos normalizados está em [`docs/dicionario-dados.md`](docs/dicionario-dados.md).
+- descoberta automática dos arquivos semanais oficiais;
+- coleta separada para Brasil, regiões, estados e municípios de 2026;
+- manifesto de origem com URL, horário, tamanho e SHA-256;
+- inspeção dos arquivos brutos;
+- detecção automática de cabeçalho nas planilhas;
+- normalização de nomes, datas e valores monetários;
+- suporte a vírgula decimal brasileira e ponto decimal;
+- consolidação exclusiva da série de 2026;
+- identificação automática do nível geográfico;
+- remoção de duplicidades por chave analítica;
+- criação de ano, mês e semana ISO;
+- validações de qualidade antes da análise;
+- testes automatizados para as regras centrais.
 
 ## Estrutura
 
@@ -68,13 +64,17 @@ observatorio-combustiveis-brasil/
 │   ├── fontes.md
 │   └── metodologia.md
 ├── notebooks/
+├── reports/
 ├── sql/
 │   └── schema.sql
 ├── src/
-│   ├── __init__.py
 │   ├── config.py
+│   ├── consolidate.py
 │   ├── download_anp.py
+│   ├── download_history.py
 │   ├── inspect_raw.py
+│   ├── pipeline.py
+│   ├── quality.py
 │   └── transform.py
 ├── tests/
 ├── .gitignore
@@ -82,7 +82,9 @@ observatorio-combustiveis-brasil/
 └── README.md
 ```
 
-## Execução
+## Execução completa
+
+Crie o ambiente e instale as dependências:
 
 ```bash
 python -m venv .venv
@@ -93,50 +95,72 @@ No Windows PowerShell:
 ```powershell
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+python -m src.pipeline
+```
 
-python -m src.download_anp
-python -m src.inspect_raw
-python -m src.transform
+O comando executa:
+
+```text
+1. download da série histórica
+2. inspeção dos arquivos brutos
+3. transformação e padronização
+4. consolidação da série 2026
+5. validação de qualidade
+```
+
+Para executar os testes:
+
+```bash
 pytest
 ```
 
-### O que acontece em cada etapa
+## Saída analítica
 
-1. `download_anp` localiza os links mais recentes publicados pela ANP, baixa os arquivos e grava um manifesto com origem, horário da coleta, tamanho e SHA-256.
-2. `inspect_raw` registra abas, dimensões, colunas e valores ausentes sem alterar os arquivos brutos.
-3. `transform` detecta automaticamente a linha real de cabeçalho, mesmo quando a planilha contém títulos ou observações antes da tabela; em seguida normaliza tipos e nomes de colunas.
-4. Os CSVs tratados são gravados em `data/processed/`.
+O pipeline gera localmente:
 
-Os dados brutos e processados não são versionados no Git para evitar crescimento desnecessário do repositório. O código para reproduzi-los permanece versionado.
-
-## Modelo dimensional planejado
-
-```mermaid
-erDiagram
-    FATO_PRECOS }o--|| DIM_DATA : data_id
-    FATO_PRECOS }o--|| DIM_PRODUTO : produto_id
-    FATO_PRECOS }o--|| DIM_LOCALIDADE : localidade_id
-    FATO_PRECOS }o--o| DIM_POSTO : posto_id
-    FATO_PRECOS }o--o| DIM_BANDEIRA : bandeira_id
+```text
+data/processed/precos_semanais_2026.csv
+reports/quality_2026.json
 ```
+
+Os datasets não são versionados no Git. Eles são reconstruíveis a partir do código e das fontes oficiais, mantendo o repositório leve.
+
+## Escopo analítico
+
+A tabela consolidada será usada para calcular e visualizar:
+
+- evolução semanal e mensal;
+- preço médio, mínimo e máximo;
+- amplitude e dispersão;
+- comparação entre produtos;
+- comparação Brasil × região × estado × município;
+- diferença de cada localidade em relação aos agregados oficiais;
+- quantidade de postos pesquisados quando disponível;
+- rankings e variações percentuais;
+- análise etanol × gasolina.
+
+## Metodologia
+
+O projeto não recalcula o indicador nacional como uma média simples das médias municipais. Os agregados oficiais da ANP são preservados porque os níveis estadual, regional e nacional possuem metodologia de agregação própria.
+
+Detalhes estão em [`docs/metodologia.md`](docs/metodologia.md).
 
 ## Princípios
 
-- dados reais e públicos;
-- nenhuma alteração nos arquivos brutos;
-- rastreabilidade da origem;
-- transformações reproduzíveis em código;
-- validações antes da análise;
-- preservação de campos novos publicados pela fonte;
-- separação entre dado bruto, tratado e camada analítica;
+- somente dados públicos reais;
+- arquivo bruto imutável;
+- origem rastreável;
+- transformação reproduzível;
+- validação antes da visualização;
 - nenhuma métrica digitada manualmente;
-- conclusões baseadas somente nos dados efetivamente processados.
+- nenhuma remoção automática de outliers;
+- separação clara entre raw, processed e camada analítica.
 
 ## Status
 
-**Fase 1 em andamento: aquisição, inspeção e padronização.**
+**Pipeline de aquisição, transformação, consolidação e qualidade de 2026 implementado.**
 
-A estrutura de transformação já está preparada para as planilhas da ANP. A próxima entrega é consolidar a série de 2026 e produzir a primeira tabela analítica para exploração em Python e SQL.
+Próxima etapa: criar a camada SQL analítica e os primeiros indicadores derivados para o dashboard.
 
 ## Licença
 

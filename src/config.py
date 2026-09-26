@@ -3,6 +3,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+REPORTS_DIR = PROJECT_ROOT / "reports"
 
 ANP_WEEKLY_PAGE = (
     "https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/"
@@ -13,6 +14,11 @@ ANP_HISTORICAL_PAGE = (
     "https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/"
     "precos/precos-revenda-e-de-distribuicao-combustiveis/"
     "serie-historica-do-levantamento-de-precos"
+)
+
+ANP_OPEN_DATA_PAGE = (
+    "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/"
+    "serie-historica-de-precos-de-combustiveis"
 )
 
 ANP_RESELLERS_PAGE = (

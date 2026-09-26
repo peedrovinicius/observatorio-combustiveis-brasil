@@ -12,13 +12,16 @@ venv/
 .env
 
 # Raw and processed datasets
-# Keep data provenance/documentation in Git, not large downloaded files.
 data/raw/*
 !data/raw/README.md
 data/processed/*
 !data/processed/README.md
 
-# Power BI temporary files
+# Generated quality reports
+reports/*
+!reports/README.md
+
+# Power BI temporary/binary files
 *.pbix
 *.pbit
 
