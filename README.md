@@ -84,6 +84,9 @@ observatorio-combustiveis-brasil/
 │   ├── medidas.dax
 │   └── README.md
 ├── reports/
+├── scripts/
+│   ├── README.md
+│   └── run_local.ps1
 ├── docker-compose.yml
 ├── .env.example
 ├── sql/
@@ -101,6 +104,7 @@ observatorio-combustiveis-brasil/
 │   ├── reporting.py
 │   ├── station_data.py
 │   ├── station_quality.py
+│   ├── snapshot.py
 │   └── transform.py
 ├── tests/
 ├── .gitignore
@@ -108,7 +112,25 @@ observatorio-combustiveis-brasil/
 └── README.md
 ```
 
-## Execução completa
+## Execução local recomendada
+
+No Windows, o projeto pode ser executado com um único comando:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1
+```
+
+Esse fluxo cria o ambiente virtual quando necessário, instala dependências, executa os testes e roda o pipeline completo.
+
+Para também gerar um snapshot revisável dos resultados:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1 -Snapshot
+```
+
+O snapshot produz `docs/resultados-2026.md` e copia os gráficos para `assets/snapshot/`. Nenhum commit ou push é feito automaticamente.
+
+## Execução manual
 
 ```bash
 python -m venv .venv
@@ -196,12 +218,13 @@ A documentação da camada por estabelecimento está em [`docs/dados-abertos-pos
 
 ## Dashboard planejado
 
-O Power BI terá quatro páginas principais:
+O Power BI terá cinco páginas principais:
 
 1. **Visão Geral** — preço atual, variação, amplitude, postos e evolução semanal;
 2. **Geografia** — comparação entre UFs e municípios;
 3. **Tendência** — evolução semanal e indicador mensal derivado;
-4. **Etanol × Gasolina** — relação observada entre os dois combustíveis.
+4. **Mercado por posto** — distribuição, mediana, bandeiras e preços observados;
+5. **Etanol × Gasolina** — relação observada entre os dois combustíveis.
 
 A especificação e as medidas DAX estão em [`powerbi/README.md`](powerbi/README.md).
 
@@ -226,7 +249,7 @@ Indicadores derivados são explicitamente identificados. Veja [`docs/kpis.md`](d
 
 **ETL agregado e por posto, validação, dois modelos dimensionais, PostgreSQL reproduzível, SQL, KPIs e geração visual automática implementados.**
 
-A próxima etapa é executar o pipeline contra os arquivos oficiais, revisar os resultados reais e construir o arquivo do dashboard.
+A próxima etapa é executar o runner local contra os arquivos oficiais, revisar o snapshot real de 2026 e então consolidar o dashboard final.
 
 ## Licença
 

@@ -30,3 +30,6 @@ reports/*
 Thumbs.db
 .vscode/
 .idea/
+
+# Generated visual outputs
+assets/generated/*
