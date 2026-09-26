@@ -4,6 +4,7 @@ import pandas as pd
 
 from src.consolidate import (
     build_analytics_table,
+    build_analytics_table_with_audit,
     infer_geographic_level,
 )
 from src.download_history import (
@@ -263,3 +264,112 @@ def test_history_cleanup_replaces_only_same_scope(
     assert not old_b.exists()
     assert other.exists()
     assert manifest.exists()
+
+
+
+def test_aggregate_ingestion_audit_counts_exclusions_and_dedup(
+    tmp_path: Path,
+) -> None:
+    aggregate = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+                "2026-01-04",
+                "2025-12-28",
+                "data-invalida",
+            ],
+            "data_final": [
+                "2026-01-10",
+                "2026-01-10",
+                "2026-01-03",
+                "2026-01-10",
+            ],
+            "uf": ["CE", "CE", "CE", "CE"],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "produto": [
+                "GASOLINA",
+                "GASOLINA",
+                "GASOLINA",
+                "GASOLINA",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
+                "R$/L",
+                "R$/L",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+                6.0,
+                5.9,
+                6.1,
+            ],
+        }
+    )
+    aggregate.to_csv(
+        tmp_path / "agregado.csv",
+        index=False,
+    )
+
+    pd.DataFrame(
+        {
+            "coluna_a": [1, 2]
+        }
+    ).to_csv(
+        tmp_path / "nao_agregado.csv",
+        index=False,
+    )
+
+    frame, audit = (
+        build_analytics_table_with_audit(
+            tmp_path
+        )
+    )
+
+    assert len(frame) == 1
+    assert audit["arquivos_encontrados"] == 2
+    assert audit["arquivos_processados"] == 1
+    assert (
+        audit[
+            "arquivos_ignorados_por_schema"
+        ]
+        == 1
+    )
+    assert (
+        audit[
+            "linhas_lidas_total"
+        ]
+        == 6
+    )
+    assert (
+        audit[
+            "linhas_lidas_arquivos_processados"
+        ]
+        == 4
+    )
+    assert (
+        audit[
+            "datas_iniciais_invalidas"
+        ]
+        == 1
+    )
+    assert audit["linhas_fora_2026"] == 1
+    assert (
+        audit[
+            "linhas_elegiveis_antes_deduplicacao"
+        ]
+        == 2
+    )
+    assert (
+        audit[
+            "linhas_removidas_por_duplicidade"
+        ]
+        == 1
+    )
+    assert audit["linhas_finais"] == 1
+    assert audit["status"] == "review"

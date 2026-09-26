@@ -64,12 +64,19 @@ Cada tabela reconhecida gera um CSV em `data/processed/`.
 
 A consolidação seleciona tabelas agregadas com preço médio de revenda e:
 
-- filtra registros de 2026;
+- registra quantas linhas foram lidas por arquivo;
+- identifica arquivos que não pertencem ao schema agregado;
+- contabiliza datas iniciais inválidas;
+- contabiliza registros fora de 2026;
+- filtra registros elegíveis de 2026;
 - identifica o nível geográfico;
 - adiciona ano, mês e semana ISO;
 - alinha schemas;
-- remove duplicidades pela chave analítica disponível;
-- gera `data/processed/precos_semanais_2026.csv`.
+- contabiliza e remove duplicidades pela chave analítica disponível;
+- gera `data/processed/precos_semanais_2026.csv`;
+- grava `reports/aggregate_ingestion_audit_2026.json`.
+
+Registros fora de 2026 são uma exclusão esperada para o recorte anual. Datas iniciais inválidas deixam a auditoria com status `review`, preservando visibilidade sobre linhas que não chegaram à base final.
 
 ## 7. Qualidade
 
@@ -81,11 +88,12 @@ A validação verifica:
 - duplicidades pela chave de negócio;
 - preço mínimo maior que preço máximo.
 
-O resultado é classificado como:
+A qualidade da base final é classificada como:
 
-- `passed`: nenhuma inconsistência bloqueante ou de revisão encontrada;
-- `review`: há registros que precisam de inspeção;
-- `failed`: faltam campos essenciais para a análise.
+- `passed`: nenhuma inconsistência bloqueante foi encontrada;
+- `failed`: existe pelo menos uma inconsistência bloqueante.
+
+O status `review` é reservado às auditorias de ingestão, nas quais uma ocorrência pode exigir inspeção sem necessariamente alterar a integridade da base final.
 
 Nenhum outlier é removido automaticamente.
 

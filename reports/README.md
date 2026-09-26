@@ -2,7 +2,28 @@
 
 Esta pasta recebe relatórios gerados automaticamente pelo pipeline.
 
-## Série agregada
+## Auditoria de ingestão agregada
+
+```text
+reports/aggregate_ingestion_audit_2026.json
+```
+
+Registra o que aconteceu durante a consolidação da série semanal:
+
+- arquivos encontrados;
+- arquivos processados;
+- arquivos ignorados por schema;
+- linhas lidas no diretório;
+- linhas lidas nos arquivos efetivamente processados;
+- datas iniciais inválidas;
+- linhas fora de 2026;
+- linhas elegíveis;
+- duplicidades removidas;
+- total final preservado.
+
+Datas iniciais inválidas deixam a auditoria com status `review`. Registros fora de 2026 são contabilizados como exclusão esperada do recorte anual.
+
+## Qualidade da série agregada
 
 ```text
 reports/quality_2026.json

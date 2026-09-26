@@ -97,6 +97,7 @@ data/processed/model_postos/
 data/processed/analytics/
 data/processed/analytics_postos/
 
+reports/aggregate_ingestion_audit_2026.json
 reports/quality_2026.json
 reports/station_ingestion_audit_2026.json
 reports/quality_postos_2026.json

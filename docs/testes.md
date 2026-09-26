@@ -26,7 +26,7 @@ A suíte verifica, entre outros pontos:
 - qualidade agregada;
 - identidade e deduplicação de postos;
 - precedência entre publicações sobrepostas;
-- auditoria de exclusões;
+- auditoria de exclusões agregadas e por posto;
 - modelo estrela agregado;
 - modelo estrela por posto;
 - KPIs agregados;
