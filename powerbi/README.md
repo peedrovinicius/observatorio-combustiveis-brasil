@@ -31,9 +31,9 @@ Usar:
 Relacionamentos:
 
 ```text
-dim_data[data_id]              1 ─── * fato_precos_semanais[data_id]
-dim_produto[produto_id]        1 ─── * fato_precos_semanais[produto_id]
-dim_localidade[localidade_id]  1 ─── * fato_precos_semanais[localidade_id]
+dim_data[data_id]              1 -> * fato_precos_semanais[data_id]
+dim_produto[produto_id]        1 -> * fato_precos_semanais[produto_id]
+dim_localidade[localidade_id]  1 -> * fato_precos_semanais[localidade_id]
 ```
 
 Direção de filtro única, das dimensões para a fato.
@@ -47,11 +47,32 @@ Usar:
 - `dim_posto`;
 - `fato_precos_postos`.
 
+Relacionamentos:
+
+```text
+dim_data_coleta[data_coleta_id]       1 -> * fato_precos_postos[data_coleta_id]
+dim_produto_posto[produto_posto_id]   1 -> * fato_precos_postos[produto_posto_id]
+dim_posto[posto_id]                   1 -> * fato_precos_postos[posto_id]
+```
+
 Esse modelo é destinado a análises de dispersão, bandeira, estabelecimento e distribuição dos preços observados.
 
 Não relacione diretamente as duas tabelas fato.
 
-## Página 1 — Visão Geral
+## Saídas Python por posto
+
+O pipeline também gera:
+
+```text
+data/processed/analytics_postos/
+├── resumo_postos_2026.csv
+├── distribuicao_municipios_ultima_coleta.csv
+└── bandeiras_ultima_coleta.csv
+```
+
+Essas tabelas são úteis para conferência dos resultados do Power BI e análises independentes do modelo DAX.
+
+## Página 1: Visão Geral
 
 Filtros:
 
@@ -73,7 +94,7 @@ Visuais:
 - barras: preço por região/UF;
 - tabela: maiores e menores preços.
 
-## Página 2 — Geografia
+## Página 2: Geografia
 
 Filtros:
 
@@ -89,7 +110,7 @@ Visuais:
 - amplitude de preço;
 - coeficiente de variação.
 
-## Página 3 — Tendência
+## Página 3: Tendência
 
 Visuais:
 
@@ -100,18 +121,29 @@ Visuais:
 
 A média mensal gerada pelo projeto é um indicador derivado das observações semanais e não deve ser apresentada como se fosse a série mensal oficial da ANP.
 
-## Página 4 — Mercado por posto
+## Página 4: Mercado por Posto
+
+Cards:
+
+- preço médio observado;
+- mediana observada;
+- postos distintos;
+- observações de preço;
+- amplitude observada.
 
 Visuais:
 
 - distribuição dos preços;
-- mediana;
 - comparação por bandeira;
 - quantidade de revendas pesquisadas;
 - menores e maiores preços observados;
-- dispersão por município.
+- dispersão por município;
+- intervalo interquartil;
+- coeficiente de variação.
 
-## Página 5 — Etanol × Gasolina
+A data mais recente deve ser avaliada por produto. Uma única data máxima global pode excluir produtos cuja coleta mais recente ocorreu em outro dia.
+
+## Página 5: Etanol × Gasolina
 
 Usar `data/processed/analytics/etanol_gasolina_ultima_semana.csv` ou reproduzir a medida no modelo.
 
@@ -126,8 +158,8 @@ O projeto não define automaticamente uma regra fixa de vantagem econômica. O d
 
 ## Medidas
 
-As medidas iniciais estão em [`medidas.dax`](medidas.dax).
+As medidas estão em [`medidas.dax`](medidas.dax).
 
-### Regra importante
+## Regra importante
 
-Os preços da ANP são agregados oficiais em diferentes níveis geográficos. Evite colocar registros de Brasil, região, estado e município no mesmo visual sem filtrar `nivel_geografico`, pois isso misturaria grãos analíticos diferentes.
+Os preços agregados oficiais e as observações por posto têm grãos e significados diferentes. Mantenha cada tabela fato no seu próprio contexto analítico e não compare medidas como se fossem equivalentes.

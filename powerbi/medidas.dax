@@ -1,6 +1,8 @@
 -- Medidas base para o modelo Power BI.
--- Importar dim_data, dim_produto, dim_localidade e fato_precos_semanais.
--- Relacionamentos: dimensões (1) -> fato (*), direção única.
+-- Manter as duas tabelas fato sem relacionamento direto.
+-- Relacionamentos sempre das dimensões (1) para a fato (*).
+
+-- Modelo agregado oficial
 
 Preço Médio Publicado =
 AVERAGE ( fato_precos_semanais[preco_medio_revenda] )
@@ -11,18 +13,26 @@ MIN ( fato_precos_semanais[preco_minimo_revenda] )
 Preço Máximo Publicado =
 MAX ( fato_precos_semanais[preco_maximo_revenda] )
 
-Amplitude de Preço =
+Amplitude de Preço Publicado =
 [Preço Máximo Publicado] - [Preço Mínimo Publicado]
 
 Postos Pesquisados =
 SUM ( fato_precos_semanais[postos_pesquisados] )
 
 Última Data Disponível =
-MAX ( dim_data[data_inicial] )
+MAXX (
+    FILTER (
+        ALL ( dim_data[data_inicial] ),
+        CALCULATE (
+            COUNTROWS ( fato_precos_semanais )
+        ) > 0
+    ),
+    dim_data[data_inicial]
+)
 
 Preço Última Semana =
 VAR UltimaData =
-    MAX ( dim_data[data_inicial] )
+    [Última Data Disponível]
 RETURN
     CALCULATE (
         [Preço Médio Publicado],
@@ -30,15 +40,18 @@ RETURN
     )
 
 Preço Semana Anterior =
-VAR DataAtual =
-    MAX ( dim_data[data_inicial] )
+VAR UltimaData =
+    [Última Data Disponível]
 VAR DataAnterior =
-    CALCULATE (
-        MAX ( dim_data[data_inicial] ),
+    MAXX (
         FILTER (
-            ALL ( dim_data ),
-            dim_data[data_inicial] < DataAtual
-        )
+            ALL ( dim_data[data_inicial] ),
+            dim_data[data_inicial] < UltimaData
+                && CALCULATE (
+                    COUNTROWS ( fato_precos_semanais )
+                ) > 0
+        ),
+        dim_data[data_inicial]
     )
 RETURN
     CALCULATE (
@@ -57,3 +70,57 @@ AVERAGE ( fato_precos_semanais[desvio_padrao_revenda] )
 
 Coeficiente de Variação Publicado =
 AVERAGE ( fato_precos_semanais[coef_variacao_revenda] )
+
+
+-- Modelo por posto
+
+Preço Médio Observado Postos =
+AVERAGE ( fato_precos_postos[preco_revenda] )
+
+Mediana Observada Postos =
+MEDIAN ( fato_precos_postos[preco_revenda] )
+
+Preço Mínimo Observado Postos =
+MIN ( fato_precos_postos[preco_revenda] )
+
+Preço Máximo Observado Postos =
+MAX ( fato_precos_postos[preco_revenda] )
+
+Amplitude Observada Postos =
+[Preço Máximo Observado Postos]
+    - [Preço Mínimo Observado Postos]
+
+Observações de Preço =
+COUNTROWS ( fato_precos_postos )
+
+Postos Distintos =
+DISTINCTCOUNT ( fato_precos_postos[posto_id] )
+
+Última Data de Coleta =
+MAXX (
+    FILTER (
+        ALL ( dim_data_coleta[data_coleta] ),
+        CALCULATE (
+            COUNTROWS ( fato_precos_postos )
+        ) > 0
+    ),
+    dim_data_coleta[data_coleta]
+)
+
+Preço Médio Última Coleta =
+VAR UltimaData =
+    [Última Data de Coleta]
+RETURN
+    CALCULATE (
+        [Preço Médio Observado Postos],
+        dim_data_coleta[data_coleta] = UltimaData
+    )
+
+Mediana Última Coleta =
+VAR UltimaData =
+    [Última Data de Coleta]
+RETURN
+    CALCULATE (
+        [Mediana Observada Postos],
+        dim_data_coleta[data_coleta] = UltimaData
+    )

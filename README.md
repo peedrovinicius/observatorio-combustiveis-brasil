@@ -32,6 +32,7 @@ A fonte principal é a Agência Nacional do Petróleo, Gás Natural e Biocombust
 - dois modelos estrela separados por granularidade;
 - PostgreSQL com DDL, views e consultas analíticas;
 - KPIs, rankings, tendência e relação etanol/gasolina;
+- média, mediana, quartis, dispersão, cobertura e bandeiras na camada por posto;
 - notebook de análise exploratória;
 - relatório web estático em `docs/`;
 - medidas DAX, tema e especificação visual para Power BI;
@@ -91,6 +92,7 @@ data/processed/precos_postos_2026.csv
 data/processed/model/
 data/processed/model_postos/
 data/processed/analytics/
+data/processed/analytics_postos/
 
 reports/quality_2026.json
 reports/station_ingestion_audit_2026.json
@@ -136,7 +138,7 @@ Documentação:
 
 ## Status
 
-Pipeline agregado e por posto, validação, modelos dimensionais, PostgreSQL, SQL, KPIs, notebook, snapshots e relatório web estático implementados.
+Pipeline agregado e por posto, validação, modelos dimensionais, PostgreSQL, SQL, KPIs agregados e por estabelecimento, notebook, snapshots e relatório web estático implementados.
 
 A publicação de métricas e gráficos no README ocorre somente depois da execução e revisão do snapshot com os dados oficiais.
 

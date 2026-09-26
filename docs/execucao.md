@@ -106,8 +106,9 @@ python -m src.load_postgres
 7. construção do modelo estrela agregado
 8. construção da camada por posto
 9. validação de qualidade por posto
-10. geração das tabelas analíticas
-11. geração do relatório e dos gráficos
+10. geração das tabelas analíticas agregadas
+11. geração das análises por posto
+12. geração do relatório e dos gráficos
 ```
 
 ## Arquivos não versionados
