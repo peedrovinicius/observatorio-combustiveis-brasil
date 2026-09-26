@@ -279,13 +279,28 @@ def _truncate_tables(
     connection.execute(statement)
 
 
-def _finalize_station_constraints(
+def _finalize_model_constraints(
     connection: psycopg.Connection,
 ) -> None:
     connection.execute(
         "ALTER TABLE dim_posto "
         "ALTER COLUMN posto_chave "
         "SET NOT NULL"
+    )
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS "
+        "ux_fato_precos_semanais_grain "
+        "ON fato_precos_semanais ("
+        "data_id, produto_id, localidade_id, "
+        "COALESCE(unidade_medida, '')"
+        ")"
+    )
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS "
+        "ux_fato_precos_postos_grain "
+        "ON fato_precos_postos ("
+        "data_coleta_id, produto_posto_id, posto_id"
+        ")"
     )
 
 
@@ -337,7 +352,7 @@ def main() -> None:
 
         print("Limpando carga anterior...")
         _truncate_tables(connection)
-        _finalize_station_constraints(
+        _finalize_model_constraints(
             connection
         )
 

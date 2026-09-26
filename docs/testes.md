@@ -37,6 +37,7 @@ A suíte verifica, entre outros pontos:
 - análises por estabelecimento;
 - barreira de qualidade antes dos analytics por posto;
 - contrato dos CSVs com PostgreSQL;
+- unicidade do grão das duas tabelas fato no PostgreSQL;
 - consistência das consultas SQL agregadas com a última semana por produto;
 - última semana comparável para etanol e gasolina comum;
 - consistência das consultas SQL por posto com a regra de última coleta por produto;

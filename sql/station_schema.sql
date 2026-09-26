@@ -43,7 +43,12 @@ CREATE TABLE IF NOT EXISTS fato_precos_postos (
     preco_revenda NUMERIC(12, 4) NOT NULL
         CHECK (preco_revenda > 0),
     preco_compra NUMERIC(12, 4),
-    fonte_arquivo VARCHAR(255)
+    fonte_arquivo VARCHAR(255),
+    UNIQUE (
+        data_coleta_id,
+        produto_posto_id,
+        posto_id
+    )
 );
 
 CREATE INDEX IF NOT EXISTS idx_postos_data

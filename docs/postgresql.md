@@ -59,7 +59,7 @@ Depois disso, a carga:
 
 1. cria ou atualiza as estruturas SQL;
 2. limpa a carga anterior de forma transacional;
-3. aplica as restrições finais da dimensão de postos;
+3. aplica as restrições finais da dimensão de postos e dos grãos das tabelas fato;
 4. carrega dimensões e fatos por `COPY`;
 5. cria as views;
 6. confere a quantidade de registros nas duas fatos;
@@ -107,3 +107,25 @@ No Power BI Desktop:
 Para a visão agregada, a view `vw_precos_semanais` já entrega dimensões e métricas unidas para exploração rápida.
 
 Para um modelo Power BI mais robusto, prefira carregar dimensões e fato separadamente e manter os relacionamentos 1:*.
+
+
+## Integridade das tabelas fato
+
+A carga cria índices únicos de grão depois do `TRUNCATE` e antes do `COPY`.
+
+Isso serve a dois objetivos:
+
+- proteger novas cargas contra duplicações lógicas;
+- atualizar bancos locais criados por versões anteriores sem tentar criar o índice sobre dados legados antes da limpeza.
+
+Os grãos protegidos são:
+
+```text
+fato_precos_semanais:
+data_id + produto_id + localidade_id + unidade_medida
+
+fato_precos_postos:
+data_coleta_id + produto_posto_id + posto_id
+```
+
+Na fato agregada, unidade de medida nula é normalizada no índice com `COALESCE`, impedindo duplicidades que uma restrição SQL comum poderia aceitar por tratar valores nulos como distintos.

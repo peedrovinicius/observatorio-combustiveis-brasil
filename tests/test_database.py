@@ -4,6 +4,7 @@ import pytest
 
 from src.load_postgres import (
     LOAD_PLAN,
+    _finalize_model_constraints,
     _read_csv_header,
     required_files,
     validate_csv_contracts,
@@ -148,3 +149,71 @@ def test_dim_posto_contract_requires_station_key(
         match="posto_chave",
     ):
         validate_csv_contracts()
+
+
+
+class _RecordingConnection:
+    def __init__(self) -> None:
+        self.statements: list[str] = []
+
+    def execute(
+        self,
+        statement: str,
+    ) -> None:
+        self.statements.append(
+            statement
+        )
+
+
+def test_finalize_model_constraints_protects_fact_grains() -> None:
+    connection = (
+        _RecordingConnection()
+    )
+
+    _finalize_model_constraints(
+        connection
+    )
+
+    sql = "\n".join(
+        connection.statements
+    )
+
+    assert (
+        "ux_fato_precos_semanais_grain"
+        in sql
+    )
+    assert (
+        "COALESCE(unidade_medida, '')"
+        in sql
+    )
+    assert (
+        "ux_fato_precos_postos_grain"
+        in sql
+    )
+    assert (
+        "data_coleta_id, produto_posto_id, posto_id"
+        in sql
+    )
+
+
+def test_station_schema_declares_unique_fact_grain() -> None:
+    from src.config import (
+        PROJECT_ROOT,
+    )
+
+    schema = (
+        PROJECT_ROOT
+        / "sql"
+        / "station_schema.sql"
+    ).read_text(
+        encoding="utf-8",
+    )
+
+    assert (
+        "UNIQUE (\n"
+        "        data_coleta_id,\n"
+        "        produto_posto_id,\n"
+        "        posto_id\n"
+        "    )"
+        in schema
+    )

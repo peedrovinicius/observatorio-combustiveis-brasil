@@ -100,3 +100,26 @@ A base consolidada por estabelecimento não é transformada diretamente em model
 Antes da criação de `dim_data_coleta`, `dim_produto_posto`, `dim_posto` e `fato_precos_postos`, o projeto exige que a validação da camada por posto retorne `status = passed`.
 
 Essa separação impede que um conjunto com problemas estruturais seja materializado em dimensões, fatos ou posteriormente carregado no PostgreSQL.
+
+
+## Unicidade do grão nas tabelas fato
+
+O PostgreSQL aplica uma segunda barreira contra duplicação lógica, além das validações executadas em Python.
+
+Na série agregada, o grão protegido é:
+
+```text
+data_id + produto_id + localidade_id + unidade_medida
+```
+
+A carga usa um índice único com `COALESCE(unidade_medida, '')`, de modo que valores nulos da unidade não criem múltiplas linhas equivalentes.
+
+Na camada por posto, o grão protegido é:
+
+```text
+data_coleta_id + produto_posto_id + posto_id
+```
+
+Como `produto_posto_id` já representa produto e unidade de medida, esse conjunto identifica uma observação única de preço por estabelecimento na data.
+
+As restrições do banco são defesa em profundidade. A deduplicação e a validação continuam ocorrendo antes da modelagem.
