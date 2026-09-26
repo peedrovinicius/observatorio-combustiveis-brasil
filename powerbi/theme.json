@@ -1,0 +1,89 @@
+{
+  "name": "Observatório de Combustíveis Brasil",
+  "dataColors": [
+    "#123B4A",
+    "#2F6B7A",
+    "#5A8F9B",
+    "#8FB5BD",
+    "#B7CED3",
+    "#59636B",
+    "#8C949A",
+    "#C2C7CA"
+  ],
+  "background": "#F7F8F9",
+  "foreground": "#172026",
+  "tableAccent": "#2F6B7A",
+  "visualStyles": {
+    "*": {
+      "*": {
+        "title": [
+          {
+            "show": true,
+            "fontFamily": "Segoe UI",
+            "fontSize": 12,
+            "bold": true,
+            "color": {
+              "solid": {
+                "color": "#172026"
+              }
+            },
+            "alignment": "left"
+          }
+        ],
+        "background": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#FFFFFF"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#D9DEE2"
+              }
+            },
+            "radius": 6
+          }
+        ],
+        "visualHeader": [
+          {
+            "show": false
+          }
+        ]
+      }
+    },
+    "card": {
+      "*": {
+        "labels": [
+          {
+            "fontFamily": "Segoe UI",
+            "fontSize": 24,
+            "color": {
+              "solid": {
+                "color": "#172026"
+              }
+            }
+          }
+        ],
+        "categoryLabels": [
+          {
+            "fontFamily": "Segoe UI",
+            "fontSize": 10,
+            "color": {
+              "solid": {
+                "color": "#59636B"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
