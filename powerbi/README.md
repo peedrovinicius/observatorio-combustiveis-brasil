@@ -1,23 +1,55 @@
 # Power BI
 
-## Modelo
+## Opção recomendada: PostgreSQL
 
-Importar os quatro CSVs gerados em `data/processed/model/`:
+Depois de executar:
 
-- `dim_data.csv`;
-- `dim_produto.csv`;
-- `dim_localidade.csv`;
-- `fato_precos_semanais.csv`.
+```bash
+docker compose up -d postgres
+python -m src.pipeline
+python -m src.load_postgres
+```
+
+conecte o Power BI Desktop ao PostgreSQL local:
+
+```text
+Servidor: localhost:5432
+Banco: combustiveis
+```
+
+As credenciais de desenvolvimento estão em `.env.example` e podem ser alteradas localmente.
+
+## Modelo agregado
+
+Usar:
+
+- `dim_data`;
+- `dim_produto`;
+- `dim_localidade`;
+- `fato_precos_semanais`.
 
 Relacionamentos:
 
 ```text
-dim_data[data_id]           1 ─── * fato_precos_semanais[data_id]
-dim_produto[produto_id]     1 ─── * fato_precos_semanais[produto_id]
-dim_localidade[localidade_id] 1 ─ * fato_precos_semanais[localidade_id]
+dim_data[data_id]              1 ─── * fato_precos_semanais[data_id]
+dim_produto[produto_id]        1 ─── * fato_precos_semanais[produto_id]
+dim_localidade[localidade_id]  1 ─── * fato_precos_semanais[localidade_id]
 ```
 
-Usar direção de filtro única, das dimensões para a fato.
+Direção de filtro única, das dimensões para a fato.
+
+## Modelo por posto
+
+Usar:
+
+- `dim_data_coleta`;
+- `dim_produto_posto`;
+- `dim_posto`;
+- `fato_precos_postos`.
+
+Esse modelo é destinado a análises de dispersão, bandeira, estabelecimento e distribuição dos preços observados.
+
+Não relacione diretamente as duas tabelas fato.
 
 ## Página 1 — Visão Geral
 
@@ -68,9 +100,20 @@ Visuais:
 
 A média mensal gerada pelo projeto é um indicador derivado das observações semanais e não deve ser apresentada como se fosse a série mensal oficial da ANP.
 
-## Página 4 — Etanol × Gasolina
+## Página 4 — Mercado por posto
 
-Usar `data/processed/analytics/etanol_gasolina_ultima_semana.csv`.
+Visuais:
+
+- distribuição dos preços;
+- mediana;
+- comparação por bandeira;
+- quantidade de revendas pesquisadas;
+- menores e maiores preços observados;
+- dispersão por município.
+
+## Página 5 — Etanol × Gasolina
+
+Usar `data/processed/analytics/etanol_gasolina_ultima_semana.csv` ou reproduzir a medida no modelo.
 
 Visuais:
 

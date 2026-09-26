@@ -53,6 +53,8 @@ flowchart LR
 - modelo estrela agregado com três dimensões e uma fato;
 - segundo modelo estrela no grão por posto, preservando a separação entre agregados oficiais e observações individuais;
 - DDL PostgreSQL, views e consultas analíticas;
+- ambiente PostgreSQL reproduzível com Docker Compose;
+- carga transacional dos dois modelos via PostgreSQL COPY;
 - KPIs nacionais por produto;
 - tendência mensal derivada das observações semanais;
 - rankings por UF e município;
@@ -78,6 +80,8 @@ observatorio-combustiveis-brasil/
 │   ├── medidas.dax
 │   └── README.md
 ├── reports/
+├── docker-compose.yml
+├── .env.example
 ├── sql/
 ├── src/
 │   ├── analytics.py
@@ -86,6 +90,8 @@ observatorio-combustiveis-brasil/
 │   ├── download_history.py
 │   ├── download_open_data.py
 │   ├── inspect_raw.py
+│   ├── load_postgres.py
+│   ├── database.py
 │   ├── pipeline.py
 │   ├── quality.py
 │   ├── station_data.py
@@ -109,6 +115,9 @@ No Windows PowerShell:
 pip install -r requirements.txt
 python -m src.pipeline
 pytest
+
+docker compose up -d postgres
+python -m src.load_postgres
 ```
 
 O pipeline executa nove etapas:
@@ -124,6 +133,19 @@ O pipeline executa nove etapas:
 8. construção da camada por posto
 9. geração das tabelas analíticas
 ```
+
+## PostgreSQL
+
+Depois de gerar os datasets, o banco local pode ser iniciado e carregado com:
+
+```powershell
+docker compose up -d postgres
+python -m src.load_postgres
+```
+
+A carga cria e popula os dois modelos dimensionais, recria as views e valida as tabelas fato antes de confirmar a transação.
+
+Veja [`docs/postgresql.md`](docs/postgresql.md).
 
 ## Saídas analíticas
 
@@ -179,7 +201,7 @@ Indicadores derivados são explicitamente identificados. Veja [`docs/kpis.md`](d
 
 ## Status
 
-**ETL agregado e por posto, validação, dois modelos dimensionais, SQL e camada inicial de KPIs/Power BI implementados.**
+**ETL agregado e por posto, validação, dois modelos dimensionais, PostgreSQL reproduzível, SQL e camada inicial de KPIs/Power BI implementados.**
 
 A próxima etapa é executar o pipeline contra os arquivos oficiais, revisar os resultados reais e construir o arquivo do dashboard.
 
