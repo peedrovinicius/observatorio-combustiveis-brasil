@@ -81,6 +81,9 @@ O snapshot cria o relatório de resultados, os gráficos, o relatório web está
 
 Instruções completas: [`docs/execucao.md`](docs/execucao.md).
 
+<!-- RESULTS:START -->
+<!-- RESULTS:END -->
+
 ## Saídas analíticas
 
 O pipeline gera localmente:

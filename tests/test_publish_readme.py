@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from src.config import PROJECT_ROOT
 from src.publish_readme import (
     END_MARKER,
     START_MARKER,
@@ -123,3 +124,43 @@ def test_publish_readme_requires_results_document(
             tmp_path
             / "missing.md",
         )
+
+
+
+def test_repository_readme_keeps_results_markers() -> None:
+    readme = (
+        PROJECT_ROOT
+        / "README.md"
+    )
+    content = readme.read_text(
+        encoding="utf-8",
+    )
+
+    assert (
+        content.count(
+            START_MARKER
+        )
+        == 1
+    )
+    assert (
+        content.count(
+            END_MARKER
+        )
+        == 1
+    )
+    assert (
+        content.index(
+            START_MARKER
+        )
+        < content.index(
+            END_MARKER
+        )
+    )
+    assert (
+        content.index(
+            END_MARKER
+        )
+        < content.index(
+            "## Saídas analíticas"
+        )
+    )
