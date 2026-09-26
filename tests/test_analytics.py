@@ -4,6 +4,7 @@ import pytest
 from src.analytics import (
     build_brazil_kpis,
     build_ethanol_gasoline_ratio,
+    build_latest_city_ranking,
     build_latest_state_ranking,
     build_monthly_brazil,
     build_validated_analytics_exports,
@@ -223,3 +224,219 @@ def test_validated_aggregate_analytics_blocks_invalid_data() -> None:
         build_validated_analytics_exports(
             frame
         )
+
+
+
+def test_rankings_use_latest_date_per_product() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-02-01",
+                "2026-02-01",
+                "2026-02-08",
+                "2026-02-08",
+                "2026-02-01",
+                "2026-02-01",
+                "2026-02-08",
+                "2026-02-08",
+            ],
+            "data_final": [
+                "2026-02-07",
+                "2026-02-07",
+                "2026-02-14",
+                "2026-02-14",
+                "2026-02-07",
+                "2026-02-07",
+                "2026-02-14",
+                "2026-02-14",
+            ],
+            "nivel_geografico": [
+                "estado",
+                "estado",
+                "estado",
+                "estado",
+                "municipio",
+                "municipio",
+                "municipio",
+                "municipio",
+            ],
+            "uf": [
+                "CE",
+                "SP",
+                "CE",
+                "SP",
+                "CE",
+                "SP",
+                "CE",
+                "SP",
+            ],
+            "estado": [
+                "CEARA",
+                "SAO PAULO",
+                "CEARA",
+                "SAO PAULO",
+                "CEARA",
+                "SAO PAULO",
+                "CEARA",
+                "SAO PAULO",
+            ],
+            "municipio": [
+                None,
+                None,
+                None,
+                None,
+                "FORTALEZA",
+                "SAO PAULO",
+                "FORTALEZA",
+                "SAO PAULO",
+            ],
+            "produto": [
+                "ETANOL HIDRATADO",
+                "ETANOL HIDRATADO",
+                "GASOLINA COMUM",
+                "GASOLINA COMUM",
+                "ETANOL HIDRATADO",
+                "ETANOL HIDRATADO",
+                "GASOLINA COMUM",
+                "GASOLINA COMUM",
+            ],
+            "preco_medio_revenda": [
+                4.50,
+                4.40,
+                6.30,
+                6.10,
+                4.55,
+                4.45,
+                6.25,
+                6.05,
+            ],
+        }
+    )
+
+    states = build_latest_state_ranking(
+        frame
+    )
+    cities = build_latest_city_ranking(
+        frame
+    )
+
+    assert set(
+        states["produto"]
+    ) == {
+        "ETANOL HIDRATADO",
+        "GASOLINA COMUM",
+    }
+    assert set(
+        cities["produto"]
+    ) == {
+        "ETANOL HIDRATADO",
+        "GASOLINA COMUM",
+    }
+
+    ethanol_states = states.loc[
+        states["produto"].eq(
+            "ETANOL HIDRATADO"
+        )
+    ]
+    gasoline_states = states.loc[
+        states["produto"].eq(
+            "GASOLINA COMUM"
+        )
+    ]
+
+    assert (
+        ethanol_states[
+            "data_inicial"
+        ].nunique()
+        == 1
+    )
+    assert (
+        ethanol_states[
+            "data_inicial"
+        ].iloc[0]
+        == pd.Timestamp(
+            "2026-02-01"
+        )
+    )
+    assert (
+        gasoline_states[
+            "data_inicial"
+        ].iloc[0]
+        == pd.Timestamp(
+            "2026-02-08"
+        )
+    )
+
+
+def test_ratio_uses_latest_common_week_and_excludes_additive_gasoline() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-02-01",
+                "2026-02-01",
+                "2026-02-08",
+                "2026-02-08",
+            ],
+            "data_final": [
+                "2026-02-07",
+                "2026-02-07",
+                "2026-02-14",
+                "2026-02-14",
+            ],
+            "nivel_geografico": [
+                "municipio",
+                "municipio",
+                "municipio",
+                "municipio",
+            ],
+            "uf": [
+                "CE",
+                "CE",
+                "CE",
+                "CE",
+            ],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "produto": [
+                "ETANOL HIDRATADO",
+                "GASOLINA COMUM",
+                "ETANOL HIDRATADO",
+                "GASOLINA ADITIVADA",
+            ],
+            "preco_medio_revenda": [
+                4.40,
+                6.20,
+                4.60,
+                6.50,
+            ],
+        }
+    )
+
+    result = (
+        build_ethanol_gasoline_ratio(
+            frame
+        )
+    )
+
+    assert len(result) == 1
+    assert (
+        result.iloc[0][
+            "data_inicial"
+        ]
+        == pd.Timestamp(
+            "2026-02-01"
+        )
+    )
+    assert (
+        round(
+            result.iloc[0][
+                "relacao_etanol_gasolina_pct"
+            ],
+            2,
+        )
+        == 70.97
+    )

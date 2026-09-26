@@ -122,6 +122,26 @@ def _latest_date(frame: pd.DataFrame) -> pd.Timestamp:
     return frame["data_inicial"].max()
 
 
+def _latest_by_product(
+    frame: pd.DataFrame,
+) -> pd.DataFrame:
+    if frame.empty:
+        return frame.copy()
+
+    latest = (
+        frame.groupby(
+            "produto",
+            dropna=False,
+        )["data_inicial"]
+        .transform("max")
+    )
+    return frame.loc[
+        frame["data_inicial"].eq(
+            latest
+        )
+    ].copy()
+
+
 def build_brazil_kpis(
     frame: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -281,10 +301,9 @@ def build_latest_state_ranking(
             columns=STATE_RANKING_COLUMNS
         )
 
-    latest = _latest_date(states)
-    states = states.loc[
-        states["data_inicial"].eq(latest)
-    ].copy()
+    states = _latest_by_product(
+        states
+    )
 
     states["ranking_mais_caro"] = (
         states.groupby("produto")[
@@ -332,10 +351,9 @@ def build_latest_city_ranking(
             columns=CITY_RANKING_COLUMNS
         )
 
-    latest = _latest_date(cities)
-    cities = cities.loc[
-        cities["data_inicial"].eq(latest)
-    ].copy()
+    cities = _latest_by_product(
+        cities
+    )
 
     cities["ranking_mais_caro"] = (
         cities.groupby("produto")[
@@ -411,21 +429,25 @@ def build_ethanol_gasoline_ratio(
     ].copy()
 
     if cities.empty:
-        return pd.DataFrame(columns=RATIO_COLUMNS)
+        return pd.DataFrame(
+            columns=RATIO_COLUMNS
+        )
 
-    latest = _latest_date(cities)
-    cities = cities.loc[
-        cities["data_inicial"].eq(latest)
-    ].copy()
     cities["combustivel_comparavel"] = (
-        _classify_fuel(cities["produto"])
+        _classify_fuel(
+            cities["produto"]
+        )
     )
     cities = cities.dropna(
-        subset=["combustivel_comparavel"]
+        subset=[
+            "combustivel_comparavel"
+        ]
     )
 
     if cities.empty:
-        return pd.DataFrame(columns=RATIO_COLUMNS)
+        return pd.DataFrame(
+            columns=RATIO_COLUMNS
+        )
 
     index_columns = [
         column
@@ -440,8 +462,12 @@ def build_ethanol_gasoline_ratio(
     pivot = (
         cities.pivot_table(
             index=index_columns,
-            columns="combustivel_comparavel",
-            values="preco_medio_revenda",
+            columns=(
+                "combustivel_comparavel"
+            ),
+            values=(
+                "preco_medio_revenda"
+            ),
             aggfunc="first",
         )
         .reset_index()
@@ -468,16 +494,54 @@ def build_ethanol_gasoline_ratio(
             "preco_gasolina_comum",
         ]
     ).copy()
-    pivot["relacao_etanol_gasolina_pct"] = (
+
+    if pivot.empty:
+        return pd.DataFrame(
+            columns=RATIO_COLUMNS
+        )
+
+    location_columns = [
+        column
+        for column in [
+            "uf",
+            "municipio",
+        ]
+        if column in pivot.columns
+    ]
+    latest_comparable = (
+        pivot.groupby(
+            location_columns,
+            dropna=False,
+        )["data_inicial"]
+        .transform("max")
+    )
+    pivot = pivot.loc[
+        pivot["data_inicial"].eq(
+            latest_comparable
+        )
+    ].copy()
+
+    pivot[
+        "relacao_etanol_gasolina_pct"
+    ] = (
         100
         * pivot["preco_etanol"]
-        / pivot["preco_gasolina_comum"]
+        / pivot[
+            "preco_gasolina_comum"
+        ]
     )
 
     return (
         pivot[RATIO_COLUMNS]
         .sort_values(
-            "relacao_etanol_gasolina_pct",
+            [
+                "data_inicial",
+                "relacao_etanol_gasolina_pct",
+            ],
+            ascending=[
+                False,
+                True,
+            ],
             kind="stable",
         )
         .reset_index(drop=True)

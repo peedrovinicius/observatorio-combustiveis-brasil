@@ -12,32 +12,40 @@ WHERE nivel_geografico = 'brasil'
 ORDER BY produto, data_inicial;
 
 
--- 2. Preço médio por UF na semana mais recente para gasolina.
+-- 2. Preço médio por UF na última semana disponível de cada produto.
 SELECT
+    data_inicial,
     uf,
+    produto,
     preco_medio_revenda,
     postos_pesquisados
 FROM vw_ultimo_periodo
 WHERE nivel_geografico = 'estado'
   AND produto ILIKE 'GASOLINA%'
-ORDER BY preco_medio_revenda DESC;
+ORDER BY
+    produto,
+    preco_medio_revenda DESC;
 
 
--- 3. Municípios com maiores preços na semana mais recente.
+-- 3. Municípios com maiores preços na última semana de cada produto.
 SELECT
+    data_inicial,
     uf,
     municipio,
+    produto,
     preco_medio_revenda,
     postos_pesquisados
 FROM vw_ultimo_periodo
 WHERE nivel_geografico = 'municipio'
   AND produto ILIKE 'GASOLINA%'
-ORDER BY preco_medio_revenda DESC
+ORDER BY
+    produto,
+    preco_medio_revenda DESC
 LIMIT 20;
 
 
 -- 4. Média mensal das observações semanais no nível Brasil.
--- Este indicador é derivado pelo projeto e não substitui a série mensal oficial da ANP.
+-- Indicador derivado pelo projeto, não substitui a série mensal oficial da ANP.
 WITH mensal AS (
     SELECT
         ano,
@@ -46,7 +54,10 @@ WITH mensal AS (
         AVG(preco_medio_revenda) AS media_semanal_no_mes
     FROM vw_precos_semanais
     WHERE nivel_geografico = 'brasil'
-    GROUP BY ano, mes, produto
+    GROUP BY
+        ano,
+        mes,
+        produto
 )
 SELECT
     ano,
@@ -58,17 +69,26 @@ SELECT
         * (
             media_semanal_no_mes
             - LAG(media_semanal_no_mes)
-                OVER (PARTITION BY produto ORDER BY ano, mes)
+                OVER (
+                    PARTITION BY produto
+                    ORDER BY ano, mes
+                )
         )
         / NULLIF(
             LAG(media_semanal_no_mes)
-                OVER (PARTITION BY produto ORDER BY ano, mes),
+                OVER (
+                    PARTITION BY produto
+                    ORDER BY ano, mes
+                ),
             0
         ),
         2
     ) AS variacao_percentual_mes
 FROM mensal
-ORDER BY produto, ano, mes;
+ORDER BY
+    produto,
+    ano,
+    mes;
 
 
 -- 5. Localidades com maior dispersão relativa de preços.
@@ -82,31 +102,70 @@ SELECT
 FROM vw_precos_semanais
 WHERE nivel_geografico = 'municipio'
   AND coef_variacao_revenda IS NOT NULL
-ORDER BY coef_variacao_revenda DESC
+ORDER BY
+    coef_variacao_revenda DESC
 LIMIT 30;
 
 
--- 6. Relação etanol/gasolina por município na semana mais recente.
-WITH precos AS (
+-- 6. Relação etanol/gasolina na última semana comparável por município.
+WITH comparaveis AS (
     SELECT
+        data_inicial,
         uf,
         municipio,
         MAX(preco_medio_revenda)
-            FILTER (WHERE produto ILIKE 'ETANOL%') AS etanol,
+            FILTER (
+                WHERE produto ILIKE 'ETANOL%'
+            ) AS etanol,
         MAX(preco_medio_revenda)
-            FILTER (WHERE produto ILIKE 'GASOLINA%') AS gasolina
-    FROM vw_ultimo_periodo
+            FILTER (
+                WHERE produto ILIKE 'GASOLINA%'
+                  AND produto NOT ILIKE '%ADITIV%'
+            ) AS gasolina
+    FROM vw_precos_semanais
     WHERE nivel_geografico = 'municipio'
-    GROUP BY uf, municipio
+    GROUP BY
+        data_inicial,
+        uf,
+        municipio
+),
+validos AS (
+    SELECT
+        data_inicial,
+        uf,
+        municipio,
+        etanol,
+        gasolina
+    FROM comparaveis
+    WHERE etanol IS NOT NULL
+      AND gasolina IS NOT NULL
+),
+ultima_comparavel AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY uf, municipio
+            ORDER BY data_inicial DESC
+        ) AS ordem
+    FROM validos
 )
 SELECT
+    data_inicial,
     uf,
     municipio,
     etanol,
     gasolina,
-    ROUND(100.0 * etanol / NULLIF(gasolina, 0), 2)
-        AS relacao_etanol_gasolina_percentual
-FROM precos
-WHERE etanol IS NOT NULL
-  AND gasolina IS NOT NULL
-ORDER BY relacao_etanol_gasolina_percentual;
+    ROUND(
+        100.0
+        * etanol
+        / NULLIF(
+            gasolina,
+            0
+        ),
+        2
+    ) AS relacao_etanol_gasolina_percentual
+FROM ultima_comparavel
+WHERE ordem = 1
+ORDER BY
+    data_inicial DESC,
+    relacao_etanol_gasolina_percentual;

@@ -29,3 +29,12 @@ data/processed/model/
 O modelo agregado preserva os indicadores publicados pela ANP. A fato representa observações semanais por produto e localidade.
 
 Na camada por posto, as consultas de última coleta determinam a data separadamente para cada `produto_posto_id`, que representa produto e unidade de medida. A comparação por bandeira segue a mesma regra de apresentação usada no Python: pelo menos 5 observações e 3 postos distintos.
+
+
+## Último período agregado
+
+A view `vw_ultimo_periodo` seleciona a última `data_inicial` separadamente por produto e unidade de medida.
+
+As consultas de ranking por UF e município preservam esse mesmo critério.
+
+A consulta de relação etanol/gasolina não usa diretamente a data mais recente de cada produto. Ela procura, para cada município, a semana comparável mais recente em que etanol e gasolina comum coexistem, excluindo gasolina aditivada.

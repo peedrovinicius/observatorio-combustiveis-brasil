@@ -38,7 +38,9 @@ Média aritmética das observações semanais oficiais contidas no mês.
 
 ### Ranking por UF e município
 
-Os rankings utilizam o preço médio publicado na semana mais recente disponível para cada produto.
+Os rankings utilizam o preço médio publicado na semana mais recente disponível para cada produto. A data não é escolhida globalmente entre todos os combustíveis.
+
+Assim, um produto continua aparecendo no ranking mesmo quando outro possui uma publicação mais recente.
 
 São produzidas duas posições:
 
@@ -54,6 +56,8 @@ Empates recebem a mesma posição mínima.
 ```
 
 A comparação usa gasolina comum, excluindo gasolina aditivada.
+
+Para cada município, o cálculo usa a semana mais recente em que etanol e gasolina comum possuem observação simultaneamente. Isso evita dividir preços provenientes de semanas diferentes.
 
 O projeto reporta a razão observada. Qualquer limiar usado para interpretar vantagem econômica deve ser explicitado como hipótese adicional.
 
