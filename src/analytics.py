@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from .atomic_outputs import replace_csv_batch
 from .config import PROCESSED_DIR
 from .consolidate import OUTPUT_NAME
 from .quality import build_quality_report
@@ -609,18 +610,14 @@ def main() -> None:
             str(exc)
         ) from exc
 
-    ANALYTICS_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
+    outputs = replace_csv_batch(
+        ANALYTICS_DIR,
+        exports,
     )
 
-    for name, table in exports.items():
-        output = ANALYTICS_DIR / f"{name}.csv"
-        table.to_csv(
-            output,
-            index=False,
-            encoding="utf-8",
-        )
+    for output in outputs:
+        name = output.stem
+        table = exports[name]
         print(
             f"{name}: {len(table):,} linhas -> "
             f"{output.relative_to(PROCESSED_DIR.parent.parent)}"

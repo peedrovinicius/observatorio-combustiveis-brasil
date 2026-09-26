@@ -164,3 +164,21 @@ consolidação agregada
 Os módulos `src.build_model` e `src.analytics` recalculam a qualidade da série consolidada antes de gerar dimensões, fato ou KPIs.
 
 Se houver inconsistência bloqueante, a execução manual encerra antes de escrever novas saídas.
+
+
+## Publicação transacional de CSVs derivados
+
+Os diretórios de modelo e analytics são atualizados por lote:
+
+```text
+data/processed/model/
+data/processed/model_postos/
+data/processed/analytics/
+data/processed/analytics_postos/
+```
+
+Cada lote é primeiro gravado em staging. Depois, os CSVs anteriores do diretório são movidos para backup temporário e somente então as novas saídas são instaladas.
+
+Se uma escrita no staging ou a instalação de qualquer arquivo falhar, o snapshot anterior do diretório permanece disponível ou é restaurado integralmente.
+
+Arquivos não CSV presentes nesses diretórios não são removidos pela rotina.

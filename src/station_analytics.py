@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from .atomic_outputs import replace_csv_batch
 from .config import PROCESSED_DIR
 from .station_data import (
     STATION_OUTPUT,
@@ -502,21 +503,14 @@ def main() -> None:
             str(exc)
         ) from exc
 
-    STATION_ANALYTICS_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
+    outputs = replace_csv_batch(
+        STATION_ANALYTICS_DIR,
+        exports,
     )
 
-    for name, table in exports.items():
-        output = (
-            STATION_ANALYTICS_DIR
-            / f"{name}.csv"
-        )
-        table.to_csv(
-            output,
-            index=False,
-            encoding="utf-8",
-        )
+    for output in outputs:
+        name = output.stem
+        table = exports[name]
         print(
             f"{name}: "
             f"{len(table):,} linhas"
