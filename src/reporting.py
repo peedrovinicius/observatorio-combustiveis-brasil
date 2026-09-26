@@ -61,11 +61,7 @@ def _select_common_gasoline(
             not in upper
         ):
             return value
-    return (
-        values[0]
-        if values
-        else None
-    )
+    return None
 
 
 def _location_label(
@@ -305,6 +301,28 @@ def plot_monthly_trend(
     monthly: pd.DataFrame,
     output: Path,
 ) -> None:
+    required = {
+        "ano",
+        "mes",
+        "produto",
+        "media_das_semanas",
+    }
+    if (
+        monthly.empty
+        or not required.issubset(
+            monthly.columns
+        )
+    ):
+        _save_empty_chart(
+            output,
+            "Tendência mensal - Brasil",
+            (
+                "Sem dados mensais "
+                "disponíveis para este recorte."
+            ),
+        )
+        return
+
     frame = monthly.copy()
     frame["periodo"] = pd.to_datetime(
         frame["ano"].astype(str)
@@ -315,6 +333,22 @@ def plot_monthly_trend(
         + "-01",
         errors="coerce",
     )
+    frame = frame.dropna(
+        subset=[
+            "periodo",
+            "media_das_semanas",
+        ]
+    )
+    if frame.empty:
+        _save_empty_chart(
+            output,
+            "Tendência mensal - Brasil",
+            (
+                "Nenhuma observação mensal "
+                "válida para este recorte."
+            ),
+        )
+        return
 
     fig, ax = plt.subplots(
         figsize=(11, 6)
@@ -357,14 +391,25 @@ def plot_state_ranking(
     ranking: pd.DataFrame,
     output: Path,
 ) -> None:
+    required = {
+        "produto",
+        "preco_medio_revenda",
+    }
     if (
         ranking.empty
-        or "produto"
-        not in ranking.columns
-    ):
-        raise ValueError(
-            "Ranking por UF sem dados disponíveis."
+        or not required.issubset(
+            ranking.columns
         )
+    ):
+        _save_empty_chart(
+            output,
+            "Ranking de preços por UF",
+            (
+                "Sem dados disponíveis "
+                "para este recorte."
+            ),
+        )
+        return
 
     product = (
         _select_common_gasoline(
@@ -372,9 +417,15 @@ def plot_state_ranking(
         )
     )
     if not product:
-        raise ValueError(
-            "Ranking por UF sem produtos disponíveis."
+        _save_empty_chart(
+            output,
+            "Ranking de preços por UF",
+            (
+                "Gasolina comum não disponível "
+                "para este recorte."
+            ),
         )
+        return
 
     frame = (
         ranking.loc[
@@ -432,14 +483,51 @@ def plot_ethanol_gasoline(
     ratio: pd.DataFrame,
     output: Path,
 ) -> None:
+    required = {
+        "preco_gasolina_comum",
+        "preco_etanol",
+    }
+    if (
+        ratio.empty
+        or not required.issubset(
+            ratio.columns
+        )
+    ):
+        _save_empty_chart(
+            output,
+            "Etanol x gasolina comum",
+            (
+                "Sem municípios com preços "
+                "comparáveis neste recorte."
+            ),
+        )
+        return
+
+    frame = ratio.dropna(
+        subset=[
+            "preco_gasolina_comum",
+            "preco_etanol",
+        ]
+    ).copy()
+    if frame.empty:
+        _save_empty_chart(
+            output,
+            "Etanol x gasolina comum",
+            (
+                "Sem municípios com preços "
+                "comparáveis neste recorte."
+            ),
+        )
+        return
+
     fig, ax = plt.subplots(
         figsize=(8, 6)
     )
     ax.scatter(
-        ratio[
+        frame[
             "preco_gasolina_comum"
         ],
-        ratio[
+        frame[
             "preco_etanol"
         ],
         alpha=0.65,

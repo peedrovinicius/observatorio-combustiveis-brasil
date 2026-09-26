@@ -6,6 +6,9 @@ from src.reporting import (
     _location_label,
     _select_common_gasoline,
     build_insights_markdown,
+    plot_ethanol_gasoline,
+    plot_monthly_trend,
+    plot_state_ranking,
     plot_station_brand_median,
     plot_station_municipality_dispersion,
 )
@@ -177,3 +180,84 @@ def test_station_brand_chart_handles_insufficient_sample(
         output.stat().st_size
         > 0
     )
+
+
+
+def test_select_common_gasoline_returns_none_without_common_gasoline() -> None:
+    products = pd.Series(
+        [
+            "GASOLINA ADITIVADA",
+            "ETANOL HIDRATADO",
+        ]
+    )
+
+    assert (
+        _select_common_gasoline(
+            products
+        )
+        is None
+    )
+
+
+def test_monthly_chart_handles_empty_data(
+    tmp_path: Path,
+) -> None:
+    output = (
+        tmp_path
+        / "mensal.png"
+    )
+
+    plot_monthly_trend(
+        pd.DataFrame(),
+        output,
+    )
+
+    assert output.exists()
+    assert output.stat().st_size > 0
+
+
+def test_state_ranking_chart_handles_missing_common_gasoline(
+    tmp_path: Path,
+) -> None:
+    frame = pd.DataFrame(
+        {
+            "produto": [
+                "ETANOL HIDRATADO",
+            ],
+            "uf": [
+                "CE",
+            ],
+            "preco_medio_revenda": [
+                4.50,
+            ],
+        }
+    )
+    output = (
+        tmp_path
+        / "ranking.png"
+    )
+
+    plot_state_ranking(
+        frame,
+        output,
+    )
+
+    assert output.exists()
+    assert output.stat().st_size > 0
+
+
+def test_ethanol_gasoline_chart_handles_empty_data(
+    tmp_path: Path,
+) -> None:
+    output = (
+        tmp_path
+        / "relacao.png"
+    )
+
+    plot_ethanol_gasoline(
+        pd.DataFrame(),
+        output,
+    )
+
+    assert output.exists()
+    assert output.stat().st_size > 0

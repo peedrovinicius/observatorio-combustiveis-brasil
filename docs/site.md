@@ -9,6 +9,7 @@ A página inclui:
 - ranking por UF;
 - cobertura e qualidade;
 - gráficos de UF e etanol/gasolina;
+- placeholders informativos quando um recorte não possui dados suficientes para determinada visualização;
 - dispersão municipal dos preços observados por posto;
 - comparação de mediana por bandeira com proteção contra amostra pequena;
 - links para metodologia e resultados completos.
@@ -28,3 +29,12 @@ As visualizações por estabelecimento usam somente a camada por posto e não s�
 A pasta `docs/` fica pronta para ser usada como origem de uma publicação estática do repositório, após revisão dos resultados gerados.
 
 Os links de documentação exibidos no HTML apontam para URLs absolutas do GitHub. Dessa forma, continuam válidos quando `docs/index.html` é servido pelo GitHub Pages e não dependem de caminhos relativos fora da pasta publicada.
+
+
+## Ausência de dados
+
+A ausência de dados em um recorte não faz o relatório visual falhar e não autoriza a substituição por outro produto.
+
+Quando tendência mensal, gasolina comum, relação etanol/gasolina ou uma análise por posto não possui amostra utilizável, o pipeline gera uma imagem informativa indicando a indisponibilidade daquele recorte.
+
+Isso mantém o conjunto de cinco arquivos visuais estável para snapshot e site sem fabricar métricas ou trocar silenciosamente o produto analisado.
