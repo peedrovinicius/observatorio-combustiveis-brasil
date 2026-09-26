@@ -122,3 +122,10 @@ A sinalização é uma regra de apresentação do projeto, não uma definição 
 Na camada por posto, a data mais recente é determinada separadamente para cada combinação de produto e unidade de medida. Isso evita excluir um produto apenas porque outro possui observação em data posterior.
 
 Essa regra é aplicada de forma consistente nos exports Python, nas medidas DAX e nas consultas de referência em `sql/station_queries.sql`.
+
+
+## Barreira de qualidade para analytics por posto
+
+A geração dos exports de `analytics_postos/` exige que a base consolidada por estabelecimento seja aprovada pela mesma validação usada antes da modelagem.
+
+A execução direta de `python -m src.station_analytics` recalcula essa validação e encerra sem gerar métricas quando a base contém inconsistências bloqueantes.

@@ -1,9 +1,11 @@
 import pandas as pd
+import pytest
 
 from src.station_analytics import (
     build_latest_brand_summary,
     build_latest_municipality_distribution,
     build_station_coverage,
+    build_validated_station_analytics_exports,
 )
 
 
@@ -234,3 +236,80 @@ def test_empty_station_data_returns_stable_schema() -> None:
         "coef_variacao_pct"
         in distribution.columns
     )
+
+
+
+def test_validated_station_analytics_accepts_clean_data() -> None:
+    frame = _sample().loc[
+        lambda item: ~(
+            item["produto"].eq(
+                "GASOLINA"
+            )
+            & item[
+                "data_coleta"
+            ].eq(
+                "2026-09-19"
+            )
+        )
+    ].copy()
+
+    exports = (
+        build_validated_station_analytics_exports(
+            frame
+        )
+    )
+
+    assert (
+        not exports[
+            "resumo_postos_2026"
+        ].empty
+    )
+    assert (
+        not exports[
+            "distribuicao_municipios_ultima_coleta"
+        ].empty
+    )
+
+
+def test_validated_station_analytics_blocks_invalid_price() -> None:
+    frame = _sample()
+    frame.loc[
+        0,
+        "preco_revenda",
+    ] = 0
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "falhou na validação "
+            "de qualidade"
+        ),
+    ):
+        build_validated_station_analytics_exports(
+            frame
+        )
+
+
+def test_validated_station_analytics_blocks_duplicate_business_key() -> None:
+    frame = _sample()
+    duplicate = frame.iloc[
+        [1]
+    ].copy()
+    frame = pd.concat(
+        [
+            frame,
+            duplicate,
+        ],
+        ignore_index=True,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "falhou na validação "
+            "de qualidade"
+        ),
+    ):
+        build_validated_station_analytics_exports(
+            frame
+        )

@@ -31,6 +31,7 @@ A suíte verifica, entre outros pontos:
 - modelo estrela por posto;
 - KPIs agregados;
 - análises por estabelecimento;
+- barreira de qualidade antes dos analytics por posto;
 - contrato dos CSVs com PostgreSQL;
 - consistência das consultas SQL por posto com a regra de última coleta por produto;
 - regra mínima de amostra por bandeira no SQL;

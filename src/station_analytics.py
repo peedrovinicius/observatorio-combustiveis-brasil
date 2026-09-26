@@ -7,6 +7,9 @@ from .station_data import (
     STATION_OUTPUT,
     station_identity,
 )
+from .station_quality import (
+    build_station_quality_report,
+)
 
 STATION_ANALYTICS_DIR = (
     PROCESSED_DIR / "analytics_postos"
@@ -453,6 +456,30 @@ def build_station_analytics_exports(
     }
 
 
+def build_validated_station_analytics_exports(
+    frame: pd.DataFrame,
+) -> dict[
+    str,
+    pd.DataFrame,
+]:
+    report = (
+        build_station_quality_report(
+            frame
+        )
+    )
+    if report["status"] != "passed":
+        raise ValueError(
+            "A base por posto falhou na validação "
+            "de qualidade e não pode gerar analytics."
+        )
+
+    return (
+        build_station_analytics_exports(
+            frame
+        )
+    )
+
+
 def main() -> None:
     if not STATION_OUTPUT.exists():
         raise SystemExit(
@@ -464,11 +491,16 @@ def main() -> None:
         STATION_OUTPUT,
         low_memory=False,
     )
-    exports = (
-        build_station_analytics_exports(
-            frame
+    try:
+        exports = (
+            build_validated_station_analytics_exports(
+                frame
+            )
         )
-    )
+    except ValueError as exc:
+        raise SystemExit(
+            str(exc)
+        ) from exc
 
     STATION_ANALYTICS_DIR.mkdir(
         parents=True,

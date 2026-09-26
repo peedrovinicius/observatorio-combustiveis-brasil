@@ -144,4 +144,4 @@ ingestão e deduplicação
 
 Se a validação detectar data inválida, data fora de 2026, preço inválido, preço não positivo, campo obrigatório ausente ou duplicidade na chave de negócio, o pipeline encerra antes de gerar `model_postos/`.
 
-O módulo `src.build_station_model` repete a validação antes da modelagem mesmo quando executado manualmente.
+Os módulos `src.build_station_model` e `src.station_analytics` repetem a validação antes de produzir modelo ou métricas, mesmo quando executados manualmente.

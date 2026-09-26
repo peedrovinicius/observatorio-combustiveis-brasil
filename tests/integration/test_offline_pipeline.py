@@ -16,7 +16,7 @@ from src.reporting import (
     plot_station_municipality_dispersion,
 )
 from src.station_analytics import (
-    build_station_analytics_exports,
+    build_validated_station_analytics_exports,
 )
 from src.station_data import (
     build_station_star_schema,
@@ -409,7 +409,7 @@ def test_offline_pipeline_reaches_models_analytics_and_charts(
     )
 
     station_analytics = (
-        build_station_analytics_exports(
+        build_validated_station_analytics_exports(
             station_frame
         )
     )
