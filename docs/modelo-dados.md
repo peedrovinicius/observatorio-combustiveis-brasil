@@ -91,3 +91,12 @@ Além da chave substituta `posto_id`, a dimensão persiste `posto_chave`, uma ch
 Quando o CNPJ não está disponível, o projeto usa uma identidade de fallback baseada em UF, município, revenda, logradouro e número. Nesse caso, mudanças nesses atributos podem representar uma nova identidade, pois não há uma chave cadastral mais forte disponível na fonte.
 
 Essa decisão evita inflar contagens de estabelecimentos no PostgreSQL e no Power BI por simples alterações cadastrais.
+
+
+## Barreira de qualidade antes da modelagem por posto
+
+A base consolidada por estabelecimento não é transformada diretamente em modelo estrela.
+
+Antes da criação de `dim_data_coleta`, `dim_produto_posto`, `dim_posto` e `fato_precos_postos`, o projeto exige que a validação da camada por posto retorne `status = passed`.
+
+Essa separação impede que um conjunto com problemas estruturais seja materializado em dimensões, fatos ou posteriormente carregado no PostgreSQL.

@@ -865,30 +865,16 @@ def main() -> None:
         encoding="utf-8",
     )
 
-    STATION_MODEL_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-    for name, table in build_station_star_schema(
-        frame
-    ).items():
-        table.to_csv(
-            STATION_MODEL_DIR
-            / f"{name}.csv",
-            index=False,
-            encoding="utf-8",
-        )
-        print(
-            f"{name}: "
-            f"{len(table):,} linhas"
-        )
-
     print(
         "Auditoria de ingestão: "
         f"{STATION_INGESTION_AUDIT.relative_to(PROCESSED_DIR.parent.parent)}"
     )
     print(
-        f"Observações por posto: "
+        "Base por posto preparada: "
+        f"{STATION_OUTPUT.relative_to(PROCESSED_DIR.parent.parent)}"
+    )
+    print(
+        f"Observações elegíveis: "
         f"{len(frame):,}"
     )
 

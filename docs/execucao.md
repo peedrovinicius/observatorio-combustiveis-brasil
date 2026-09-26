@@ -22,10 +22,11 @@ O script:
 2. instala as dependências;
 3. executa os testes;
 4. baixa as fontes oficiais;
-5. processa e valida os dados;
-6. constrói os modelos dimensionais;
-7. gera as tabelas analíticas;
-8. produz relatório e gráficos locais.
+5. processa os dados;
+6. valida os dados antes da modelagem;
+7. constrói os modelos dimensionais;
+8. gera as tabelas analíticas;
+9. produz relatório e gráficos locais.
 
 ## Gerar snapshot revisável
 
@@ -104,11 +105,12 @@ python -m src.load_postgres
 5. consolidação da série agregada 2026
 6. validação de qualidade agregada
 7. construção do modelo estrela agregado
-8. construção da camada por posto
+8. preparação da camada por posto
 9. validação de qualidade por posto
-10. geração das tabelas analíticas agregadas
-11. geração das análises por posto
-12. geração do relatório e dos gráficos
+10. construção do modelo estrela por posto
+11. geração das tabelas analíticas agregadas
+12. geração das análises por posto
+13. geração do relatório e dos gráficos
 ```
 
 ## Arquivos não versionados
@@ -124,3 +126,22 @@ Por padrão, o Git ignora:
 - variáveis locais em `.env`.
 
 O snapshot revisado em `assets/snapshot/`, `docs/resultados-2026.md` e `docs/index.html` pode ser versionado após conferência.
+
+
+## Barreira de qualidade por posto
+
+A modelagem por estabelecimento é executada somente depois da validação final da base consolidada.
+
+A ordem é:
+
+```text
+ingestão e deduplicação
+-> auditoria de ingestão
+-> base consolidada por posto
+-> quality_postos_2026.json
+-> modelo estrela por posto
+```
+
+Se a validação detectar data inválida, data fora de 2026, preço inválido, preço não positivo, campo obrigatório ausente ou duplicidade na chave de negócio, o pipeline encerra antes de gerar `model_postos/`.
+
+O módulo `src.build_station_model` repete a validação antes da modelagem mesmo quando executado manualmente.
