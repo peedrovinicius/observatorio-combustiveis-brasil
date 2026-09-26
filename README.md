@@ -42,6 +42,7 @@ flowchart LR
 
 - descoberta automática dos arquivos semanais oficiais;
 - coleta para Brasil, regiões, estados e municípios de 2026;
+- coleta da base aberta por posto, com data, produto, preço, estabelecimento e bandeira;
 - manifesto com URL, horário, tamanho e SHA-256;
 - inspeção de schema e valores ausentes;
 - detecção automática de cabeçalho;
@@ -49,7 +50,8 @@ flowchart LR
 - consolidação da série de 2026;
 - identificação do nível geográfico;
 - validações de qualidade;
-- modelo estrela com três dimensões e uma fato;
+- modelo estrela agregado com três dimensões e uma fato;
+- segundo modelo estrela no grão por posto, preservando a separação entre agregados oficiais e observações individuais;
 - DDL PostgreSQL, views e consultas analíticas;
 - KPIs nacionais por produto;
 - tendência mensal derivada das observações semanais;
@@ -82,9 +84,11 @@ observatorio-combustiveis-brasil/
 │   ├── build_model.py
 │   ├── consolidate.py
 │   ├── download_history.py
+│   ├── download_open_data.py
 │   ├── inspect_raw.py
 │   ├── pipeline.py
 │   ├── quality.py
+│   ├── station_data.py
 │   └── transform.py
 ├── tests/
 ├── .gitignore
@@ -107,16 +111,18 @@ python -m src.pipeline
 pytest
 ```
 
-O pipeline executa sete etapas:
+O pipeline executa nove etapas:
 
 ```text
-1. download da série histórica
-2. inspeção dos arquivos brutos
-3. transformação e padronização
-4. consolidação da série 2026
-5. validação de qualidade
-6. construção do modelo estrela
-7. geração das tabelas analíticas
+1. download da série agregada
+2. download dos dados abertos por posto
+3. inspeção dos arquivos brutos agregados
+4. transformação da série agregada
+5. consolidação da série agregada 2026
+6. validação de qualidade agregada
+7. construção do modelo estrela agregado
+8. construção da camada por posto
+9. geração das tabelas analíticas
 ```
 
 ## Saídas analíticas
@@ -133,6 +139,15 @@ data/processed/analytics/
 ```
 
 Essas tabelas são derivadas dos dados processados e não são mantidas manualmente.
+
+## Duas camadas de dados
+
+O projeto mantém dois grãos analíticos separados:
+
+- **agregado oficial:** período × produto × localidade, usado para indicadores oficiais;
+- **por posto:** data da coleta × estabelecimento × produto, usado para dispersão, bandeira e comparação entre revendas.
+
+A documentação da camada por estabelecimento está em [`docs/dados-abertos-postos.md`](docs/dados-abertos-postos.md).
 
 ## Dashboard planejado
 
@@ -164,7 +179,7 @@ Indicadores derivados são explicitamente identificados. Veja [`docs/kpis.md`](d
 
 ## Status
 
-**ETL, validação, modelo dimensional, SQL e camada inicial de KPIs/Power BI implementados.**
+**ETL agregado e por posto, validação, dois modelos dimensionais, SQL e camada inicial de KPIs/Power BI implementados.**
 
 A próxima etapa é executar o pipeline contra os arquivos oficiais, revisar os resultados reais e construir o arquivo do dashboard.
 

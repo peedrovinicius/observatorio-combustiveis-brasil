@@ -4,20 +4,24 @@ from .analytics import main as analytics
 from .build_model import main as build_model
 from .consolidate import main as consolidate
 from .download_history import main as download_history
+from .download_open_data import main as download_open_data
 from .inspect_raw import main as inspect_raw
 from .quality import main as quality
+from .station_data import main as station_data
 from .transform import main as transform
 
 
 def main() -> None:
     steps = [
-        ("1/7 Download da série histórica", download_history),
-        ("2/7 Inspeção dos arquivos brutos", inspect_raw),
-        ("3/7 Transformação e padronização", transform),
-        ("4/7 Consolidação da série 2026", consolidate),
-        ("5/7 Validação de qualidade", quality),
-        ("6/7 Construção do modelo estrela", build_model),
-        ("7/7 Geração de tabelas analíticas", analytics),
+        ("1/9 Download da série agregada", download_history),
+        ("2/9 Download dos dados abertos por posto", download_open_data),
+        ("3/9 Inspeção dos arquivos brutos agregados", inspect_raw),
+        ("4/9 Transformação da série agregada", transform),
+        ("5/9 Consolidação da série agregada 2026", consolidate),
+        ("6/9 Validação de qualidade agregada", quality),
+        ("7/9 Construção do modelo estrela agregado", build_model),
+        ("8/9 Construção da camada por posto", station_data),
+        ("9/9 Geração de tabelas analíticas", analytics),
     ]
 
     for title, step in steps:
