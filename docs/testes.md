@@ -34,7 +34,8 @@ A suíte verifica, entre outros pontos:
 - contrato dos CSVs com PostgreSQL;
 - geração de gráficos;
 - publicação de snapshot e README;
-- construção do relatório web.
+- construção do relatório web;
+- regra de estilo que bloqueia travessões tipográficos nos arquivos textuais do repositório.
 
 ## Integração offline
 

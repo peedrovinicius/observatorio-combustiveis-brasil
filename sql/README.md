@@ -4,10 +4,10 @@ Os scripts desta pasta usam sintaxe PostgreSQL.
 
 ## Ordem
 
-1. `schema.sql` — cria dimensões, fato, restrições e índices.
+1. `schema.sql`: cria dimensões, fato, restrições e índices.
 2. carregar os CSVs de `data/processed/model/` para as tabelas correspondentes.
-3. `views.sql` — cria a camada semântica.
-4. `queries.sql` — consultas analíticas de referência.
+3. `views.sql`: cria a camada semântica.
+4. `queries.sql`: consultas analíticas de referência.
 
 ## Arquivos produzidos pelo pipeline
 

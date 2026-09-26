@@ -1,6 +1,6 @@
 # Notebooks
 
-## 01 — Análise exploratória
+## 01: Análise exploratória
 
 [`01_analise_exploratoria.ipynb`](01_analise_exploratoria.ipynb) apresenta a primeira EDA reproduzível do projeto.
 
