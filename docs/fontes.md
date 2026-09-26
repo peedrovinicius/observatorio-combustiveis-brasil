@@ -12,44 +12,78 @@ https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/lev
 
 Uso no projeto:
 
-- preços médios semanais;
-- preços por posto revendedor;
-- combustíveis automotivos e GLP P13;
-- recortes geográficos publicados pela ANP.
+- referência para as publicações semanais;
+- conferência da cobertura temporal;
+- validação das séries publicadas pela ANP.
 
 ### Série histórica do levantamento de preços
 
 https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/precos-revenda-e-de-distribuicao-combustiveis/serie-historica-do-levantamento-de-precos
 
-Uso planejado:
+Uso no projeto:
 
-- construção de séries temporais;
-- comparações anuais e mensais;
-- análise por Brasil, região, UF e município.
+- série semanal de Brasil;
+- regiões;
+- estados;
+- municípios em 2026.
+
+Os arquivos são validados pelo conteúdo antes de serem aceitos como XLSX. Uma resposta HTML intermediária não é salva como planilha.
+
+### Série Histórica de Preços de Combustíveis e de GLP
+
+https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis
+
+Uso no projeto:
+
+- observações de preço por estabelecimento;
+- produto e unidade de medida;
+- CNPJ e identificação do posto;
+- bandeira;
+- distribuição municipal de preços.
+
+O downloader identifica CSV, ZIP e XLSX pelo conteúdo real do arquivo. Isso cobre respostas do portal com `application/octet-stream` e impede que páginas HTML sejam tratadas como dados.
 
 ### Cadastro de revendedores varejistas
 
 https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/dados-cadastrais-dos-revendedores-varejistas-de-combustiveis-automotivos
 
-Uso planejado:
+Possível uso futuro:
 
-- enriquecimento cadastral de postos;
-- análise por bandeira e localização;
-- validações de estabelecimentos em operação.
+- enriquecimento cadastral;
+- validação complementar de estabelecimentos;
+- atributos não presentes na série de preços.
+
+Essa fonte não é necessária para executar o pipeline atual.
 
 ## Rastreabilidade
 
-Todo arquivo baixado pelo pipeline deve manter registro de:
+Todo arquivo aceito pelo pipeline mantém registro de:
 
 - URL da página oficial;
+- URL descoberta;
 - URL final do arquivo;
 - data e hora da coleta em UTC;
 - nome do arquivo salvo;
+- formato detectado pelo conteúdo;
+- tipo de conteúdo HTTP informado;
 - tamanho em bytes;
 - hash SHA-256.
 
-O registro é salvo em `data/raw/manifest.json`.
+Manifestos:
+
+```text
+data/raw/history_manifest.json
+data/raw/open_data/manifest.json
+```
 
 ## Política de dados
 
-Os arquivos brutos não devem ser modificados. Qualquer limpeza, conversão de tipos, padronização ou criação de colunas deve produzir novos arquivos em `data/processed/`.
+Os arquivos brutos não são modificados.
+
+Qualquer limpeza, conversão de tipos, padronização, deduplicação ou criação de colunas produz saídas em `data/processed/` e relatórios em `reports/`.
+
+A camada por posto também registra exclusões e sobreposições em:
+
+```text
+reports/station_ingestion_audit_2026.json
+```
