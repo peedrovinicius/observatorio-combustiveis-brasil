@@ -6,7 +6,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![Pandas](https://img.shields.io/badge/Pandas-2.x-150458?logo=pandas&logoColor=white)
-![SQL](https://img.shields.io/badge/SQL-Modelagem%20Dimensional-336791)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Modelo%20Estrela-4169E1?logo=postgresql&logoColor=white)
 ![Power BI](https://img.shields.io/badge/Power%20BI-Dashboard-F2C811?logo=powerbi&logoColor=black)
 ![Data](https://img.shields.io/badge/Dados-ANP.gov.br-0B6E4F)
 
@@ -16,7 +16,7 @@
 
 O projeto analisa a evolução e a distribuição dos preços de combustíveis no Brasil a partir de dados públicos da Agência Nacional do Petróleo, Gás Natural e Biocombustíveis (ANP).
 
-A proposta é construir um fluxo analítico reproduzível de ponta a ponta: aquisição, rastreabilidade, inspeção, tratamento, validação, consolidação, SQL e visualização em Power BI.
+A proposta é construir um fluxo analítico reproduzível de ponta a ponta: aquisição, rastreabilidade, inspeção, tratamento, validação, consolidação, modelagem dimensional, SQL e visualização em Power BI.
 
 ## Pergunta analítica
 
@@ -27,30 +27,32 @@ A proposta é construir um fluxo analítico reproduzível de ponta a ponta: aqui
 ```mermaid
 flowchart LR
     A[ANP<br/>Série histórica] --> B[Download<br/>Python]
-    B --> C[Raw<br/>Arquivos originais]
+    B --> C[Raw<br/>Originais]
     C --> D[Inspeção<br/>Schema]
     D --> E[Transformação<br/>Pandas]
     E --> F[Consolidação<br/>2026]
-    F --> G[Qualidade<br/>Data checks]
-    G --> H[SQL<br/>Modelo analítico]
-    H --> I[Power BI<br/>Dashboard]
+    F --> G[Qualidade<br/>Checks]
+    G --> H[Modelo estrela<br/>Dimensões + fato]
+    H --> I[PostgreSQL<br/>Views e queries]
+    I --> J[Power BI<br/>Dashboard]
 ```
 
-## O que já está implementado
+## Implementado
 
 - descoberta automática dos arquivos semanais oficiais;
-- coleta separada para Brasil, regiões, estados e municípios de 2026;
-- manifesto de origem com URL, horário, tamanho e SHA-256;
-- inspeção dos arquivos brutos;
-- detecção automática de cabeçalho nas planilhas;
-- normalização de nomes, datas e valores monetários;
-- suporte a vírgula decimal brasileira e ponto decimal;
+- coleta para Brasil, regiões, estados e municípios de 2026;
+- manifesto com URL, horário, tamanho e SHA-256;
+- inspeção de schema e valores ausentes;
+- detecção automática de cabeçalho;
+- padronização de datas, colunas e valores monetários;
 - consolidação exclusiva da série de 2026;
 - identificação automática do nível geográfico;
-- remoção de duplicidades por chave analítica;
-- criação de ano, mês e semana ISO;
-- validações de qualidade antes da análise;
-- testes automatizados para as regras centrais.
+- validações de qualidade;
+- modelo estrela com três dimensões e uma tabela fato;
+- DDL PostgreSQL com chaves, restrições e índices;
+- views analíticas;
+- consultas SQL para tendência, ranking, dispersão e etanol × gasolina;
+- testes automatizados das regras centrais.
 
 ## Estrutura
 
@@ -62,15 +64,19 @@ observatorio-combustiveis-brasil/
 ├── docs/
 │   ├── dicionario-dados.md
 │   ├── fontes.md
-│   └── metodologia.md
+│   ├── metodologia.md
+│   └── modelo-dados.md
 ├── notebooks/
 ├── reports/
 ├── sql/
-│   └── schema.sql
+│   ├── README.md
+│   ├── queries.sql
+│   ├── schema.sql
+│   └── views.sql
 ├── src/
+│   ├── build_model.py
 │   ├── config.py
 │   ├── consolidate.py
-│   ├── download_anp.py
 │   ├── download_history.py
 │   ├── inspect_raw.py
 │   ├── pipeline.py
@@ -82,9 +88,7 @@ observatorio-combustiveis-brasil/
 └── README.md
 ```
 
-## Execução completa
-
-Crie o ambiente e instale as dependências:
+## Execução
 
 ```bash
 python -m venv .venv
@@ -96,9 +100,10 @@ No Windows PowerShell:
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python -m src.pipeline
+pytest
 ```
 
-O comando executa:
+O pipeline executa seis etapas:
 
 ```text
 1. download da série histórica
@@ -106,61 +111,72 @@ O comando executa:
 3. transformação e padronização
 4. consolidação da série 2026
 5. validação de qualidade
+6. construção do modelo estrela
 ```
 
-Para executar os testes:
-
-```bash
-pytest
-```
-
-## Saída analítica
-
-O pipeline gera localmente:
+## Saídas locais
 
 ```text
 data/processed/precos_semanais_2026.csv
+
+data/processed/model/
+├── dim_data.csv
+├── dim_produto.csv
+├── dim_localidade.csv
+└── fato_precos_semanais.csv
+
 reports/quality_2026.json
 ```
 
-Os datasets não são versionados no Git. Eles são reconstruíveis a partir do código e das fontes oficiais, mantendo o repositório leve.
+Os datasets são reconstruíveis e não são versionados no Git, mantendo o repositório leve.
 
-## Escopo analítico
+## Modelo dimensional
 
-A tabela consolidada será usada para calcular e visualizar:
+```mermaid
+erDiagram
+    DIM_DATA ||--o{ FATO_PRECOS_SEMANAIS : periodo
+    DIM_PRODUTO ||--o{ FATO_PRECOS_SEMANAIS : produto
+    DIM_LOCALIDADE ||--o{ FATO_PRECOS_SEMANAIS : localidade
+```
+
+O grão da fato é **período × produto × localidade × unidade de medida**.
+
+A documentação completa está em [`docs/modelo-dados.md`](docs/modelo-dados.md).
+
+## Análises previstas
 
 - evolução semanal e mensal;
 - preço médio, mínimo e máximo;
 - amplitude e dispersão;
-- comparação entre produtos;
 - comparação Brasil × região × estado × município;
-- diferença de cada localidade em relação aos agregados oficiais;
-- quantidade de postos pesquisados quando disponível;
-- rankings e variações percentuais;
-- análise etanol × gasolina.
+- rankings geográficos;
+- variação percentual;
+- quantidade de postos pesquisados;
+- relação etanol × gasolina;
+- análise futura por posto e bandeira.
 
 ## Metodologia
 
-O projeto não recalcula o indicador nacional como uma média simples das médias municipais. Os agregados oficiais da ANP são preservados porque os níveis estadual, regional e nacional possuem metodologia de agregação própria.
+O projeto preserva os agregados oficiais publicados pela ANP. Não tratamos uma média simples das médias municipais como equivalente ao indicador nacional oficial.
 
-Detalhes estão em [`docs/metodologia.md`](docs/metodologia.md).
+Veja [`docs/metodologia.md`](docs/metodologia.md).
 
 ## Princípios
 
 - somente dados públicos reais;
-- arquivo bruto imutável;
+- raw imutável;
 - origem rastreável;
 - transformação reproduzível;
 - validação antes da visualização;
 - nenhuma métrica digitada manualmente;
 - nenhuma remoção automática de outliers;
-- separação clara entre raw, processed e camada analítica.
+- separação entre dado bruto, tratado e analítico.
 
 ## Status
 
-**Pipeline de aquisição, transformação, consolidação e qualidade de 2026 implementado.**
+**ETL, validação, consolidação 2026, modelo estrela e camada SQL implementados.**
 
-Próxima etapa: criar a camada SQL analítica e os primeiros indicadores derivados para o dashboard.
+Próxima etapa: processar os arquivos oficiais no ambiente local e construir os primeiros indicadores e visuais do Power BI a partir dos resultados reais.
 
 ## Licença
 

@@ -1,52 +1,63 @@
--- Modelo dimensional inicial.
--- Os tipos e chaves serão refinados após a inspeção do schema real da ANP.
+-- PostgreSQL
+-- Modelo dimensional da série semanal agregada da ANP.
 
 CREATE TABLE IF NOT EXISTS dim_data (
-    data_id INTEGER PRIMARY KEY,
-    data_completa DATE NOT NULL UNIQUE,
+    data_id BIGINT PRIMARY KEY,
+    data_inicial DATE NOT NULL,
+    data_final DATE NOT NULL,
     ano SMALLINT NOT NULL,
-    mes SMALLINT NOT NULL,
-    semana SMALLINT,
-    trimestre SMALLINT NOT NULL
+    mes SMALLINT NOT NULL CHECK (mes BETWEEN 1 AND 12),
+    semana_iso SMALLINT NOT NULL CHECK (semana_iso BETWEEN 1 AND 53),
+    trimestre SMALLINT NOT NULL CHECK (trimestre BETWEEN 1 AND 4),
+    UNIQUE (data_inicial, data_final)
 );
 
 CREATE TABLE IF NOT EXISTS dim_produto (
-    produto_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    produto VARCHAR(120) NOT NULL UNIQUE
+    produto_id BIGINT PRIMARY KEY,
+    produto VARCHAR(150) NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS dim_localidade (
-    localidade_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    regiao VARCHAR(30),
+    localidade_id BIGINT PRIMARY KEY,
+    nivel_geografico VARCHAR(20) NOT NULL
+        CHECK (nivel_geografico IN ('brasil', 'regiao', 'estado', 'municipio')),
+    regiao VARCHAR(40),
     uf CHAR(2),
-    municipio VARCHAR(150)
+    estado VARCHAR(120),
+    municipio VARCHAR(160)
 );
 
-CREATE TABLE IF NOT EXISTS dim_bandeira (
-    bandeira_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    bandeira VARCHAR(180) NOT NULL UNIQUE
-);
-
-CREATE TABLE IF NOT EXISTS dim_posto (
-    posto_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    identificador_fonte VARCHAR(200),
-    razao_social VARCHAR(255),
-    nome_fantasia VARCHAR(255),
-    bandeira_id INTEGER REFERENCES dim_bandeira(bandeira_id),
-    localidade_id INTEGER REFERENCES dim_localidade(localidade_id)
-);
-
-CREATE TABLE IF NOT EXISTS fato_precos (
-    preco_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    data_id INTEGER NOT NULL REFERENCES dim_data(data_id),
-    produto_id INTEGER NOT NULL REFERENCES dim_produto(produto_id),
-    localidade_id INTEGER NOT NULL REFERENCES dim_localidade(localidade_id),
-    posto_id INTEGER REFERENCES dim_posto(posto_id),
-    preco_revenda NUMERIC(10, 4) NOT NULL CHECK (preco_revenda >= 0),
+CREATE TABLE IF NOT EXISTS fato_precos_semanais (
+    preco_fato_id BIGINT PRIMARY KEY,
+    data_id BIGINT NOT NULL REFERENCES dim_data(data_id),
+    produto_id BIGINT NOT NULL REFERENCES dim_produto(produto_id),
+    localidade_id BIGINT NOT NULL REFERENCES dim_localidade(localidade_id),
+    postos_pesquisados INTEGER,
     unidade_medida VARCHAR(30),
-    fonte VARCHAR(120) NOT NULL DEFAULT 'ANP'
+    preco_medio_revenda NUMERIC(12, 4) NOT NULL
+        CHECK (preco_medio_revenda > 0),
+    preco_minimo_revenda NUMERIC(12, 4),
+    preco_maximo_revenda NUMERIC(12, 4),
+    desvio_padrao_revenda NUMERIC(12, 6),
+    coef_variacao_revenda NUMERIC(12, 6),
+    fonte_arquivo VARCHAR(255),
+    fonte_planilha VARCHAR(255),
+    CHECK (
+        preco_minimo_revenda IS NULL
+        OR preco_maximo_revenda IS NULL
+        OR preco_minimo_revenda <= preco_maximo_revenda
+    ),
+    UNIQUE (data_id, produto_id, localidade_id, unidade_medida)
 );
 
-CREATE INDEX IF NOT EXISTS idx_fato_precos_data ON fato_precos(data_id);
-CREATE INDEX IF NOT EXISTS idx_fato_precos_produto ON fato_precos(produto_id);
-CREATE INDEX IF NOT EXISTS idx_fato_precos_localidade ON fato_precos(localidade_id);
+CREATE INDEX IF NOT EXISTS idx_fato_precos_data
+    ON fato_precos_semanais(data_id);
+
+CREATE INDEX IF NOT EXISTS idx_fato_precos_produto
+    ON fato_precos_semanais(produto_id);
+
+CREATE INDEX IF NOT EXISTS idx_fato_precos_localidade
+    ON fato_precos_semanais(localidade_id);
+
+CREATE INDEX IF NOT EXISTS idx_localidade_nivel_uf_municipio
+    ON dim_localidade(nivel_geografico, uf, municipio);
