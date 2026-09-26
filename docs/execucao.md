@@ -189,3 +189,24 @@ Arquivos não CSV presentes nesses diretórios não são removidos pela rotina.
 A etapa final do pipeline trata os cinco PNGs gerados e `reports/insights_2026.md` como um único bundle lógico.
 
 Todos os arquivos são produzidos em staging e validados antes da substituição. Uma falha durante a geração não altera o bundle anterior. Uma falha durante a instalação aciona rollback dos gráficos e do relatório de insights.
+
+
+## Publicação transacional do snapshot versionável
+
+Quando `python -m src.snapshot` é executado, o projeto monta primeiro um snapshot completo em staging.
+
+O bundle inclui:
+
+```text
+assets/snapshot/
+docs/resultados-2026.md
+docs/assets/
+docs/index.html
+README.md
+```
+
+O `README.md` é copiado para staging e recebe o bloco de resultados somente nessa cópia. O site também é construído a partir do snapshot em staging.
+
+A substituição dos cinco alvos só começa quando todo o conjunto foi gerado. Os alvos anteriores são mantidos em backup temporário durante a troca. Se qualquer instalação falhar, os itens novos já instalados são removidos e o snapshot versionável anterior é restaurado integralmente.
+
+Arquivos de documentação que não fazem parte desse bundle, como `docs/site.css`, metodologia e documentação técnica, não são substituídos pela rotina.

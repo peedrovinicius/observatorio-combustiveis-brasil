@@ -51,7 +51,8 @@ A suíte verifica, entre outros pontos:
 - geração de gráficos;
 - publicação transacional do bundle visual com rollback;
 - geração de placeholders visuais para recortes vazios ou sem gasolina comum;
-- publicação de snapshot e README;
+- publicação transacional de snapshot, site e README;
+- rollback integral do snapshot versionável quando a instalação falha;
 - construção do relatório web;
 - regra de estilo que bloqueia travessões tipográficos nos arquivos textuais do repositório.
 

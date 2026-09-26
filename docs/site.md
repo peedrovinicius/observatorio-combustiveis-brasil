@@ -47,3 +47,12 @@ Os cinco gráficos em `assets/generated/` e `reports/insights_2026.md` são gera
 A publicação só começa depois que os cinco PNGs esperados e o Markdown de insights existem. O diretório visual anterior e o insight anterior são mantidos em backup temporário durante a troca.
 
 Se a instalação de qualquer parte falhar, o novo conteúdo parcial é removido e o snapshot visual anterior é restaurado. Os relatórios de qualidade presentes em `reports/` não participam da troca e não são removidos.
+
+
+## Consistência do snapshot versionável
+
+A geração com `src.snapshot` não publica `docs/index.html`, `docs/assets/`, `docs/resultados-2026.md`, `assets/snapshot/` e `README.md` de forma independente.
+
+Todo o conjunto é montado primeiro em staging. A página HTML usa as imagens do snapshot em staging e o README também é atualizado em staging.
+
+Somente depois da geração completa o conjunto substitui a versão anterior. Em caso de falha durante a troca, o site, as imagens, o relatório e o README anteriores são restaurados juntos.

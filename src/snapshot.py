@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -82,6 +83,25 @@ def publish_snapshot(
             f"Ausentes:\n{formatted}"
         )
 
+    empty = [
+        path
+        for path in required
+        if (
+            path.is_file()
+            and path.stat().st_size <= 0
+        )
+    ]
+    if empty:
+        formatted = "\n".join(
+            f"- {path}"
+            for path in empty
+        )
+        raise ValueError(
+            "Arquivos necessários para o snapshot "
+            "estão vazios.\n"
+            f"Vazios:\n{formatted}"
+        )
+
     snapshot_dir.mkdir(
         parents=True,
         exist_ok=True,
@@ -152,33 +172,232 @@ Gerado em: **{generated_at}**
     )
 
 
+def _remove_path(
+    path: Path,
+) -> None:
+    if path.is_dir():
+        shutil.rmtree(
+            path
+        )
+    elif path.exists():
+        path.unlink()
+
+
+def _replace_snapshot_bundle(
+    replacements: list[
+        tuple[
+            Path,
+            Path,
+        ]
+    ],
+) -> None:
+    if not replacements:
+        raise ValueError(
+            "Bundle de snapshot vazio."
+        )
+
+    destinations = [
+        destination
+        for _, destination
+        in replacements
+    ]
+    if len(destinations) != len(
+        set(destinations)
+    ):
+        raise ValueError(
+            "Bundle de snapshot contém "
+            "destinos duplicados."
+        )
+
+    for staged, destination in replacements:
+        if not staged.exists():
+            raise FileNotFoundError(
+                "Item do snapshot em staging "
+                f"não encontrado: {staged}"
+            )
+        if (
+            staged.is_file()
+            and staged.stat().st_size <= 0
+        ):
+            raise ValueError(
+                "Item vazio no staging do snapshot: "
+                f"{staged.name}"
+            )
+        if (
+            staged.is_dir()
+            and not any(
+                staged.iterdir()
+            )
+        ):
+            raise ValueError(
+                "Diretório vazio no staging do snapshot: "
+                f"{staged.name}"
+            )
+        destination.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+    stage_root = (
+        replacements[0][0].parent
+    )
+    backup_root = (
+        stage_root
+        / "snapshot_backup"
+    )
+    backup_root.mkdir(
+        exist_ok=False
+    )
+
+    backed_up: list[
+        tuple[
+            Path,
+            Path,
+        ]
+    ] = []
+    installed: list[
+        Path
+    ] = []
+
+    try:
+        for index, (
+            _,
+            destination,
+        ) in enumerate(
+            replacements
+        ):
+            if not destination.exists():
+                continue
+            backup = (
+                backup_root
+                / f"{index}_{destination.name}"
+            )
+            shutil.move(
+                str(destination),
+                str(backup),
+            )
+            backed_up.append(
+                (
+                    destination,
+                    backup,
+                )
+            )
+
+        for staged, destination in replacements:
+            shutil.move(
+                str(staged),
+                str(destination),
+            )
+            installed.append(
+                destination
+            )
+    except Exception:
+        for destination in reversed(
+            installed
+        ):
+            _remove_path(
+                destination
+            )
+
+        for destination, backup in reversed(
+            backed_up
+        ):
+            if backup.exists():
+                shutil.move(
+                    str(backup),
+                    str(destination),
+                )
+        raise
+
+
 def main() -> None:
-    publish_snapshot(
-        REPORTS_DIR
-        / "insights_2026.md",
-        GENERATED_DIR,
-        SNAPSHOT_DIR,
-        RESULTS_DOC,
-    )
-
-    build_site(
-        ANALYTICS_DIR
-        / "kpis_brasil_2026.csv",
-        ANALYTICS_DIR
-        / "ranking_ufs_ultima_semana.csv",
-        SNAPSHOT_DIR,
-        DOCS_DIR,
-        REPORTS_DIR
-        / "quality_2026.json",
-        REPORTS_DIR
-        / "quality_postos_2026.json",
-    )
-
-    update_readme_results(
+    readme_path = (
         PROJECT_ROOT
-        / "README.md",
-        RESULTS_DOC,
+        / "README.md"
     )
+
+    with tempfile.TemporaryDirectory(
+        prefix=".snapshot_stage_",
+        dir=PROJECT_ROOT,
+    ) as temporary:
+        stage_root = Path(
+            temporary
+        )
+        staged_snapshot = (
+            stage_root
+            / "snapshot"
+        )
+        staged_docs = (
+            stage_root
+            / "docs"
+        )
+        staged_results = (
+            staged_docs
+            / "resultados-2026.md"
+        )
+        staged_readme = (
+            stage_root
+            / "README.md"
+        )
+
+        publish_snapshot(
+            REPORTS_DIR
+            / "insights_2026.md",
+            GENERATED_DIR,
+            staged_snapshot,
+            staged_results,
+        )
+
+        build_site(
+            ANALYTICS_DIR
+            / "kpis_brasil_2026.csv",
+            ANALYTICS_DIR
+            / "ranking_ufs_ultima_semana.csv",
+            staged_snapshot,
+            staged_docs,
+            REPORTS_DIR
+            / "quality_2026.json",
+            REPORTS_DIR
+            / "quality_postos_2026.json",
+        )
+
+        shutil.copy2(
+            readme_path,
+            staged_readme,
+        )
+        update_readme_results(
+            staged_readme,
+            staged_results,
+        )
+
+        _replace_snapshot_bundle(
+            [
+                (
+                    staged_snapshot,
+                    SNAPSHOT_DIR,
+                ),
+                (
+                    staged_results,
+                    RESULTS_DOC,
+                ),
+                (
+                    staged_docs
+                    / "assets",
+                    DOCS_DIR
+                    / "assets",
+                ),
+                (
+                    staged_docs
+                    / "index.html",
+                    DOCS_DIR
+                    / "index.html",
+                ),
+                (
+                    staged_readme,
+                    readme_path,
+                ),
+            ]
+        )
 
     print(
         "Snapshot criado, site estático gerado "
