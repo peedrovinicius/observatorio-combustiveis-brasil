@@ -2,7 +2,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.site import SITE_IMAGES, build_site
+from src.site import (
+    REPOSITORY_URL,
+    RESULTS_URL,
+    SITE_IMAGES,
+    build_site,
+)
 
 
 def _write_inputs(root: Path) -> tuple[Path, Path, Path]:
@@ -79,3 +84,34 @@ def test_build_site_requires_snapshot_images(
         assert "Arquivos ausentes" in str(error)
     else:
         raise AssertionError("Era esperado FileNotFoundError")
+
+
+
+def test_build_site_uses_publish_safe_documentation_links(
+    tmp_path: Path,
+) -> None:
+    kpis, ranking, snapshot = (
+        _write_inputs(tmp_path)
+    )
+    docs = tmp_path / "docs"
+
+    output = build_site(
+        kpis,
+        ranking,
+        snapshot,
+        docs,
+    )
+
+    text = output.read_text(
+        encoding="utf-8"
+    )
+
+    assert (
+        f'href="{REPOSITORY_URL}"'
+        in text
+    )
+    assert (
+        f'href="{RESULTS_URL}"'
+        in text
+    )
+    assert '../README.md' not in text

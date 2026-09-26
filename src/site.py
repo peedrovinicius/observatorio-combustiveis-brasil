@@ -39,6 +39,15 @@ SITE_IMAGES = [
     "mediana_bandeiras_postos.png",
 ]
 
+REPOSITORY_URL = (
+    "https://github.com/peedrovinicius/"
+    "observatorio-combustiveis-brasil"
+)
+RESULTS_URL = (
+    REPOSITORY_URL
+    + "/blob/main/docs/resultados-2026.md"
+)
+
 
 def _currency(
     value: object,
@@ -499,9 +508,17 @@ def build_site(
         automaticamente.
       </p>
       <p>
-        <a href="resultados-2026.md">Relatório detalhado</a>
+        <a
+          href="{RESULTS_URL}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Relatório detalhado</a>
         <span aria-hidden="true"> · </span>
-        <a href="../README.md">Documentação técnica</a>
+        <a
+          href="{REPOSITORY_URL}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Documentação técnica</a>
       </p>
     </section>
   </main>
