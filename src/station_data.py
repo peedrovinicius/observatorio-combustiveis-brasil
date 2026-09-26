@@ -32,9 +32,18 @@ COLUMN_ALIASES = {
 
 BUSINESS_KEY = [
     "data_coleta",
-    "cnpj_revenda",
+    "_posto_identidade",
     "produto",
+    "unidade_medida",
     "preco_revenda",
+]
+
+FALLBACK_STATION_COLUMNS = [
+    "uf",
+    "municipio",
+    "revenda",
+    "logradouro",
+    "numero",
 ]
 
 
@@ -66,6 +75,69 @@ def _parse_decimal(series: pd.Series) -> pd.Series:
             return None
 
     return series.map(parse)
+
+
+def station_identity(frame: pd.DataFrame) -> pd.Series:
+    index = frame.index
+
+    if "cnpj_revenda" in frame.columns:
+        cnpj = (
+            frame["cnpj_revenda"]
+            .astype("string")
+            .str.replace(r"\D", "", regex=True)
+            .str.strip()
+        )
+        cnpj = cnpj.mask(cnpj.eq(""))
+    else:
+        cnpj = pd.Series(pd.NA, index=index, dtype="string")
+
+    fallback_parts: list[pd.Series] = []
+    for column in FALLBACK_STATION_COLUMNS:
+        if column in frame.columns:
+            values = (
+                frame[column]
+                .astype("string")
+                .fillna("")
+                .str.strip()
+                .str.upper()
+            )
+        else:
+            values = pd.Series("", index=index, dtype="string")
+        fallback_parts.append(values)
+
+    fallback = fallback_parts[0]
+    for part in fallback_parts[1:]:
+        fallback = fallback.str.cat(part, sep="|")
+
+    identity = pd.Series(
+        "cnpj:" + cnpj,
+        index=index,
+        dtype="string",
+    )
+    identity = identity.mask(
+        cnpj.isna(),
+        "fallback:" + fallback,
+    )
+    return identity
+
+
+def deduplicate_station_rows(frame: pd.DataFrame) -> pd.DataFrame:
+    working = frame.copy()
+    working["_posto_identidade"] = station_identity(working)
+
+    keys = [
+        key
+        for key in BUSINESS_KEY
+        if key in working.columns
+    ]
+    working = working.drop_duplicates(
+        subset=keys,
+        keep="last",
+    )
+    return working.drop(
+        columns=["_posto_identidade"],
+        errors="ignore",
+    )
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
@@ -105,6 +177,7 @@ def transform_station_file(path: Path) -> pd.DataFrame:
         "produto",
         "data_coleta",
         "preco_revenda",
+        "unidade_medida",
     }
     missing = required - set(frame.columns)
     if missing:
@@ -182,23 +255,24 @@ def consolidate_station_data(
         sort=False,
     )
 
-    keys = [
-        key for key in BUSINESS_KEY
-        if key in combined.columns
+    combined = deduplicate_station_rows(combined)
+
+    sort_candidates = [
+        "data_coleta",
+        "uf",
+        "municipio",
+        "produto",
+        "cnpj_revenda",
+        "revenda",
     ]
-    combined = combined.drop_duplicates(
-        subset=keys,
-        keep="last",
-    )
+    sort_columns = [
+        column
+        for column in sort_candidates
+        if column in combined.columns
+    ]
 
     return combined.sort_values(
-        [
-            "data_coleta",
-            "uf",
-            "municipio",
-            "produto",
-            "cnpj_revenda",
-        ],
+        sort_columns,
         kind="stable",
         na_position="last",
     ).reset_index(drop=True)
@@ -266,7 +340,7 @@ def build_station_star_schema(
     ]
     sort_cols = [
         column
-        for column in ["uf", "municipio", "cnpj_revenda"]
+        for column in ["uf", "municipio", "cnpj_revenda", "revenda"]
         if column in posto_cols
     ]
 

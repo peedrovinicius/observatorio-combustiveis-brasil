@@ -41,9 +41,36 @@ def _sample() -> pd.DataFrame:
                 "municipio",
                 "municipio",
             ],
-            "uf": [None, None, None, None, "CE", "SP", "CE", "CE"],
-            "estado": [None, None, None, None, "CEARA", "SAO PAULO", "CEARA", "CEARA"],
-            "municipio": [None, None, None, None, None, None, "FORTALEZA", "FORTALEZA"],
+            "uf": [
+                None,
+                None,
+                None,
+                None,
+                "CE",
+                "SP",
+                "CE",
+                "CE",
+            ],
+            "estado": [
+                None,
+                None,
+                None,
+                None,
+                "CEARA",
+                "SAO PAULO",
+                "CEARA",
+                "CEARA",
+            ],
+            "municipio": [
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
             "produto": [
                 "GASOLINA COMUM",
                 "GASOLINA COMUM",
@@ -64,41 +91,99 @@ def _sample() -> pd.DataFrame:
                 4.50,
                 6.25,
             ],
-            "postos_pesquisados": [100, 100, 100, 100, 20, 20, 10, 10],
+            "postos_pesquisados": [
+                100,
+                100,
+                100,
+                100,
+                20,
+                20,
+                10,
+                10,
+            ],
         }
     )
 
 
 def test_brazil_kpis_calculate_weekly_change() -> None:
     result = build_brazil_kpis(_sample())
-    row = result.loc[result["produto"].eq("GASOLINA COMUM")].iloc[0]
+    row = result.loc[
+        result["produto"].eq("GASOLINA COMUM")
+    ].iloc[0]
 
     assert row["preco_atual"] == 6.24
     assert row["preco_semana_anterior"] == 6.18
-    assert round(row["variacao_semanal_pct"], 2) == 0.97
+    assert (
+        round(
+            row["variacao_semanal_pct"],
+            2,
+        )
+        == 0.97
+    )
     assert row["semanas_observadas"] == 4
 
 
 def test_monthly_brazil_aggregates_weekly_observations() -> None:
     result = build_monthly_brazil(_sample())
-    january = result.loc[result["mes"].eq(1)].iloc[0]
+    january = result.loc[
+        result["mes"].eq(1)
+    ].iloc[0]
 
-    assert round(january["media_das_semanas"], 2) == 6.06
+    assert (
+        round(
+            january["media_das_semanas"],
+            2,
+        )
+        == 6.06
+    )
     assert january["semanas_observadas"] == 2
 
 
 def test_state_ranking_orders_highest_price_first() -> None:
     result = build_latest_state_ranking(_sample())
-    ce = result.loc[result["uf"].eq("CE")].iloc[0]
-    sp = result.loc[result["uf"].eq("SP")].iloc[0]
+    ce = result.loc[
+        result["uf"].eq("CE")
+    ].iloc[0]
+    sp = result.loc[
+        result["uf"].eq("SP")
+    ].iloc[0]
 
     assert ce["ranking_mais_caro"] == 1
     assert sp["ranking_mais_caro"] == 2
 
 
 def test_ethanol_gasoline_ratio_uses_common_gasoline() -> None:
-    result = build_ethanol_gasoline_ratio(_sample())
+    result = build_ethanol_gasoline_ratio(
+        _sample()
+    )
     row = result.iloc[0]
 
     assert row["municipio"] == "FORTALEZA"
-    assert round(row["relacao_etanol_gasolina_pct"], 2) == 72.00
+    assert (
+        round(
+            row[
+                "relacao_etanol_gasolina_pct"
+            ],
+            2,
+        )
+        == 72.00
+    )
+
+
+def test_analytics_returns_stable_empty_schemas() -> None:
+    frame = _sample().loc[
+        _sample()["nivel_geografico"].eq(
+            "municipio"
+        )
+    ].copy()
+
+    brazil = build_brazil_kpis(frame)
+    monthly = build_monthly_brazil(frame)
+    states = build_latest_state_ranking(frame)
+
+    assert brazil.empty
+    assert "produto" in brazil.columns
+    assert monthly.empty
+    assert "variacao_mensal_pct" in monthly.columns
+    assert states.empty
+    assert "ranking_mais_caro" in states.columns

@@ -1,6 +1,7 @@
 import pandas as pd
 
 from src.reporting import (
+    _location_label,
     _select_common_gasoline,
     build_insights_markdown,
 )
@@ -16,6 +17,17 @@ def test_select_common_gasoline_excludes_additive() -> None:
     )
 
     assert _select_common_gasoline(products) == "GASOLINA COMUM"
+
+
+def test_location_label_handles_missing_uf() -> None:
+    row = pd.Series(
+        {
+            "uf": pd.NA,
+            "estado": "CEARA",
+        }
+    )
+
+    assert _location_label(row) == "CEARA"
 
 
 def test_insights_use_data_values() -> None:

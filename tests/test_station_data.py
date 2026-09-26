@@ -6,6 +6,8 @@ from src.download_open_data import _discover_2026_links
 from src.station_data import (
     build_station_star_schema,
     consolidate_station_data,
+    deduplicate_station_rows,
+    station_identity,
     transform_station_file,
 )
 
@@ -105,6 +107,40 @@ def test_transform_station_file_uses_official_schema(
     assert result.loc[0, "municipio"] == "FORTALEZA"
     assert result.loc[0, "preco_revenda"] == 6.129
     assert result.loc[0, "data_coleta"].year == 2026
+
+
+def test_station_identity_prefers_cnpj() -> None:
+    frame = pd.DataFrame(
+        {
+            "cnpj_revenda": ["00.000.000/0001-00"],
+            "uf": ["CE"],
+            "municipio": ["FORTALEZA"],
+            "revenda": ["POSTO A"],
+        }
+    )
+
+    assert station_identity(frame).iloc[0] == "cnpj:00000000000100"
+
+
+def test_deduplication_keeps_different_stations_without_cnpj() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_coleta": pd.to_datetime(
+                ["2026-09-20", "2026-09-20"]
+            ),
+            "cnpj_revenda": [pd.NA, pd.NA],
+            "uf": ["CE", "CE"],
+            "municipio": ["FORTALEZA", "FORTALEZA"],
+            "revenda": ["POSTO A", "POSTO B"],
+            "produto": ["GASOLINA", "GASOLINA"],
+            "unidade_medida": ["R$ / litro", "R$ / litro"],
+            "preco_revenda": [6.10, 6.10],
+        }
+    )
+
+    result = deduplicate_station_rows(frame)
+
+    assert len(result) == 2
 
 
 def test_consolidation_removes_overlap(

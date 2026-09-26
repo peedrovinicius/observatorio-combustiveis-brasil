@@ -5,7 +5,11 @@ import json
 import pandas as pd
 
 from .config import REPORTS_DIR
-from .station_data import BUSINESS_KEY, STATION_OUTPUT
+from .station_data import (
+    BUSINESS_KEY,
+    STATION_OUTPUT,
+    station_identity,
+)
 
 REQUIRED_COLUMNS = {
     "data_coleta",
@@ -13,6 +17,7 @@ REQUIRED_COLUMNS = {
     "municipio",
     "produto",
     "preco_revenda",
+    "unidade_medida",
 }
 
 
@@ -102,6 +107,9 @@ def build_station_quality_report(
         (prices <= 0).fillna(False).sum()
     )
 
+    working["_posto_identidade"] = station_identity(
+        working
+    )
     keys = [
         column
         for column in BUSINESS_KEY
@@ -118,7 +126,7 @@ def build_station_quality_report(
         else 0
     )
 
-    required_nulls = {}
+    required_nulls: dict[str, int] = {}
     for column in sorted(
         REQUIRED_COLUMNS - {"preco_revenda"}
     ):

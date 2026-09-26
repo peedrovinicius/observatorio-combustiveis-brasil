@@ -36,6 +36,16 @@ def _select_common_gasoline(products: pd.Series) -> str | None:
     return values[0] if values else None
 
 
+def _location_label(row: pd.Series) -> str:
+    for column in ("uf", "estado", "municipio"):
+        value = row.get(column)
+        if pd.notna(value):
+            text = str(value).strip()
+            if text:
+                return text
+    return "n/d"
+
+
 def build_insights_markdown(
     kpis: pd.DataFrame,
     ranking_ufs: pd.DataFrame,
@@ -70,7 +80,7 @@ def build_insights_markdown(
                 ]
             )
 
-    if not ranking_ufs.empty:
+    if not ranking_ufs.empty and "produto" in ranking_ufs.columns:
         product = _select_common_gasoline(ranking_ufs["produto"])
         if product:
             subset = ranking_ufs.loc[
@@ -92,7 +102,7 @@ def build_insights_markdown(
                 ]
             )
             for _, row in subset.head(5).iterrows():
-                label = row.get("uf") or row.get("estado") or "n/d"
+                label = _location_label(row)
                 lines.append(
                     f"- {label}: {_format_currency(row['preco_medio_revenda'])}"
                 )
@@ -102,7 +112,7 @@ def build_insights_markdown(
                 "preco_medio_revenda",
                 kind="stable",
             ).iterrows():
-                label = row.get("uf") or row.get("estado") or "n/d"
+                label = _location_label(row)
                 lines.append(
                     f"- {label}: {_format_currency(row['preco_medio_revenda'])}"
                 )
@@ -175,6 +185,9 @@ def plot_monthly_trend(monthly: pd.DataFrame, output: Path) -> None:
 
 
 def plot_state_ranking(ranking: pd.DataFrame, output: Path) -> None:
+    if ranking.empty or "produto" not in ranking.columns:
+        raise ValueError("Ranking por UF sem dados disponíveis.")
+
     product = _select_common_gasoline(ranking["produto"])
     if not product:
         raise ValueError("Ranking por UF sem produtos disponíveis.")
