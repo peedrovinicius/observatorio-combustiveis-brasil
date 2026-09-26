@@ -69,10 +69,10 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Executar testes:
+Executar testes, incluindo a integração offline:
 
 ```powershell
-pytest
+python -m pytest
 ```
 
 Executar o pipeline:

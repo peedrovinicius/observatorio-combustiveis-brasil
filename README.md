@@ -37,7 +37,7 @@ A fonte principal é a Agência Nacional do Petróleo, Gás Natural e Biocombust
 - relatório web estático em `docs/`;
 - medidas DAX, tema e especificação visual para Power BI;
 - auditoria explícita de linhas excluídas e sobreposições entre fontes;
-- testes automatizados das regras centrais.
+- testes unitários e integração offline do fluxo analítico.
 
 ## Arquitetura de dados
 
@@ -135,6 +135,7 @@ Documentação:
 - [Modelo de dados](docs/modelo-dados.md)
 - [PostgreSQL](docs/postgresql.md)
 - [Relatório web](docs/site.md)
+- [Testes](docs/testes.md)
 
 ## Status
 
