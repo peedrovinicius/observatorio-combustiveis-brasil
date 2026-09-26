@@ -46,15 +46,22 @@ python -m src.pipeline
 python -m src.load_postgres
 ```
 
-A carga:
+Antes de abrir a conexão, a carga valida:
 
-1. valida a existência de todos os CSVs do modelo;
-2. cria as estruturas SQL;
-3. limpa a carga anterior de forma transacional;
-4. carrega dimensões e fatos por `COPY`;
-5. cria as views;
-6. confere a quantidade de registros nas duas fatos;
-7. confirma a transação somente após a validação.
+- existência de todos os CSVs;
+- cabeçalhos duplicados;
+- colunas desconhecidas;
+- colunas obrigatórias de cada tabela;
+- compatibilidade entre os arquivos gerados e o schema PostgreSQL.
+
+Depois disso, a carga:
+
+1. cria as estruturas SQL;
+2. limpa a carga anterior de forma transacional;
+3. carrega dimensões e fatos por `COPY`;
+4. cria as views;
+5. confere a quantidade de registros nas duas fatos;
+6. confirma a transação somente após a validação.
 
 ## Tabelas principais
 
@@ -82,4 +89,6 @@ No Power BI Desktop:
 4. banco: `combustiveis`;
 5. autenticar com as credenciais definidas no ambiente local.
 
-Para a visão agregada, a view `vw_precos_semanais` já entrega dimensões e métricas unidas para exploração rápida. Para um modelo Power BI mais robusto, prefira carregar dimensões e fato separadamente e manter os relacionamentos 1:*.
+Para a visão agregada, a view `vw_precos_semanais` já entrega dimensões e métricas unidas para exploração rápida.
+
+Para um modelo Power BI mais robusto, prefira carregar dimensões e fato separadamente e manter os relacionamentos 1:*.

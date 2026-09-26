@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 
 import psycopg
@@ -23,13 +24,174 @@ LOAD_PLAN = [
     ("fato_precos_postos", STATION_MODEL_DIR / "fato_precos_postos.csv"),
 ]
 
+TABLE_COLUMNS = {
+    "dim_data": {
+        "data_id",
+        "data_inicial",
+        "data_final",
+        "ano",
+        "mes",
+        "semana_iso",
+        "trimestre",
+    },
+    "dim_produto": {
+        "produto_id",
+        "produto",
+    },
+    "dim_localidade": {
+        "localidade_id",
+        "nivel_geografico",
+        "regiao",
+        "uf",
+        "estado",
+        "municipio",
+    },
+    "fato_precos_semanais": {
+        "preco_fato_id",
+        "data_id",
+        "produto_id",
+        "localidade_id",
+        "postos_pesquisados",
+        "unidade_medida",
+        "preco_medio_revenda",
+        "preco_minimo_revenda",
+        "preco_maximo_revenda",
+        "desvio_padrao_revenda",
+        "coef_variacao_revenda",
+        "fonte_arquivo",
+        "fonte_planilha",
+    },
+    "dim_data_coleta": {
+        "data_coleta_id",
+        "data_coleta",
+        "ano",
+        "mes",
+        "semana_iso",
+    },
+    "dim_produto_posto": {
+        "produto_posto_id",
+        "produto",
+        "unidade_medida",
+    },
+    "dim_posto": {
+        "posto_id",
+        "cnpj_revenda",
+        "revenda",
+        "bandeira",
+        "regiao",
+        "uf",
+        "municipio",
+        "logradouro",
+        "numero",
+        "complemento",
+        "bairro",
+        "cep",
+    },
+    "fato_precos_postos": {
+        "preco_posto_id",
+        "data_coleta_id",
+        "produto_posto_id",
+        "posto_id",
+        "preco_revenda",
+        "preco_compra",
+        "fonte_arquivo",
+    },
+}
+
+REQUIRED_TABLE_COLUMNS = {
+    "dim_data": TABLE_COLUMNS["dim_data"],
+    "dim_produto": TABLE_COLUMNS["dim_produto"],
+    "dim_localidade": TABLE_COLUMNS["dim_localidade"],
+    "fato_precos_semanais": {
+        "preco_fato_id",
+        "data_id",
+        "produto_id",
+        "localidade_id",
+        "preco_medio_revenda",
+    },
+    "dim_data_coleta": TABLE_COLUMNS["dim_data_coleta"],
+    "dim_produto_posto": TABLE_COLUMNS["dim_produto_posto"],
+    "dim_posto": {
+        "posto_id",
+        "uf",
+        "municipio",
+    },
+    "fato_precos_postos": {
+        "preco_posto_id",
+        "data_coleta_id",
+        "produto_posto_id",
+        "posto_id",
+        "preco_revenda",
+        "fonte_arquivo",
+    },
+}
+
 
 def required_files() -> list[Path]:
     return [path for _, path in LOAD_PLAN]
 
 
+def _read_csv_header(path: Path) -> list[str]:
+    with path.open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        reader = csv.reader(handle)
+        try:
+            return [
+                column.strip()
+                for column in next(reader)
+            ]
+        except StopIteration as exc:
+            raise ValueError(
+                f"CSV vazio: {path}"
+            ) from exc
+
+
+def validate_csv_contracts() -> None:
+    errors: list[str] = []
+
+    for table, path in LOAD_PLAN:
+        header = _read_csv_header(path)
+        header_set = set(header)
+
+        if len(header) != len(header_set):
+            errors.append(
+                f"{table}: cabeçalho contém colunas duplicadas"
+            )
+            continue
+
+        allowed = TABLE_COLUMNS[table]
+        required = REQUIRED_TABLE_COLUMNS[table]
+
+        unknown = sorted(header_set - allowed)
+        missing = sorted(required - header_set)
+
+        if unknown:
+            errors.append(
+                f"{table}: colunas não suportadas: "
+                + ", ".join(unknown)
+            )
+        if missing:
+            errors.append(
+                f"{table}: colunas obrigatórias ausentes: "
+                + ", ".join(missing)
+            )
+
+    if errors:
+        raise ValueError(
+            "Contrato dos CSVs incompatível com o schema PostgreSQL:\n"
+            + "\n".join(f"- {item}" for item in errors)
+        )
+
+
 def validate_input_files() -> None:
-    missing = [path for path in required_files() if not path.exists()]
+    missing = [
+        path
+        for path in required_files()
+        if not path.exists()
+    ]
     if missing:
         formatted = "\n".join(
             f"- {path.relative_to(PROJECT_ROOT)}"
@@ -40,6 +202,8 @@ def validate_input_files() -> None:
             "Execute python -m src.pipeline antes da carga PostgreSQL.\n"
             f"Ausentes:\n{formatted}"
         )
+
+    validate_csv_contracts()
 
 
 def _execute_sql_file(
@@ -60,39 +224,48 @@ def _copy_csv(
     table: str,
     path: Path,
 ) -> int:
-    with path.open("r", encoding="utf-8", newline="") as handle:
-        header = handle.readline().strip()
-        if not header:
-            raise ValueError(f"CSV sem cabeçalho: {path}")
+    columns = _read_csv_header(path)
 
-        columns = [column.strip() for column in header.split(",")]
-        command = sql.SQL(
-            "COPY {} ({}) FROM STDIN "
-            "WITH (FORMAT CSV, HEADER FALSE, NULL '')"
-        ).format(
-            sql.Identifier(table),
-            sql.SQL(", ").join(
-                sql.Identifier(column)
-                for column in columns
-            ),
-        )
-
+    with path.open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        next(handle)
         payload = handle.read()
+
+    command = sql.SQL(
+        "COPY {} ({}) FROM STDIN "
+        "WITH (FORMAT CSV, HEADER FALSE, NULL '')"
+    ).format(
+        sql.Identifier(table),
+        sql.SQL(", ").join(
+            sql.Identifier(column)
+            for column in columns
+        ),
+    )
 
     with connection.cursor() as cursor:
         with cursor.copy(command) as copy:
             copy.write(payload)
 
-    count_query = sql.SQL("SELECT COUNT(*) FROM {}").format(
-        sql.Identifier(table)
+    count_query = sql.SQL(
+        "SELECT COUNT(*) FROM {}"
+    ).format(sql.Identifier(table))
+    return int(
+        connection.execute(
+            count_query
+        ).fetchone()[0]
     )
-    return int(connection.execute(count_query).fetchone()[0])
 
 
 def _truncate_tables(
     connection: psycopg.Connection,
 ) -> None:
-    tables = [table for table, _ in LOAD_PLAN]
+    tables = [
+        table
+        for table, _ in LOAD_PLAN
+    ]
     statement = sql.SQL(
         "TRUNCATE TABLE {} RESTART IDENTITY CASCADE"
     ).format(
@@ -110,11 +283,15 @@ def _validate_database(
     counts: dict[str, int] = {}
 
     for table, _ in LOAD_PLAN:
-        query = sql.SQL("SELECT COUNT(*) FROM {}").format(
+        query = sql.SQL(
+            "SELECT COUNT(*) FROM {}"
+        ).format(
             sql.Identifier(table)
         )
         counts[table] = int(
-            connection.execute(query).fetchone()[0]
+            connection.execute(
+                query
+            ).fetchone()[0]
         )
 
     if counts["fato_precos_semanais"] <= 0:
@@ -133,7 +310,9 @@ def main() -> None:
     validate_input_files()
     settings = get_database_settings()
 
-    with psycopg.connect(settings.url) as connection:
+    with psycopg.connect(
+        settings.url
+    ) as connection:
         print("Criando estruturas SQL...")
         _execute_sql_file(
             connection,
@@ -149,8 +328,14 @@ def main() -> None:
 
         print("Carregando CSVs...")
         for table, path in LOAD_PLAN:
-            rows = _copy_csv(connection, table, path)
-            print(f"{table}: {rows:,} linhas")
+            rows = _copy_csv(
+                connection,
+                table,
+                path,
+            )
+            print(
+                f"{table}: {rows:,} linhas"
+            )
 
         print("Criando views...")
         _execute_sql_file(
@@ -159,7 +344,9 @@ def main() -> None:
         )
 
         print("Validando banco...")
-        counts = _validate_database(connection)
+        counts = _validate_database(
+            connection
+        )
 
         connection.commit()
 
