@@ -29,7 +29,9 @@ Uso no projeto:
 
 Os arquivos são validados pelo conteúdo antes de serem aceitos como XLSX. Uma resposta HTML intermediária não é salva como planilha.
 
-Para cada escopo da série histórica, uma nova planilha válida substitui os arquivos locais antigos daquele mesmo escopo. A limpeza ocorre somente após a validação do novo download.
+A série histórica é atualizada como um lote único. Brasil, regiões, estados e municípios são baixados e validados antes de qualquer substituição local.
+
+Depois da validação de todo o lote, os arquivos anteriores e o `history_manifest.json` são movidos para backup temporário. As novas planilhas e o novo manifesto são instalados juntos. Se qualquer instalação falhar, todos os arquivos já trocados naquela execução são removidos e o snapshot anterior completo é restaurado.
 
 ### Série Histórica de Preços de Combustíveis e de GLP
 

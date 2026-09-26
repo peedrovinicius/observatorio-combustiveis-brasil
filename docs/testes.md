@@ -21,6 +21,7 @@ A suíte verifica, entre outros pontos:
 - descoberta das fontes oficiais;
 - reconhecimento de CSV, ZIP e XLSX pelo conteúdo;
 - substituição transacional de datasets por posto com staging e restauração;
+- substituição transacional do lote histórico e do manifesto com rollback integral;
 - normalização de schema;
 - substituição segura de CSVs processados por escopo;
 - preservação da versão processada anterior quando a nova planilha é inválida;

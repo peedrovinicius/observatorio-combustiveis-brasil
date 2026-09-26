@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
+import tempfile
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
@@ -91,6 +93,286 @@ def _clear_history_scope(
     ):
         if path.is_file():
             path.unlink()
+
+
+def _history_scope_files(
+    root: Path,
+    scope: str,
+) -> list[Path]:
+    prefix = (
+        f"historico_semanal_{scope}__"
+    )
+    return sorted(
+        path
+        for path in root.glob(
+            prefix + "*"
+        )
+        if path.is_file()
+    )
+
+
+def _remove_file(
+    path: Path,
+) -> None:
+    if path.exists():
+        path.unlink()
+
+
+def _replace_history_batch(
+    root: Path,
+    replacements: list[
+        tuple[
+            str,
+            str,
+            bytes,
+        ]
+    ],
+    manifest_content: str,
+) -> list[Path]:
+    root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    if not replacements:
+        raise ValueError(
+            "Lote histórico vazio."
+        )
+
+    scopes = [
+        scope
+        for scope, _, _
+        in replacements
+    ]
+    if len(scopes) != len(
+        set(scopes)
+    ):
+        raise ValueError(
+            "Lote histórico contém "
+            "escopos duplicados."
+        )
+
+    filenames = [
+        filename
+        for _, filename, _
+        in replacements
+    ]
+    normalized_filenames = [
+        filename.casefold()
+        for filename
+        in filenames
+    ]
+    if len(normalized_filenames) != len(
+        set(normalized_filenames)
+    ):
+        raise ValueError(
+            "Lote histórico contém "
+            "nomes de arquivo duplicados."
+        )
+
+    for (
+        scope,
+        filename,
+        _,
+    ) in replacements:
+        if (
+            Path(filename).name
+            != filename
+            or not filename.startswith(
+                f"historico_semanal_{scope}__"
+            )
+        ):
+            raise ValueError(
+                "Nome de arquivo histórico "
+                "incompatível com o escopo."
+            )
+
+    try:
+        manifest_data = json.loads(
+            manifest_content
+        )
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "Manifesto histórico não é JSON válido."
+        ) from exc
+
+    if not isinstance(
+        manifest_data,
+        dict,
+    ):
+        raise ValueError(
+            "Manifesto histórico deve ser um objeto JSON."
+        )
+
+    with tempfile.TemporaryDirectory(
+        prefix=".history_stage_",
+        dir=root,
+    ) as temporary:
+        stage_root = Path(
+            temporary
+        )
+        staged_files: list[
+            tuple[
+                str,
+                Path,
+            ]
+        ] = []
+
+        for (
+            scope,
+            filename,
+            content,
+        ) in replacements:
+            kind = detect_download_kind(
+                content,
+                filename,
+                (
+                    "application/"
+                    "vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet"
+                ),
+            )
+            if kind != "xlsx":
+                raise ValueError(
+                    "A série histórica semanal "
+                    "aceita somente XLSX."
+                )
+
+            staged = (
+                stage_root
+                / filename
+            )
+            staged.write_bytes(
+                content
+            )
+            staged_files.append(
+                (
+                    scope,
+                    staged,
+                )
+            )
+
+        staged_manifest = (
+            stage_root
+            / "history_manifest.json"
+        )
+        staged_manifest.write_text(
+            manifest_content,
+            encoding="utf-8",
+        )
+
+        backup_root = (
+            stage_root
+            / "backup"
+        )
+        backup_root.mkdir()
+
+        backed_up: list[
+            tuple[
+                Path,
+                Path,
+            ]
+        ] = []
+        installed: list[
+            Path
+        ] = []
+
+        try:
+            existing_files: list[
+                Path
+            ] = []
+            for scope in scopes:
+                existing_files.extend(
+                    _history_scope_files(
+                        root,
+                        scope,
+                    )
+                )
+
+            manifest_path = (
+                root
+                / "history_manifest.json"
+            )
+            if manifest_path.exists():
+                existing_files.append(
+                    manifest_path
+                )
+
+            seen_existing: set[
+                Path
+            ] = set()
+            for existing in existing_files:
+                if existing in seen_existing:
+                    continue
+                seen_existing.add(
+                    existing
+                )
+                backup = (
+                    backup_root
+                    / existing.name
+                )
+                shutil.move(
+                    str(existing),
+                    str(backup),
+                )
+                backed_up.append(
+                    (
+                        existing,
+                        backup,
+                    )
+                )
+
+            destinations: list[
+                Path
+            ] = []
+            for _, staged in staged_files:
+                destination = (
+                    root
+                    / staged.name
+                )
+                shutil.move(
+                    str(staged),
+                    str(destination),
+                )
+                installed.append(
+                    destination
+                )
+                destinations.append(
+                    destination
+                )
+
+            manifest_destination = (
+                root
+                / "history_manifest.json"
+            )
+            shutil.move(
+                str(staged_manifest),
+                str(
+                    manifest_destination
+                ),
+            )
+            installed.append(
+                manifest_destination
+            )
+
+            return destinations
+        except Exception:
+            for path in reversed(
+                installed
+            ):
+                _remove_file(
+                    path
+                )
+
+            for original, backup in reversed(
+                backed_up
+            ):
+                if backup.exists():
+                    shutil.move(
+                        str(backup),
+                        str(original),
+                    )
+            raise
 
 
 def _discover_weekly_history_links(
@@ -348,6 +630,13 @@ def main() -> None:
     files: list[
         dict[str, object]
     ] = []
+    replacements: list[
+        tuple[
+            str,
+            str,
+            bytes,
+        ]
+    ] = []
 
     for scope, url in links.items():
         try:
@@ -392,20 +681,14 @@ def main() -> None:
             f"historico_semanal_"
             f"{scope}__{remote_name}"
         )
-        destination = (
-            RAW_DIR
-            / filename
-        )
 
-        _clear_history_scope(
-            RAW_DIR,
-            scope,
+        replacements.append(
+            (
+                scope,
+                filename,
+                response.content,
+            )
         )
-
-        destination.write_bytes(
-            response.content
-        )
-
         files.append(
             {
                 "dataset": (
@@ -440,6 +723,33 @@ def main() -> None:
                 ),
             }
         )
+
+    manifest_data = {
+        "source": "ANP",
+        "series": (
+            "Levantamento de Preços "
+            "- série histórica semanal"
+        ),
+        "collected_at_utc": (
+            collected_at
+        ),
+        "files": files,
+    }
+    manifest_content = json.dumps(
+        manifest_data,
+        ensure_ascii=False,
+        indent=2,
+    )
+
+    destinations = (
+        _replace_history_batch(
+            RAW_DIR,
+            replacements,
+            manifest_content,
+        )
+    )
+
+    for destination in destinations:
         print(
             "Salvo: "
             f"{destination.relative_to(RAW_DIR.parent.parent)}"
@@ -448,24 +758,6 @@ def main() -> None:
     manifest_path = (
         RAW_DIR
         / "history_manifest.json"
-    )
-    manifest_path.write_text(
-        json.dumps(
-            {
-                "source": "ANP",
-                "series": (
-                    "Levantamento de Preços "
-                    "- série histórica semanal"
-                ),
-                "collected_at_utc": (
-                    collected_at
-                ),
-                "files": files,
-            },
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
     )
     print(
         "Manifesto: "

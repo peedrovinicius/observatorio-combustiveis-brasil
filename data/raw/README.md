@@ -25,6 +25,6 @@ baixar
 
 Na camada por posto, isso cobre mudanças entre CSV e ZIP e também substitui diretórios de extração antigos. Um CSV interno inválido em um ZIP não remove a última versão válida do dataset.
 
-Na série histórica agregada, a limpeza é feita por escopo, como Brasil, regiões, estados e municípios.
+Na série histórica agregada, Brasil, regiões, estados e municípios são tratados como um lote único junto com `history_manifest.json`. O snapshot anterior permanece íntegro se qualquer arquivo novo ou a instalação do lote falhar.
 
 Arquivos pertencentes a outros datasets não são removidos.

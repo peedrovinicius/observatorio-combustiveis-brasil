@@ -1,3 +1,4 @@
+import io
 from pathlib import Path
 
 import pandas as pd
@@ -11,6 +12,7 @@ from src.consolidate import (
 from src.download_history import (
     _clear_history_scope,
     _discover_weekly_history_links,
+    _replace_history_batch,
 )
 from src.quality import build_quality_report
 import src.transform as transform_module
@@ -579,3 +581,360 @@ def test_transform_keeps_old_scope_when_new_workbook_is_invalid(
         )
 
     assert old.exists()
+
+
+
+def _xlsx_bytes() -> bytes:
+    buffer = io.BytesIO()
+    frame = pd.DataFrame(
+        {
+            "Data Inicial": [
+                "04/01/2026",
+            ],
+            "Produto": [
+                "GASOLINA COMUM",
+            ],
+            "Preço Médio Revenda": [
+                6.0,
+            ],
+        }
+    )
+    with pd.ExcelWriter(
+        buffer,
+        engine="openpyxl",
+    ) as writer:
+        frame.to_excel(
+            writer,
+            index=False,
+            sheet_name="Dados",
+        )
+    return buffer.getvalue()
+
+
+def test_history_batch_invalid_file_preserves_previous_snapshot(
+    tmp_path: Path,
+) -> None:
+    old_brazil = (
+        tmp_path
+        / "historico_semanal_brasil__antigo.xlsx"
+    )
+    old_states = (
+        tmp_path
+        / "historico_semanal_estados__antigo.xlsx"
+    )
+    manifest = (
+        tmp_path
+        / "history_manifest.json"
+    )
+
+    old_brazil.write_bytes(
+        b"brasil-antigo"
+    )
+    old_states.write_bytes(
+        b"estados-antigo"
+    )
+    manifest.write_text(
+        '{"versao":"antiga"}',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        Exception,
+    ):
+        _replace_history_batch(
+            tmp_path,
+            [
+                (
+                    "brasil",
+                    "historico_semanal_brasil__novo.xlsx",
+                    _xlsx_bytes(),
+                ),
+                (
+                    "estados",
+                    "historico_semanal_estados__novo.xlsx",
+                    b"<html>erro</html>",
+                ),
+            ],
+            '{"versao":"nova"}',
+        )
+
+    assert (
+        old_brazil.read_bytes()
+        == b"brasil-antigo"
+    )
+    assert (
+        old_states.read_bytes()
+        == b"estados-antigo"
+    )
+    assert (
+        manifest.read_text(
+            encoding="utf-8"
+        )
+        == '{"versao":"antiga"}'
+    )
+    assert not (
+        tmp_path
+        / "historico_semanal_brasil__novo.xlsx"
+    ).exists()
+
+
+def test_history_batch_replaces_all_scopes_and_manifest_together(
+    tmp_path: Path,
+) -> None:
+    old_brazil = (
+        tmp_path
+        / "historico_semanal_brasil__antigo.xlsx"
+    )
+    old_states = (
+        tmp_path
+        / "historico_semanal_estados__antigo.xlsx"
+    )
+    unrelated = (
+        tmp_path
+        / "arquivo_nao_historico.txt"
+    )
+    manifest = (
+        tmp_path
+        / "history_manifest.json"
+    )
+
+    old_brazil.write_bytes(
+        b"brasil-antigo"
+    )
+    old_states.write_bytes(
+        b"estados-antigo"
+    )
+    unrelated.write_text(
+        "preservar",
+        encoding="utf-8",
+    )
+    manifest.write_text(
+        '{"versao":"antiga"}',
+        encoding="utf-8",
+    )
+
+    content = _xlsx_bytes()
+    destinations = (
+        _replace_history_batch(
+            tmp_path,
+            [
+                (
+                    "brasil",
+                    "historico_semanal_brasil__novo.xlsx",
+                    content,
+                ),
+                (
+                    "estados",
+                    "historico_semanal_estados__novo.xlsx",
+                    content,
+                ),
+            ],
+            '{"versao":"nova"}',
+        )
+    )
+
+    assert not old_brazil.exists()
+    assert not old_states.exists()
+    assert unrelated.exists()
+    assert len(destinations) == 2
+    assert all(
+        path.exists()
+        for path in destinations
+    )
+    assert (
+        manifest.read_text(
+            encoding="utf-8"
+        )
+        == '{"versao":"nova"}'
+    )
+
+
+def test_history_batch_install_failure_restores_all_scopes_and_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import src.download_history as history
+
+    old_brazil = (
+        tmp_path
+        / "historico_semanal_brasil__antigo.xlsx"
+    )
+    old_states = (
+        tmp_path
+        / "historico_semanal_estados__antigo.xlsx"
+    )
+    manifest = (
+        tmp_path
+        / "history_manifest.json"
+    )
+
+    old_brazil.write_bytes(
+        b"brasil-antigo"
+    )
+    old_states.write_bytes(
+        b"estados-antigo"
+    )
+    manifest.write_text(
+        '{"versao":"antiga"}',
+        encoding="utf-8",
+    )
+
+    original_move = (
+        history.shutil.move
+    )
+
+    def failing_move(
+        source: str,
+        destination: str,
+    ):
+        source_path = Path(
+            source
+        )
+        destination_path = Path(
+            destination
+        )
+        if (
+            source_path.name
+            == "historico_semanal_estados__novo.xlsx"
+            and destination_path.parent
+            == tmp_path
+        ):
+            raise OSError(
+                "falha simulada"
+            )
+        return original_move(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        history.shutil,
+        "move",
+        failing_move,
+    )
+
+    content = _xlsx_bytes()
+    with pytest.raises(
+        OSError,
+        match="falha simulada",
+    ):
+        _replace_history_batch(
+            tmp_path,
+            [
+                (
+                    "brasil",
+                    "historico_semanal_brasil__novo.xlsx",
+                    content,
+                ),
+                (
+                    "estados",
+                    "historico_semanal_estados__novo.xlsx",
+                    content,
+                ),
+            ],
+            '{"versao":"nova"}',
+        )
+
+    assert (
+        old_brazil.read_bytes()
+        == b"brasil-antigo"
+    )
+    assert (
+        old_states.read_bytes()
+        == b"estados-antigo"
+    )
+    assert (
+        manifest.read_text(
+            encoding="utf-8"
+        )
+        == '{"versao":"antiga"}'
+    )
+    assert not (
+        tmp_path
+        / "historico_semanal_brasil__novo.xlsx"
+    ).exists()
+    assert not (
+        tmp_path
+        / "historico_semanal_estados__novo.xlsx"
+    ).exists()
+
+
+def test_history_batch_rejects_duplicate_scopes(
+    tmp_path: Path,
+) -> None:
+    content = _xlsx_bytes()
+
+    with pytest.raises(
+        ValueError,
+        match="escopos duplicados",
+    ):
+        _replace_history_batch(
+            tmp_path,
+            [
+                (
+                    "brasil",
+                    "historico_semanal_brasil__a.xlsx",
+                    content,
+                ),
+                (
+                    "brasil",
+                    "historico_semanal_brasil__b.xlsx",
+                    content,
+                ),
+            ],
+            "{}",
+        )
+
+
+
+def test_history_batch_rejects_invalid_manifest_before_replacement(
+    tmp_path: Path,
+) -> None:
+    old = (
+        tmp_path
+        / "historico_semanal_brasil__antigo.xlsx"
+    )
+    old.write_bytes(
+        b"versao-anterior"
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="JSON válido",
+    ):
+        _replace_history_batch(
+            tmp_path,
+            [
+                (
+                    "brasil",
+                    "historico_semanal_brasil__novo.xlsx",
+                    _xlsx_bytes(),
+                )
+            ],
+            "{invalido",
+        )
+
+    assert (
+        old.read_bytes()
+        == b"versao-anterior"
+    )
+
+
+def test_history_batch_rejects_filename_outside_scope(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="incompatível com o escopo",
+    ):
+        _replace_history_batch(
+            tmp_path,
+            [
+                (
+                    "brasil",
+                    "../historico_semanal_brasil__novo.xlsx",
+                    _xlsx_bytes(),
+                )
+            ],
+            "{}",
+        )
