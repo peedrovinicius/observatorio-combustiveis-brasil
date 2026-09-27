@@ -109,3 +109,8 @@ A tendência mensal separa as séries por unidade de medida dentro do mesmo PNG.
 ## Contrato dos gráficos por posto
 
 Os gráficos por posto validam explicitamente o contrato mínimo dos CSVs analíticos antes de desenhar a figura. Produto, unidade, data de coleta, identidade geográfica e métricas necessárias não podem desaparecer silenciosamente. Uma regressão de schema interrompe a geração com erro descritivo em vez de produzir um gráfico incompleto ou falhar com uma exceção genérica de coluna.
+
+
+## Contrato único de imagens públicas
+
+A lista dos cinco PNGs públicos fica centralizada em `src/publication_contract.py`. Reporting, snapshot, site e publicação do README consomem o mesmo contrato, evitando divergência de nomes ou quantidade de arquivos entre as etapas.
