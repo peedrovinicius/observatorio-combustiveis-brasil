@@ -744,6 +744,25 @@ def plot_station_municipality_dispersion(
             product,
         )
     )
+    if (
+        product_frame.empty
+        and "múltiplas unidades"
+        in series_label
+    ):
+        _save_empty_chart(
+            output,
+            (
+                "Dispersão municipal "
+                f"por posto - {series_label}"
+            ),
+            (
+                "O recorte contém múltiplas "
+                "unidades de medida e não pode "
+                "ser combinado em um único gráfico."
+            ),
+        )
+        return
+
     frame = (
         product_frame.loc[
             product_frame[
@@ -883,6 +902,25 @@ def plot_station_brand_median(
             product,
         )
     )
+    if (
+        product_frame.empty
+        and "múltiplas unidades"
+        in series_label
+    ):
+        _save_empty_chart(
+            output,
+            (
+                "Mediana observada "
+                f"por bandeira - {series_label}"
+            ),
+            (
+                "O recorte contém múltiplas "
+                "unidades de medida e não pode "
+                "ser combinado em um único gráfico."
+            ),
+        )
+        return
+
     sufficient = sufficient.loc[
         product_frame.index
     ]
