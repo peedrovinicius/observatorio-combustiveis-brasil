@@ -237,6 +237,18 @@ def test_finalize_model_constraints_protects_dimension_keys() -> None:
     )
 
     assert (
+        "ALTER TABLE fato_precos_semanais "
+        "ALTER COLUMN fonte_arquivo "
+        "SET NOT NULL"
+        in sql
+    )
+    assert (
+        "ALTER TABLE fato_precos_semanais "
+        "ALTER COLUMN fonte_planilha "
+        "SET NOT NULL"
+        in sql
+    )
+    assert (
         "ALTER TABLE dim_produto_posto "
         "ALTER COLUMN unidade_medida "
         "SET NOT NULL"
@@ -825,8 +837,8 @@ def test_aggregate_csv_contract_rejects_decimal_rounding(
     path = tmp_path / "fato_precos_semanais.csv"
     path.write_text(
         "preco_fato_id,data_id,produto_id,localidade_id,"
-        "preco_medio_revenda\n"
-        "1,1,1,1,6.12345\n",
+        "preco_medio_revenda,fonte_arquivo,fonte_planilha\n"
+        "1,1,1,1,6.12345,historico.xlsx,Dados\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(
@@ -868,8 +880,9 @@ def _write_valid_aggregate_contract_bundle(
     )
     fact.write_text(
         "preco_fato_id,data_id,produto_id,localidade_id,"
-        "unidade_medida,preco_medio_revenda\n"
-        "1,1,1,1,R$/L,6.1234\n",
+        "unidade_medida,preco_medio_revenda,"
+        "fonte_arquivo,fonte_planilha\n"
+        "1,1,1,1,R$/L,6.1234,historico.xlsx,Dados\n",
         encoding="utf-8",
     )
 
@@ -895,8 +908,9 @@ def test_aggregate_relations_reject_missing_foreign_key(
     ]
     fact.write_text(
         "preco_fato_id,data_id,produto_id,localidade_id,"
-        "unidade_medida,preco_medio_revenda\n"
-        "1,1,99,1,R$/L,6.1234\n",
+        "unidade_medida,preco_medio_revenda,"
+        "fonte_arquivo,fonte_planilha\n"
+        "1,1,99,1,R$/L,6.1234,historico.xlsx,Dados\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(
@@ -926,9 +940,10 @@ def test_aggregate_relations_reject_duplicate_fact_grain(
     ]
     fact.write_text(
         "preco_fato_id,data_id,produto_id,localidade_id,"
-        "unidade_medida,preco_medio_revenda\n"
-        "1,1,1,1,R$/L,6.1234\n"
-        "2,1,1,1,R$/L,6.1200\n",
+        "unidade_medida,preco_medio_revenda,"
+        "fonte_arquivo,fonte_planilha\n"
+        "1,1,1,1,R$/L,6.1234,historico.xlsx,Dados\n"
+        "2,1,1,1,R$/L,6.1200,historico.xlsx,Dados\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(
@@ -1052,3 +1067,18 @@ def test_aggregate_schema_protects_metric_semantics() -> None:
     assert "CHECK (coef_variacao_revenda >= 0)" in schema
     assert "preco_medio_revenda >= preco_minimo_revenda" in schema
     assert "preco_medio_revenda <= preco_maximo_revenda" in schema
+
+
+def test_aggregate_schema_requires_provenance() -> None:
+    from src.config import PROJECT_ROOT
+
+    schema = (
+        PROJECT_ROOT
+        / "sql"
+        / "schema.sql"
+    ).read_text(
+        encoding="utf-8",
+    )
+
+    assert "fonte_arquivo VARCHAR(255) NOT NULL" in schema
+    assert "fonte_planilha VARCHAR(255) NOT NULL" in schema
