@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import zipfile
@@ -559,7 +560,13 @@ def _batch_item(
                 "https://example.test/"
                 + stem
             ),
-            "sha256": "teste",
+            "detected_format": "csv",
+            "bytes": len(
+                content
+            ),
+            "sha256": hashlib.sha256(
+                content
+            ).hexdigest(),
         },
     }
 
@@ -875,7 +882,9 @@ def test_open_data_batch_records_extracted_hashes(
                     "bytes": len(
                         content
                     ),
-                    "sha256": "teste",
+                    "sha256": hashlib.sha256(
+                        content
+                    ).hexdigest(),
                 },
             }
         ],
@@ -905,3 +914,34 @@ def test_open_data_batch_records_extracted_hashes(
             "sha256"
         ]
     ) == 64
+
+
+
+def test_open_data_batch_rejects_versioned_manifest_hash_mismatch(
+    tmp_path: Path,
+) -> None:
+    item = _batch_item(
+        "atual",
+        "NOVO",
+    )
+    item["record"][
+        "sha256"
+    ] = "0" * 64
+
+    with pytest.raises(
+        ValueError,
+        match="SHA-256 do manifesto",
+    ):
+        _replace_open_data_batch(
+            tmp_path,
+            [item],
+            {
+                "manifest_version": 1,
+                "source": "ANP",
+            },
+        )
+
+    assert not (
+        tmp_path
+        / "atual.csv"
+    ).exists()
