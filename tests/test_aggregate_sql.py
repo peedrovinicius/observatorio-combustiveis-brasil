@@ -209,3 +209,19 @@ def test_ratio_sql_uses_python_export_names() -> None:
     assert "etanol AS preco_etanol" in sql
     assert "gasolina AS preco_gasolina_comum" in sql
     assert "AS relacao_etanol_gasolina_pct" in sql
+
+
+def test_ranking_sql_exposes_period_end_and_dispersion() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+    ranking_section = sql.split(
+        "-- 2. Preço médio por UF",
+        1,
+    )[1].split(
+        "-- 4. Média mensal",
+        1,
+    )[0]
+
+    assert "data_final" in ranking_section
+    assert "coef_variacao_revenda" in ranking_section

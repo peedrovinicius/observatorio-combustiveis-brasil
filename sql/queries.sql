@@ -16,6 +16,7 @@ ORDER BY produto, unidade_medida, data_inicial;
 -- 2. Preço médio por UF na última semana disponível de cada produto e unidade.
 SELECT
     data_inicial,
+    data_final,
     uf,
     estado,
     produto,
@@ -24,6 +25,7 @@ SELECT
     preco_medio_revenda,
     preco_minimo_revenda,
     preco_maximo_revenda,
+    coef_variacao_revenda,
     RANK() OVER (
         PARTITION BY
             produto,
@@ -51,6 +53,7 @@ ORDER BY
 WITH municipios_ranqueados AS (
     SELECT
         data_inicial,
+        data_final,
         uf,
         municipio,
         produto,
@@ -59,6 +62,7 @@ WITH municipios_ranqueados AS (
         preco_medio_revenda,
         preco_minimo_revenda,
         preco_maximo_revenda,
+        coef_variacao_revenda,
         RANK() OVER (
             PARTITION BY
                 produto,
@@ -78,6 +82,7 @@ WITH municipios_ranqueados AS (
 )
 SELECT
     data_inicial,
+    data_final,
     uf,
     municipio,
     produto,
@@ -86,6 +91,7 @@ SELECT
     preco_medio_revenda,
     preco_minimo_revenda,
     preco_maximo_revenda,
+    coef_variacao_revenda,
     ranking_mais_caro,
     ranking_mais_barato
 FROM municipios_ranqueados
