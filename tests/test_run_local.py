@@ -13,6 +13,14 @@ def test_run_local_checks_native_exit_codes() -> None:
     assert "function Invoke-NativeChecked" in script
     assert "$LASTEXITCODE -ne 0" in script
     assert (
+        '"requirements-dev.txt"'
+        in script
+    )
+    assert (
+        '"requirements.txt"'
+        not in script
+    )
+    assert (
         'Invoke-NativeChecked -FilePath $python '
         '-Arguments @("-m", "pytest")'
         in script
