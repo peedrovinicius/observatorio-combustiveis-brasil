@@ -725,3 +725,123 @@ def test_open_data_batch_install_failure_restores_all(
         )
         == '{"versao":"antiga"}'
     )
+
+
+
+def test_open_data_batch_removes_dataset_missing_from_new_manifest(
+    tmp_path: Path,
+) -> None:
+    current = (
+        tmp_path
+        / "atual.csv"
+    )
+    stale = (
+        tmp_path
+        / "obsoleto.csv"
+    )
+    current.write_text(
+        "antigo-atual",
+        encoding="utf-8",
+    )
+    stale.write_text(
+        "antigo-obsoleto",
+        encoding="utf-8",
+    )
+    (
+        tmp_path
+        / "manifest.json"
+    ).write_text(
+        json.dumps(
+            {
+                "files": [
+                    {
+                        "dataset": "atual",
+                        "filename": "atual.csv",
+                    },
+                    {
+                        "dataset": "obsoleto",
+                        "filename": "obsoleto.csv",
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    _replace_open_data_batch(
+        tmp_path,
+        [
+            _batch_item(
+                "atual",
+                "NOVO",
+            )
+        ],
+        {
+            "manifest_version": 1,
+            "source": "ANP",
+        },
+    )
+
+    assert current.exists()
+    assert "NOVO" in current.read_text(
+        encoding="utf-8",
+    )
+    assert not stale.exists()
+
+    manifest = json.loads(
+        (
+            tmp_path
+            / "manifest.json"
+        ).read_text(
+            encoding="utf-8",
+        )
+    )
+    assert [
+        item["dataset"]
+        for item in manifest["files"]
+    ] == ["atual"]
+
+
+def test_open_data_batch_rejects_invalid_previous_manifest(
+    tmp_path: Path,
+) -> None:
+    old = (
+        tmp_path
+        / "atual.csv"
+    )
+    old.write_text(
+        "preservar",
+        encoding="utf-8",
+    )
+    (
+        tmp_path
+        / "manifest.json"
+    ).write_text(
+        "{invalido",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Manifesto anterior",
+    ):
+        _replace_open_data_batch(
+            tmp_path,
+            [
+                _batch_item(
+                    "atual",
+                    "NOVO",
+                )
+            ],
+            {
+                "manifest_version": 1,
+                "source": "ANP",
+            },
+        )
+
+    assert (
+        old.read_text(
+            encoding="utf-8",
+        )
+        == "preservar"
+    )
