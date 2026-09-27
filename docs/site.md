@@ -104,3 +104,8 @@ O gráfico de etanol e gasolina é diferente: cada município usa sua semana com
 ## Unidades na tendência mensal
 
 A tendência mensal separa as séries por unidade de medida dentro do mesmo PNG. Produtos medidos em R$/L, R$/m³ ou outra unidade não compartilham o mesmo eixo de preço. Isso evita comparar visualmente grandezas incompatíveis.
+
+
+## Contrato dos gráficos por posto
+
+Os gráficos por posto validam explicitamente o contrato mínimo dos CSVs analíticos antes de desenhar a figura. Produto, unidade, data de coleta, identidade geográfica e métricas necessárias não podem desaparecer silenciosamente. Uma regressão de schema interrompe a geração com erro descritivo em vez de produzir um gráfico incompleto ou falhar com uma exceção genérica de coluna.

@@ -24,6 +24,48 @@ ASSETS_DIR = (
     / "generated"
 )
 
+STATION_DISPERSION_REQUIRED_COLUMNS = {
+    "data_coleta",
+    "produto",
+    "unidade_medida",
+    "uf",
+    "municipio",
+    "postos_distintos",
+    "intervalo_interquartil",
+}
+
+STATION_BRAND_REQUIRED_COLUMNS = {
+    "data_coleta",
+    "produto",
+    "unidade_medida",
+    "bandeira",
+    "observacoes",
+    "postos_distintos",
+    "mediana_observada",
+    "amostra_suficiente",
+}
+
+
+def _require_chart_columns(
+    frame: pd.DataFrame,
+    required: set[str],
+    chart_name: str,
+) -> None:
+    missing = sorted(
+        required
+        - set(
+            frame.columns
+        )
+    )
+    if missing:
+        raise ValueError(
+            f"{chart_name}: colunas "
+            "obrigatórias ausentes: "
+            + ", ".join(
+                missing
+            )
+        )
+
 
 def _format_currency(
     value: object,
@@ -999,6 +1041,12 @@ def plot_station_municipality_dispersion(
         )
         return
 
+    _require_chart_columns(
+        distribution,
+        STATION_DISPERSION_REQUIRED_COLUMNS,
+        "Dispersão municipal por posto",
+    )
+
     product = (
         _select_common_gasoline(
             distribution[
@@ -1014,8 +1062,8 @@ def plot_station_municipality_dispersion(
                 "municipal por posto"
             ),
             (
-                "Nenhum produto "
-                "disponível para comparação."
+                "Gasolina comum não disponível "
+                "para este recorte."
             ),
         )
         return
@@ -1166,6 +1214,12 @@ def plot_station_brand_median(
         )
         return
 
+    _require_chart_columns(
+        brands,
+        STATION_BRAND_REQUIRED_COLUMNS,
+        "Mediana por bandeira",
+    )
+
     product = (
         _select_common_gasoline(
             brands["produto"]
@@ -1179,8 +1233,8 @@ def plot_station_brand_median(
                 "por bandeira"
             ),
             (
-                "Nenhum produto "
-                "disponível para comparação."
+                "Gasolina comum não disponível "
+                "para este recorte."
             ),
         )
         return

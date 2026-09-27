@@ -954,3 +954,51 @@ def test_monthly_unit_groups_never_mix_units() -> None:
             .eq(unit)
             .all()
         )
+
+
+def test_station_dispersion_requires_export_contract(
+    tmp_path: Path,
+) -> None:
+    frame = pd.DataFrame(
+        {
+            "produto": [
+                "GASOLINA",
+            ],
+            "intervalo_interquartil": [
+                0.20,
+            ],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="colunas obrigatórias ausentes",
+    ):
+        plot_station_municipality_dispersion(
+            frame,
+            tmp_path / "dispersao.png",
+        )
+
+
+def test_station_brand_chart_requires_export_contract(
+    tmp_path: Path,
+) -> None:
+    frame = pd.DataFrame(
+        {
+            "produto": [
+                "GASOLINA",
+            ],
+            "mediana_observada": [
+                6.20,
+            ],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="colunas obrigatórias ausentes",
+    ):
+        plot_station_brand_median(
+            frame,
+            tmp_path / "bandeiras.png",
+        )
