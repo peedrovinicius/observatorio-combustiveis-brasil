@@ -27,3 +27,8 @@ python -m src.pipeline
 Isso gera as tabelas em `data/processed/` utilizadas pela análise.
 
 O notebook não contém resultados digitados manualmente nem outputs persistidos. A lógica de ingestão, transformação, consolidação e validação permanece em `src/`, para que o projeto não dependa de execução manual de células.
+
+
+## Regras de comparação
+
+As visualizações do notebook preservam a unidade de medida. Séries em R$/L e R$/m³ não compartilham o mesmo eixo de preço. O ranking de gasolina comum também exige uma única combinação de produto e unidade antes de desenhar a figura.
