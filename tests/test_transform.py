@@ -3,7 +3,12 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.transform import detect_header_row, normalize_column, read_excel_sheet
+from src.transform import (
+    _prepare_workbook_outputs,
+    detect_header_row,
+    normalize_column,
+    read_excel_sheet,
+)
 
 
 def _sample_workbook(path: Path) -> None:
@@ -130,3 +135,45 @@ def test_read_excel_sheet_preserves_fractional_station_count_for_quality(
         ]
         == 1.5
     )
+
+
+
+def test_prepare_workbook_propagates_duplicate_column_error(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "historico_semanal_brasil__duplicado.xlsx"
+    )
+    rows = [
+        [
+            "DATA INICIAL",
+            "UF",
+            "ESTADO SIGLA",
+            "PRODUTO",
+            "PREÇO MÉDIO REVENDA",
+        ],
+        [
+            "20/09/2026",
+            "CE",
+            "CE",
+            "GASOLINA",
+            "6,10",
+        ],
+    ]
+    pd.DataFrame(
+        rows
+    ).to_excel(
+        path,
+        index=False,
+        header=False,
+        sheet_name="Dados",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Colunas duplicadas após normalização",
+    ):
+        _prepare_workbook_outputs(
+            path
+        )
