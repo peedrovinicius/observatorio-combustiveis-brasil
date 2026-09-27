@@ -746,21 +746,10 @@ def build_site(
 
 
 def main() -> None:
-    output = build_site(
-        ANALYTICS_DIR
-        / "kpis_brasil_2026.csv",
-        ANALYTICS_DIR
-        / "ranking_ufs_ultima_semana.csv",
-        SNAPSHOT_DIR,
-        DOCS_DIR,
-        REPORTS_DIR
-        / "quality_2026.json",
-        REPORTS_DIR
-        / "quality_postos_2026.json",
-    )
-    print(
-        "Relatório web: "
-        f"{output.relative_to(PROJECT_ROOT)}"
+    raise SystemExit(
+        "A publicação isolada do site foi desativada. "
+        "Use python -m src.snapshot para gerar e publicar "
+        "o bundle visual completo."
     )
 
 
