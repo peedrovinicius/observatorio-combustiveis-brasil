@@ -46,6 +46,8 @@ README.md
 
 O README recebe localmente a seção de resultados reais. O script não executa comandos Git de escrita.
 
+Cada comando externo é verificado pelo código de saída. Falhas em criação do ambiente, instalação, testes, pipeline, Docker, carga PostgreSQL ou snapshot interrompem imediatamente o fluxo.
+
 A atualização isolada do README também valida a existência e o conteúdo dos cinco PNGs do snapshot e do relatório de resultados. Assim, o bloco visual não é publicado com links quebrados ou arquivos vazios.
 
 ## Executar com PostgreSQL
@@ -55,6 +57,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1 -WithPostgres
 ```
 
 O Docker Compose inicia o PostgreSQL e o projeto carrega os dois modelos dimensionais.
+
+O fluxo com PostgreSQL aguarda o `healthcheck` do serviço ficar saudável, com timeout de 60 segundos, antes de iniciar a carga. Uma inicialização incompleta interrompe o script em vez de tentar conectar prematuramente.
 
 Para usar PostgreSQL e snapshot na mesma execução:
 
