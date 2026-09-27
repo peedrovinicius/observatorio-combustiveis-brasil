@@ -4,6 +4,9 @@ import json
 
 import pandas as pd
 
+from .atomic_outputs import (
+    replace_text_file,
+)
 from .config import PROCESSED_DIR, REPORTS_DIR
 from .consolidate import OUTPUT_NAME
 
@@ -447,13 +450,13 @@ def main() -> None:
         exist_ok=True,
     )
     output = REPORTS_DIR / "quality_2026.json"
-    output.write_text(
+    replace_text_file(
+        output,
         json.dumps(
             report,
             ensure_ascii=False,
             indent=2,
         ),
-        encoding="utf-8",
     )
 
     print(
