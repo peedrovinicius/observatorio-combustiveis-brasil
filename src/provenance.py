@@ -726,6 +726,43 @@ def verify_open_data_provenance(
             filename
         )
 
+    missing_families: list[str] = []
+    if (
+        "automotivos_2026_s1"
+        not in datasets
+    ):
+        missing_families.append(
+            "combustíveis automotivos do 1º semestre"
+        )
+    if not any(
+        name.startswith(
+            "diesel_gnv_"
+        )
+        for name in datasets
+    ):
+        missing_families.append(
+            "diesel/GNV"
+        )
+    if not any(
+        name.startswith(
+            "etanol_gasolina_"
+        )
+        for name in datasets
+    ):
+        missing_families.append(
+            "etanol/gasolina"
+        )
+
+    if missing_families:
+        raise ValueError(
+            "Cobertura do manifesto por posto "
+            "incompleta. Famílias ausentes: "
+            + ", ".join(
+                missing_families
+            )
+            + "."
+        )
+
     actual_raw_files = {
         path.name
         for path in root.iterdir()
