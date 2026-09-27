@@ -4,6 +4,14 @@ O projeto usa `pytest` para validar regras unitárias e um fluxo de integração
 
 ## Execução
 
+Instale o perfil de desenvolvimento:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
+Depois execute:
+
 ```bash
 python -m pytest
 ```
