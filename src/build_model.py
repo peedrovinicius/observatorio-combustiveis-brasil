@@ -17,6 +17,15 @@ LOCATION_COLUMNS = [
     "municipio",
 ]
 
+AGGREGATE_MODEL_REQUIRED_COLUMNS = {
+    "data_inicial",
+    "produto",
+    "nivel_geografico",
+    "preco_medio_revenda",
+    "fonte_arquivo",
+    "fonte_planilha",
+}
+
 FACT_METRICS = [
     "postos_pesquisados",
     "unidade_medida",
@@ -35,17 +44,31 @@ def _normalized_text(series: pd.Series) -> pd.Series:
 
 
 def build_star_schema(frame: pd.DataFrame) -> dict[str, pd.DataFrame]:
-    required = {
-        "data_inicial",
-        "produto",
-        "nivel_geografico",
-        "preco_medio_revenda",
-    }
+    required = (
+        AGGREGATE_MODEL_REQUIRED_COLUMNS
+    )
     missing = required - set(frame.columns)
     if missing:
         raise ValueError(
             "Colunas obrigatórias ausentes: " + ", ".join(sorted(missing))
         )
+
+    for column in (
+        "fonte_arquivo",
+        "fonte_planilha",
+    ):
+        provenance = (
+            frame[column]
+            .astype("string")
+            .str.strip()
+            .replace("", pd.NA)
+        )
+        if provenance.isna().any():
+            raise ValueError(
+                f"A coluna {column} deve estar "
+                "preenchida em todas as observações "
+                "do modelo agregado."
+            )
 
     working = frame.copy()
     working["data_inicial"] = pd.to_datetime(
