@@ -34,10 +34,19 @@ A suíte verifica, entre outros pontos:
 - rejeição de arquivos raw ou CSVs extraídos não manifestados;
 - substituição transacional do lote histórico e do manifesto com rollback integral;
 - normalização de schema;
+- rejeição de colunas que colidem depois da normalização;
+- preservação de valores numéricos anômalos para diagnóstico posterior;
 - substituição transacional do lote de CSVs processados;
+- publicação transacional do manifesto de transformação histórica junto dos CSVs;
+- verificação de SHA-256 entre manifesto raw, manifesto processado e CSVs históricos;
+- rejeição de edição ou inserção manual de CSV histórico processado;
 - preservação integral do lote processado anterior quando uma planilha é inválida ou a instalação falha;
 - datas e decimais;
 - consolidação de 2026;
+- cobertura completa dos quatro escopos históricos;
+- compatibilidade entre escopo histórico e nível geográfico;
+- remoção apenas de duplicatas semanticamente equivalentes;
+- preservação de duplicidades divergentes para a barreira de qualidade;
 - qualidade agregada;
 - rejeição de datasets vazios nas duas camadas;
 - proveniência obrigatória da fato agregada;
@@ -52,6 +61,7 @@ A suíte verifica, entre outros pontos:
 - exclusão de fallback incompleto da auditoria de sobreposição;
 - precedência entre publicações sobrepostas;
 - auditoria de exclusões agregadas e por posto;
+- status de revisão para linhas por posto fora de 2026 e sobreposições com preço divergente;
 - publicação transacional das bases consolidadas junto das respectivas auditorias;
 - substituição transacional dos lotes de modelo e analytics;
 - rollback integral dos CSVs derivados quando uma escrita ou instalação falha;

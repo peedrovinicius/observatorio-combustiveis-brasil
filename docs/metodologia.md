@@ -60,13 +60,19 @@ O pipeline:
 
 Cada tabela reconhecida gera um CSV em `data/processed/`.
 
+A transformação rejeita colisões de nomes depois da normalização de colunas, em vez de descartar uma delas silenciosamente. Valores numéricos inesperados, como quantidade fracionária de postos, são preservados como número para que a camada de qualidade possa diagnosticá-los.
+
 Antes de substituir arquivos processados, o pipeline lê todas as planilhas históricas e confirma que cada uma possui pelo menos uma aba reconhecível. Os CSVs novos são produzidos em staging antes de qualquer alteração em `data/processed/`.
 
-Brasil, regiões, estados e municípios são então substituídos como um único lote. Os CSVs históricos anteriores ficam em backup temporário até a instalação terminar. Em caso de falha, o lote anterior completo é restaurado.
+Brasil, regiões, estados e municípios são substituídos como um único lote junto de `data/processed/history_transform_manifest.json`. Esse manifesto registra o SHA-256 do `history_manifest.json` que originou a transformação e, para cada CSV, escopo, arquivo e planilha de origem, número de linhas e colunas, tamanho e SHA-256.
 
-Essa estratégia impede mistura entre transformações de execuções diferentes e também evita que uma mudança no nome remoto do XLSX deixe versões antigas sendo consolidadas junto com as novas.
+Os CSVs históricos anteriores e o manifesto processado ficam em backup temporário até a instalação terminar. Em caso de falha, o lote anterior completo é restaurado.
+
+Essa estratégia impede mistura entre transformações de execuções diferentes, detecta edição posterior de CSV processado e evita que uma mudança no nome remoto do XLSX deixe versões antigas sendo consolidadas junto com as novas.
 
 ## 6. Consolidação de 2026
+
+Antes de consolidar, o pipeline valida `history_transform_manifest.json` contra o manifesto raw atual e contra os hashes dos CSVs processados. A consolidação usa somente os arquivos aprovados por essa verificação.
 
 A consolidação seleciona tabelas agregadas com preço médio de revenda e:
 
@@ -78,12 +84,16 @@ A consolidação seleciona tabelas agregadas com preço médio de revenda e:
 - identifica o nível geográfico;
 - adiciona ano, mês e semana ISO;
 - alinha schemas;
-- contabiliza e remove duplicidades pela chave analítica disponível;
+- remove somente duplicatas semanticamente equivalentes;
+- preserva linhas conflitantes na mesma chave analítica para que a qualidade possa bloqueá-las;
+- confere que Brasil, regiões, estados e municípios aparecem no escopo histórico correto;
 - prepara `data/processed/precos_semanais_2026.csv`;
 - prepara `reports/aggregate_ingestion_audit_2026.json`;
 - publica base consolidada e auditoria juntas, com rollback do par anterior se a instalação falhar.
 
 Registros fora de 2026 são uma exclusão esperada para o recorte anual. Datas iniciais inválidas deixam a auditoria com status `review`, preservando visibilidade sobre linhas que não chegaram à base final.
+
+Um arquivo histórico ignorado por schema, um arquivo processado sem linhas elegíveis de 2026 ou uma duplicidade conflitante também deixam a auditoria em `review`. No modo usado pelo pipeline, incompatibilidade entre o escopo do arquivo e o nível geográfico das linhas é bloqueante.
 
 ## 7. Qualidade
 

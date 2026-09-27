@@ -268,3 +268,23 @@ python -m src.download_open_data
 ```
 
 `src.download_anp` é mantido apenas por compatibilidade com testes antigos de descoberta e seu `main()` é bloqueado. Ele não deve ser usado para gravar dados raw.
+
+
+## Proveniência entre raw e processed
+
+A transformação da série histórica publica:
+
+```text
+data/processed/history_transform_manifest.json
+```
+
+Esse manifesto liga os CSVs processados ao `data/raw/history_manifest.json` por SHA-256. A consolidação verifica o hash do manifesto raw atual, o tamanho e SHA-256 de cada CSV processado e a correspondência exata do conjunto de arquivos.
+
+Por isso, não edite manualmente os CSVs históricos em `data/processed/`. Se qualquer arquivo ou manifesto divergir, reexecute:
+
+```powershell
+python -m src.transform
+python -m src.consolidate
+```
+
+A transformação publica os CSVs e o manifesto processado como um único bundle com rollback.
