@@ -8,6 +8,7 @@ TEXT_EXTENSIONS = {
     ".sql",
     ".dax",
     ".ps1",
+    ".ipynb",
 }
 
 TEXT_ROOTS = [
