@@ -7,7 +7,14 @@ import pandas as pd
 from .atomic_outputs import (
     replace_text_file,
 )
-from .config import REPORTS_DIR
+from .config import (
+    PROCESSED_DIR,
+    RAW_OPEN_DATA_DIR,
+    REPORTS_DIR,
+)
+from .provenance import (
+    verify_station_transform_provenance,
+)
 from .station_data import (
     BUSINESS_KEY,
     STATION_OUTPUT,
@@ -340,6 +347,12 @@ def build_station_quality_report(
 
 
 def main() -> None:
+    verify_station_transform_provenance(
+        PROCESSED_DIR,
+        RAW_OPEN_DATA_DIR,
+        REPORTS_DIR,
+    )
+
     if not STATION_OUTPUT.exists():
         raise SystemExit(
             "Base por posto não encontrada. "
