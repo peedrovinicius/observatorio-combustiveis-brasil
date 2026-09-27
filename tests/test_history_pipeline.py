@@ -1627,3 +1627,105 @@ def test_consolidation_preserves_conflicting_duplicate_rows(
         == 2
     )
     assert audit["status"] == "review"
+
+
+
+def test_aggregate_audit_reviews_processed_file_without_2026_rows(
+    tmp_path: Path,
+) -> None:
+    valid = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+        }
+    )
+    old = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2025-12-28",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                5.9,
+            ],
+        }
+    )
+    valid.to_csv(
+        tmp_path / "valido.csv",
+        index=False,
+    )
+    old.to_csv(
+        tmp_path / "sem_2026.csv",
+        index=False,
+    )
+
+    frame, audit = (
+        build_analytics_table_with_audit(
+            tmp_path
+        )
+    )
+
+    assert len(frame) == 1
+    assert (
+        audit[
+            "arquivos_processados_sem_linhas_2026"
+        ]
+        == 1
+    )
+    assert audit["status"] == "review"
+
+
+def test_aggregate_audit_reviews_ignored_schema_without_other_issues(
+    tmp_path: Path,
+) -> None:
+    valid = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+        }
+    )
+    invalid_schema = pd.DataFrame(
+        {
+            "outra_coluna": [
+                "x",
+            ]
+        }
+    )
+    valid.to_csv(
+        tmp_path / "valido.csv",
+        index=False,
+    )
+    invalid_schema.to_csv(
+        tmp_path / "schema_novo.csv",
+        index=False,
+    )
+
+    _, audit = (
+        build_analytics_table_with_audit(
+            tmp_path
+        )
+    )
+
+    assert (
+        audit[
+            "arquivos_ignorados_por_schema"
+        ]
+        == 1
+    )
+    assert audit["status"] == "review"
