@@ -48,6 +48,8 @@ A suíte verifica, entre outros pontos:
 - modelo estrela por posto;
 - presença da proveniência `fonte_arquivo` antes da modelagem por posto;
 - KPIs agregados;
+- semântica produto + unidade de medida nos analytics agregados;
+- relação etanol/gasolina somente entre observações da mesma unidade;
 - barreira de qualidade antes dos analytics agregados;
 - análises por estabelecimento;
 - analytics por posto preservam séries independentes por combinação de produto e unidade de medida;
@@ -63,7 +65,8 @@ A suíte verifica, entre outros pontos:
 - unicidade do grão das duas tabelas fato no PostgreSQL;
 - unicidade natural de localidade e produto por posto no PostgreSQL;
 - separação segura de comandos SQL com strings, comentários e blocos PostgreSQL;
-- consistência das consultas SQL agregadas com a última semana por produto;
+- consistência das consultas SQL agregadas com a última semana por produto e unidade de medida;
+- guardas DAX contra mistura de unidades;
 - última semana comparável para etanol e gasolina comum;
 - consistência das consultas SQL por posto com a regra de última coleta por combinação de produto e unidade de medida;
 - regra mínima de amostra por bandeira no SQL;
