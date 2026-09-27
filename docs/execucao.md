@@ -94,6 +94,8 @@ Gerar snapshot:
 python -m src.snapshot
 ```
 
+O snapshot recusa artefatos visuais mais antigos que os CSVs analíticos ou relatórios de qualidade atuais. Se houver reprocessamento desses insumos, execute `python -m src.reporting` antes do snapshot.
+
 Não use `python -m src.site` nem `python -m src.publish_readme` para publicação isolada. Esses pontos de entrada são bloqueados para preservar a regra de publicação tudo ou nada.
 
 Subir PostgreSQL:
