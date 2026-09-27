@@ -13,6 +13,12 @@ from .config import (
     PROCESSED_DIR,
     REPORTS_DIR,
 )
+from .provenance import (
+    HISTORY_SCOPES,
+)
+from .transform import (
+    history_scope_from_path,
+)
 
 OUTPUT_NAME = "precos_semanais_2026.csv"
 AGGREGATE_INGESTION_AUDIT = (
@@ -75,8 +81,9 @@ def infer_geographic_level(
 
 def _candidate_files(
     directory: Path,
+    history_only: bool = False,
 ) -> list[Path]:
-    return sorted(
+    files = sorted(
         path
         for path in directory.glob(
             "*.csv"
@@ -84,6 +91,45 @@ def _candidate_files(
         if path.name
         != OUTPUT_NAME
     )
+    if history_only:
+        files = [
+            path
+            for path in files
+            if history_scope_from_path(
+                path
+            )
+            is not None
+        ]
+    return files
+
+
+def _validate_history_scope_coverage(
+    files: list[Path],
+) -> None:
+    scopes = {
+        scope
+        for path in files
+        if (
+            scope
+            := history_scope_from_path(
+                path
+            )
+        )
+    }
+    if scopes != HISTORY_SCOPES:
+        missing = sorted(
+            HISTORY_SCOPES
+            - scopes
+        )
+        extra = sorted(
+            scopes
+            - HISTORY_SCOPES
+        )
+        raise RuntimeError(
+            "Cobertura processada histórica "
+            f"incompleta. Ausentes={missing}; "
+            f"extras={extra}."
+        )
 
 
 def _prepare_aggregate_file(
@@ -200,6 +246,9 @@ def _prepare_aggregate_file(
 
 def build_analytics_table_with_audit(
     directory: Path = PROCESSED_DIR,
+    *,
+    history_only: bool = False,
+    require_complete_history: bool = False,
 ) -> tuple[
     pd.DataFrame,
     dict[str, object],
@@ -210,8 +259,13 @@ def build_analytics_table_with_audit(
     ] = []
 
     files = _candidate_files(
-        directory
+        directory,
+        history_only=history_only,
     )
+    if require_complete_history:
+        _validate_history_scope_coverage(
+            files
+        )
     for path in files:
         frame, file_audit = (
             _prepare_aggregate_file(
@@ -261,17 +315,36 @@ def build_analytics_table_with_audit(
         if column
         in combined.columns
     ]
-    if keys:
-        combined = (
-            combined.drop_duplicates(
-                subset=keys,
-                keep="last",
-            )
-        )
 
+    semantic_columns = [
+        column
+        for column in combined.columns
+        if column
+        not in {
+            "fonte_arquivo",
+            "fonte_planilha",
+        }
+    ]
+    combined = (
+        combined.drop_duplicates(
+            subset=semantic_columns,
+            keep="first",
+        )
+    )
     duplicates_removed = (
         rows_before_dedup
         - len(combined)
+    )
+
+    conflicting_duplicate_rows = (
+        int(
+            combined.duplicated(
+                subset=keys,
+                keep=False,
+            ).sum()
+        )
+        if keys
+        else 0
     )
 
     sort_candidates = [
@@ -369,13 +442,20 @@ def build_analytics_table_with_audit(
         "linhas_removidas_por_duplicidade": int(
             duplicates_removed
         ),
+        "linhas_com_duplicidade_divergente": int(
+            conflicting_duplicate_rows
+        ),
         "linhas_finais": int(
             len(combined)
         ),
         "arquivos": file_audits,
         "status": (
             "passed"
-            if invalid_dates == 0
+            if (
+                invalid_dates == 0
+                and conflicting_duplicate_rows
+                == 0
+            )
             else "review"
         ),
     }
@@ -406,7 +486,9 @@ def main() -> None:
     )
     frame, audit = (
         build_analytics_table_with_audit(
-            PROCESSED_DIR
+            PROCESSED_DIR,
+            history_only=True,
+            require_complete_history=True,
         )
     )
 
