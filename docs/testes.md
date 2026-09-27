@@ -51,6 +51,7 @@ A suíte verifica, entre outros pontos:
 - analytics por posto preservam séries independentes por combinação de produto e unidade de medida;
 - barreira de qualidade antes dos analytics por posto;
 - contrato dos CSVs com PostgreSQL;
+- alinhamento automático entre cabeçalhos gerados pelo modelo por posto, contrato da carga e colunas declaradas no SQL;
 - unicidade do grão das duas tabelas fato no PostgreSQL;
 - unicidade natural de localidade e produto por posto no PostgreSQL;
 - separação segura de comandos SQL com strings, comentários e blocos PostgreSQL;

@@ -2,7 +2,7 @@
 -- Consultas de referência para a camada por estabelecimento.
 -- A última coleta é calculada por produto e unidade de medida.
 
--- Base auxiliar com a última data disponível de cada produto.
+-- Base auxiliar com a última data disponível por produto e unidade de medida.
 WITH ultima_coleta_produto AS (
     SELECT
         f.produto_posto_id,
@@ -83,7 +83,7 @@ ORDER BY
     preco_medio DESC;
 
 
--- Comparação entre bandeiras na última coleta de cada produto.
+-- Comparação entre bandeiras na última coleta por produto e unidade de medida.
 WITH ultima_coleta_produto AS (
     SELECT
         f.produto_posto_id,
@@ -161,7 +161,7 @@ ORDER BY
     preco_medio;
 
 
--- Postos com menor preço na última coleta de cada produto.
+-- Postos com menor preço na última coleta por produto e unidade de medida.
 WITH ultima_coleta_produto AS (
     SELECT
         f.produto_posto_id,

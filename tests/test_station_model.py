@@ -4,6 +4,10 @@ import pytest
 from src.build_station_model import (
     build_validated_station_model,
 )
+from src.load_postgres import (
+    REQUIRED_TABLE_COLUMNS,
+    TABLE_COLUMNS,
+)
 
 
 def _valid_station_frame() -> pd.DataFrame:
@@ -131,4 +135,18 @@ def test_validated_station_model_requires_source_provenance() -> None:
     ):
         build_validated_station_model(
             frame
+        )
+
+
+def test_station_model_headers_match_postgres_contract() -> None:
+    tables = build_validated_station_model(
+        _valid_station_frame()
+    )
+
+    for table, frame in tables.items():
+        columns = set(frame.columns)
+        assert columns <= TABLE_COLUMNS[table]
+        assert (
+            REQUIRED_TABLE_COLUMNS[table]
+            <= columns
         )

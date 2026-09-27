@@ -15,7 +15,7 @@ def _sql() -> str:
     )
 
 
-def test_station_sql_uses_latest_date_per_product() -> None:
+def test_station_sql_uses_latest_date_per_product_unit() -> None:
     sql = _sql()
 
     assert (
