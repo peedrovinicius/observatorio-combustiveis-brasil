@@ -119,3 +119,8 @@ A lista dos cinco PNGs públicos fica centralizada em `src/publication_contract.
 ## Entrada única de publicação pública
 
 A publicação direta por `python -m src.site` e `python -m src.publish_readme` é bloqueada para evitar estados parciais. O único comando de publicação pública é `python -m src.snapshot`, que monta e substitui site, relatório, imagens e README como um único bundle.
+
+
+## Frescor do bundle visual
+
+O snapshot também verifica o frescor do bundle visual antes de publicar. Os cinco PNGs e `reports/insights_2026.md` precisam ser tão recentes quanto os CSVs analíticos e relatórios de qualidade usados como entrada. Se analytics ou qualidade forem regenerados depois dos gráficos, `python -m src.snapshot` é bloqueado até que `python -m src.reporting` seja executado novamente.
