@@ -110,3 +110,6 @@ Os manifestos têm versão explícita e não funcionam apenas como registro hist
 Na camada por posto, o pipeline confere o arquivo raw baixado e também cada CSV extraído de ZIP, com tamanho e SHA-256 próprios. CSVs adicionais não manifestados bloqueiam a consolidação.
 
 Os registros também preservam, quando fornecidos pelo servidor, `ETag` e `Last-Modified`. Esses cabeçalhos são metadados auxiliares; a integridade local é decidida pelo SHA-256 e pelo tamanho.
+
+
+A inspeção e a transformação não varrem livremente todos os XLSX presentes em `data/raw/`. Depois da validação, ambas consomem exclusivamente os arquivos listados no manifesto histórico aprovado. Um arquivo adicional com outro nome não entra no processamento.
