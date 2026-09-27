@@ -3,7 +3,14 @@ from __future__ import annotations
 import pandas as pd
 
 from .atomic_outputs import replace_csv_batch
-from .config import PROCESSED_DIR
+from .config import (
+    PROCESSED_DIR,
+    RAW_OPEN_DATA_DIR,
+    REPORTS_DIR,
+)
+from .provenance import (
+    verify_station_transform_provenance,
+)
 from .station_data import (
     STATION_MODEL_DIR,
     STATION_OUTPUT,
@@ -34,6 +41,12 @@ def build_validated_station_model(
 
 
 def main() -> None:
+    verify_station_transform_provenance(
+        PROCESSED_DIR,
+        RAW_OPEN_DATA_DIR,
+        REPORTS_DIR,
+    )
+
     if not STATION_OUTPUT.exists():
         raise SystemExit(
             "Base por posto não encontrada. "
