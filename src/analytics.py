@@ -11,6 +11,7 @@ ANALYTICS_DIR = PROCESSED_DIR / "analytics"
 
 KPI_COLUMNS = [
     "produto",
+    "unidade_medida",
     "ultima_semana_inicio",
     "ultima_semana_fim",
     "preco_atual",
@@ -27,6 +28,7 @@ MONTHLY_COLUMNS = [
     "ano",
     "mes",
     "produto",
+    "unidade_medida",
     "media_das_semanas",
     "menor_semana",
     "maior_semana",
@@ -40,6 +42,7 @@ STATE_RANKING_COLUMNS = [
     "uf",
     "estado",
     "produto",
+    "unidade_medida",
     "postos_pesquisados",
     "preco_medio_revenda",
     "preco_minimo_revenda",
@@ -55,6 +58,7 @@ CITY_RANKING_COLUMNS = [
     "uf",
     "municipio",
     "produto",
+    "unidade_medida",
     "postos_pesquisados",
     "preco_medio_revenda",
     "preco_minimo_revenda",
@@ -68,6 +72,7 @@ RATIO_COLUMNS = [
     "data_inicial",
     "uf",
     "municipio",
+    "unidade_medida",
     "preco_etanol",
     "preco_gasolina_comum",
     "relacao_etanol_gasolina_pct",
@@ -106,6 +111,15 @@ def _prepare(frame: pd.DataFrame) -> pd.DataFrame:
         .str.strip()
         .str.upper()
     )
+    if "unidade_medida" in working.columns:
+        working["unidade_medida"] = (
+            working["unidade_medida"]
+            .astype("string")
+            .str.strip()
+            .replace("", pd.NA)
+        )
+    else:
+        working["unidade_medida"] = pd.NA
     working["preco_medio_revenda"] = pd.to_numeric(
         working["preco_medio_revenda"],
         errors="coerce",
@@ -123,7 +137,7 @@ def _latest_date(frame: pd.DataFrame) -> pd.Timestamp:
     return frame["data_inicial"].max()
 
 
-def _latest_by_product(
+def _latest_by_product_unit(
     frame: pd.DataFrame,
 ) -> pd.DataFrame:
     if frame.empty:
@@ -131,7 +145,10 @@ def _latest_by_product(
 
     latest = (
         frame.groupby(
-            "produto",
+            [
+                "produto",
+                "unidade_medida",
+            ],
             dropna=False,
         )["data_inicial"]
         .transform("max")
@@ -158,8 +175,14 @@ def build_brazil_kpis(
         return pd.DataFrame(columns=KPI_COLUMNS)
 
     rows: list[dict[str, object]] = []
-    for product, group in brazil.groupby(
-        "produto",
+    for (
+        product,
+        unit,
+    ), group in brazil.groupby(
+        [
+            "produto",
+            "unidade_medida",
+        ],
         dropna=False,
     ):
         group = group.sort_values(
@@ -203,6 +226,7 @@ def build_brazil_kpis(
         rows.append(
             {
                 "produto": product,
+                "unidade_medida": unit,
                 "ultima_semana_inicio": latest["data_inicial"],
                 "ultima_semana_fim": latest.get("data_final"),
                 "preco_atual": current_price,
@@ -224,7 +248,13 @@ def build_brazil_kpis(
 
     return (
         pd.DataFrame(rows, columns=KPI_COLUMNS)
-        .sort_values("produto", kind="stable")
+        .sort_values(
+            [
+                "produto",
+                "unidade_medida",
+            ],
+            kind="stable",
+        )
         .reset_index(drop=True)
     )
 
@@ -248,8 +278,14 @@ def build_monthly_brazil(
 
     monthly = (
         brazil.groupby(
-            ["ano", "mes", "produto"],
+            [
+                "ano",
+                "mes",
+                "produto",
+                "unidade_medida",
+            ],
             as_index=False,
+            dropna=False,
         )
         .agg(
             media_das_semanas=(
@@ -270,16 +306,25 @@ def build_monthly_brazil(
             ),
         )
         .sort_values(
-            ["produto", "ano", "mes"],
+            [
+                "produto",
+                "unidade_medida",
+                "ano",
+                "mes",
+            ],
             kind="stable",
         )
         .reset_index(drop=True)
     )
 
     monthly["variacao_mensal_pct"] = (
-        monthly.groupby("produto")[
-            "media_das_semanas"
-        ]
+        monthly.groupby(
+            [
+                "produto",
+                "unidade_medida",
+            ],
+            dropna=False,
+        )["media_das_semanas"]
         .pct_change(fill_method=None)
         * 100
     )
@@ -302,21 +347,29 @@ def build_latest_state_ranking(
             columns=STATE_RANKING_COLUMNS
         )
 
-    states = _latest_by_product(
+    states = _latest_by_product_unit(
         states
     )
 
     states["ranking_mais_caro"] = (
-        states.groupby("produto")[
-            "preco_medio_revenda"
-        ]
+        states.groupby(
+            [
+                "produto",
+                "unidade_medida",
+            ],
+            dropna=False,
+        )["preco_medio_revenda"]
         .rank(method="min", ascending=False)
         .astype("Int64")
     )
     states["ranking_mais_barato"] = (
-        states.groupby("produto")[
-            "preco_medio_revenda"
-        ]
+        states.groupby(
+            [
+                "produto",
+                "unidade_medida",
+            ],
+            dropna=False,
+        )["preco_medio_revenda"]
         .rank(method="min", ascending=True)
         .astype("Int64")
     )
@@ -329,7 +382,11 @@ def build_latest_state_ranking(
     return (
         states[columns]
         .sort_values(
-            ["produto", "ranking_mais_caro"],
+            [
+                "produto",
+                "unidade_medida",
+                "ranking_mais_caro",
+            ],
             kind="stable",
         )
         .reset_index(drop=True)
@@ -352,21 +409,29 @@ def build_latest_city_ranking(
             columns=CITY_RANKING_COLUMNS
         )
 
-    cities = _latest_by_product(
+    cities = _latest_by_product_unit(
         cities
     )
 
     cities["ranking_mais_caro"] = (
-        cities.groupby("produto")[
-            "preco_medio_revenda"
-        ]
+        cities.groupby(
+            [
+                "produto",
+                "unidade_medida",
+            ],
+            dropna=False,
+        )["preco_medio_revenda"]
         .rank(method="min", ascending=False)
         .astype("Int64")
     )
     cities["ranking_mais_barato"] = (
-        cities.groupby("produto")[
-            "preco_medio_revenda"
-        ]
+        cities.groupby(
+            [
+                "produto",
+                "unidade_medida",
+            ],
+            dropna=False,
+        )["preco_medio_revenda"]
         .rank(method="min", ascending=True)
         .astype("Int64")
     )
@@ -379,7 +444,11 @@ def build_latest_city_ranking(
     return (
         cities[columns]
         .sort_values(
-            ["produto", "ranking_mais_caro"],
+            [
+                "produto",
+                "unidade_medida",
+                "ranking_mais_caro",
+            ],
             kind="stable",
         )
         .reset_index(drop=True)
@@ -456,6 +525,7 @@ def build_ethanol_gasoline_ratio(
             "data_inicial",
             "uf",
             "municipio",
+            "unidade_medida",
         ]
         if column in cities.columns
     ]
