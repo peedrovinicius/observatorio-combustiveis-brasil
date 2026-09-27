@@ -26,6 +26,7 @@ ASSETS_DIR = (
     / "assets"
     / "generated"
 )
+REPORT_IMAGES = PUBLIC_IMAGE_FILES
 
 STATION_DISPERSION_REQUIRED_COLUMNS = {
     "data_coleta",
@@ -1417,7 +1418,7 @@ def _publish_report_bundle(
         )
 
     required_images = set(
-        PUBLIC_IMAGE_FILES
+        REPORT_IMAGES
     )
     staged_image_paths = [
         path
