@@ -519,6 +519,38 @@ def build_ethanol_gasoline_ratio(
             columns=RATIO_COLUMNS
         )
 
+    class_key = [
+        "data_inicial",
+        *(
+            ["uf"]
+            if "uf" in cities.columns
+            else []
+        ),
+        *(
+            ["municipio"]
+            if "municipio"
+            in cities.columns
+            else []
+        ),
+        "unidade_medida",
+        "combustivel_comparavel",
+    ]
+    class_size = (
+        cities.groupby(
+            class_key,
+            dropna=False,
+        )["produto"]
+        .transform("size")
+    )
+    cities = cities.loc[
+        class_size.eq(1)
+    ].copy()
+
+    if cities.empty:
+        return pd.DataFrame(
+            columns=RATIO_COLUMNS
+        )
+
     index_columns = [
         column
         for column in [
