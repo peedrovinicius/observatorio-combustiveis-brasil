@@ -117,6 +117,8 @@ Quantidade de estabelecimentos distintos no recorte, usando CNPJ quando disponí
 
 ### Cobertura
 
+O resumo anual identifica municípios pela combinação de UF e nome, evitando fundir municípios homônimos de estados diferentes.
+
 O resumo anual por produto registra:
 
 - período inicial e final;

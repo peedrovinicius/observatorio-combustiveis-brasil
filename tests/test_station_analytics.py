@@ -489,3 +489,49 @@ def test_validated_station_analytics_rejects_blank_provenance() -> None:
         build_validated_station_analytics_exports(
             frame
         )
+
+
+def test_station_coverage_distinguishes_same_municipality_name_across_states() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_coleta": [
+                "2026-09-20",
+                "2026-09-20",
+            ],
+            "uf": [
+                "SC",
+                "GO",
+            ],
+            "municipio": [
+                "SAO DOMINGOS",
+                "SAO DOMINGOS",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO B",
+            ],
+            "cnpj_revenda": [
+                "00000001000136",
+                "00000002000180",
+            ],
+            "produto": [
+                "GASOLINA",
+                "GASOLINA",
+            ],
+            "unidade_medida": [
+                "R$ / litro",
+                "R$ / litro",
+            ],
+            "preco_revenda": [
+                6.10,
+                6.20,
+            ],
+        }
+    )
+
+    result = build_station_coverage(
+        frame
+    )
+
+    assert result.iloc[0]["municipios"] == 2
+    assert result.iloc[0]["ufs"] == 2

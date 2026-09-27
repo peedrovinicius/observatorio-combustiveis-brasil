@@ -137,6 +137,17 @@ def _prepare_station(
     ] = station_identity(
         working
     )
+    working[
+        "_municipio_identidade"
+    ] = (
+        working["uf"]
+        .astype("string")
+        .str.cat(
+            working["municipio"]
+            .astype("string"),
+            sep="|",
+        )
+    )
     return working
 
 
@@ -201,7 +212,7 @@ def build_station_coverage(
                 "nunique",
             ),
             municipios=(
-                "municipio",
+                "_municipio_identidade",
                 "nunique",
             ),
             ufs=(
