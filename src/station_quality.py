@@ -36,6 +36,9 @@ def build_station_quality_report(
     report: dict[str, object] = {
         "rows": int(len(frame)),
         "columns": int(len(frame.columns)),
+        "empty_dataset": bool(
+            frame.empty
+        ),
         "missing_required_columns": missing_columns,
     }
 
@@ -301,6 +304,11 @@ def build_station_quality_report(
     ] = required_nulls
 
     blocking_issues = [
+        int(
+            report[
+                "empty_dataset"
+            ]
+        ),
         report["datas_invalidas"],
         report["datas_fora_2026"],
         report["precos_invalidos"],
