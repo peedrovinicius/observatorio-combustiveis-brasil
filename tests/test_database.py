@@ -478,16 +478,16 @@ def test_station_sql_schema_columns_match_loader_contract() -> None:
         "fato_precos_postos",
     )
     column_pattern = re.compile(
-        r"^\\s*([a-z_][a-z0-9_]*)\\s+"
+        r"^\s*([a-z_][a-z0-9_]*)\s+"
         r"(?:BIGINT|DATE|SMALLINT|VARCHAR|CHAR|NUMERIC|"
-        r"INTEGER|TEXT|BOOLEAN)\\b",
+        r"INTEGER|TEXT|BOOLEAN)\b",
         re.MULTILINE,
     )
 
     for table in station_tables:
         block = re.search(
-            rf"CREATE TABLE IF NOT EXISTS {table}\\s*"
-            r"\\((.*?)\\n\\);",
+            rf"CREATE TABLE IF NOT EXISTS {table}\s*"
+            r"\((.*?)\n\);",
             schema,
             re.DOTALL,
         )
