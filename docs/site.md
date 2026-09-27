@@ -4,7 +4,7 @@ O snapshot local também gera `docs/index.html`, um relatório estático constru
 
 A página inclui:
 
-- KPIs nacionais por produto;
+- KPIs nacionais por produto e unidade de medida;
 - tendência de preços;
 - ranking por UF;
 - cobertura e qualidade;
@@ -60,8 +60,10 @@ Somente depois da geração completa o conjunto substitui a versão anterior. Em
 
 ## Seleção de combustível no ranking
 
-O ranking por UF do site usa somente gasolina comum.
+O ranking por UF do site usa somente gasolina comum e exige uma única unidade de medida no recorte.
 
 Se a saída analítica não contiver gasolina comum, o site informa `Gasolina comum indisponível` e não substitui o produto por etanol, gasolina aditivada ou qualquer outro combustível disponível no arquivo.
+
+Se houver mais de uma unidade de medida para gasolina comum, o ranking também não combina os preços. O site informa a ambiguidade em vez de ordenar grandezas incompatíveis.
 
 Essa regra mantém o HTML consistente com os gráficos e com a definição metodológica do ranking.
