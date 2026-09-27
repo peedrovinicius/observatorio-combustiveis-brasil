@@ -4,6 +4,8 @@
 
 Os exports analíticos agregados só são gerados quando a série consolidada passa pela validação de qualidade. A execução direta de `python -m src.analytics` repete essa validação antes de escrever arquivos em `data/processed/analytics/`.
 
+No Power BI, medidas de preço agregado exigem uma única localidade além de produto, unidade e nível geográfico. O objetivo é impedir que um card amplo calcule média aritmética entre agregados oficiais de localidades diferentes.
+
 ### Preço atual
 
 Último preço médio de revenda publicado para a combinação de produto e nível geográfico selecionada.
