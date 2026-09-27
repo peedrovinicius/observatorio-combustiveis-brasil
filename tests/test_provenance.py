@@ -328,3 +328,95 @@ def test_provenance_rejects_legacy_manifest_without_version(
         verify_history_provenance(
             tmp_path
         )
+
+
+
+def test_open_data_provenance_rejects_raw_name_dataset_mismatch(
+    tmp_path: Path,
+) -> None:
+    _write_open_manifest(
+        tmp_path
+    )
+    manifest_path = (
+        tmp_path
+        / "manifest.json"
+    )
+    manifest = json.loads(
+        manifest_path.read_text(
+            encoding="utf-8",
+        )
+    )
+    manifest["files"][0][
+        "dataset"
+    ] = "outro_dataset"
+    manifest_path.write_text(
+        json.dumps(
+            manifest
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="dataset lógico",
+    ):
+        verify_open_data_provenance(
+            tmp_path
+        )
+
+
+def test_open_data_provenance_rejects_extra_raw_archive(
+    tmp_path: Path,
+) -> None:
+    _write_open_manifest(
+        tmp_path
+    )
+    (
+        tmp_path
+        / "arquivo_extra.zip"
+    ).write_bytes(
+        b"extra"
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Arquivos raw locais",
+    ):
+        verify_open_data_provenance(
+            tmp_path
+        )
+
+
+def test_open_data_provenance_accepts_windows_legacy_separator(
+    tmp_path: Path,
+) -> None:
+    _write_open_manifest(
+        tmp_path
+    )
+    manifest_path = (
+        tmp_path
+        / "manifest.json"
+    )
+    manifest = json.loads(
+        manifest_path.read_text(
+            encoding="utf-8",
+        )
+    )
+    manifest["files"][1][
+        "extracted_csvs"
+    ] = [
+        (
+            "etanol_gasolina_setembro_2026"
+            "\\dados.csv"
+        )
+    ]
+    manifest_path.write_text(
+        json.dumps(
+            manifest
+        ),
+        encoding="utf-8",
+    )
+
+    verify_open_data_provenance(
+        tmp_path
+    )
