@@ -12,6 +12,12 @@ O notebook cobre:
 - relação etanol × gasolina por município;
 - cuidados metodológicos para não misturar níveis geográficos.
 
+Para usar o notebook, instale o perfil específico:
+
+```bash
+python -m pip install -r requirements-notebook.txt
+```
+
 Antes de abrir o notebook, execute:
 
 ```bash
