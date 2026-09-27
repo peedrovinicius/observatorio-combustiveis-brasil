@@ -420,3 +420,62 @@ def test_ranking_rows_rejects_multiple_dates() -> None:
 
     assert rows == ""
     assert "período ambíguo" in label
+
+
+def test_ranking_rows_formats_missing_station_count_as_nd() -> None:
+    from src.site import _ranking_rows
+
+    ranking = pd.DataFrame(
+        {
+            "produto": [
+                "GASOLINA COMUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+            ],
+            "data_inicial": [
+                "2026-09-20",
+            ],
+            "data_final": [
+                "2026-09-26",
+            ],
+            "uf": [
+                "CE",
+            ],
+            "preco_medio_revenda": [
+                6.30,
+            ],
+            "postos_pesquisados": [
+                pd.NA,
+            ],
+        }
+    )
+
+    rows, _ = _ranking_rows(
+        ranking
+    )
+
+    assert "<td>n/d</td>" in rows
+    assert "nan" not in rows.lower()
+    assert "&lt;na&gt;" not in rows.lower()
+
+
+def test_ranking_rows_formats_station_count_as_integer() -> None:
+    from src.site import _ranking_rows
+
+    ranking = pd.DataFrame(
+        {
+            "produto": ["GASOLINA COMUM"],
+            "unidade_medida": ["R$/L"],
+            "uf": ["CE"],
+            "preco_medio_revenda": [6.30],
+            "postos_pesquisados": [1234.0],
+        }
+    )
+
+    rows, _ = _ranking_rows(
+        ranking
+    )
+
+    assert "<td>1.234</td>" in rows
+    assert "1234.0" not in rows

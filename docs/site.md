@@ -24,6 +24,8 @@ O site é totalmente estático e não depende de backend.
 
 Os valores exibidos são lidos das saídas analíticas do pipeline. Não existem métricas fictícias ou preenchidas manualmente no HTML.
 
+Contagens ausentes são exibidas como `n/d`, nunca como representações internas de valores nulos como `NaN` ou `<NA>`.
+
 As visualizações por estabelecimento usam somente a camada por posto e não são apresentadas como equivalentes aos agregados oficiais da ANP.
 
 A pasta `docs/` fica pronta para ser usada como origem de uma publicação estática do repositório, após revisão dos resultados gerados.

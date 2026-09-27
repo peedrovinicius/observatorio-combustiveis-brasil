@@ -60,6 +60,27 @@ def _currency(
     )
 
 
+def _count(
+    value: object,
+) -> str:
+    if pd.isna(value):
+        return "n/d"
+    try:
+        number = float(value)
+    except (
+        TypeError,
+        ValueError,
+    ):
+        return "n/d"
+
+    if not number.is_integer():
+        return "n/d"
+    return f"{int(number):,}".replace(
+        ",",
+        ".",
+    )
+
+
 def _percent(
     value: object,
 ) -> str:
@@ -365,7 +386,7 @@ def _ranking_rows(
             "<tr>"
             f"<td>{html.escape(str(label))}</td>"
             f"<td>{_currency(row['preco_medio_revenda'])}</td>"
-            f"<td>{html.escape(str(row.get('postos_pesquisados', 'n/d')))}</td>"
+            f"<td>{_count(row.get('postos_pesquisados'))}</td>"
             "</tr>"
         )
 
