@@ -384,17 +384,6 @@ def _replace_dataset_artifacts(
         parents=True,
         exist_ok=True,
     )
-    previous_stems = (
-        _previous_manifest_stems(
-            root
-        )
-    )
-    managed_stems = sorted(
-        set(
-            stems
-        )
-        | previous_stems
-    )
 
     with tempfile.TemporaryDirectory(
         prefix=".dataset_stage_",
@@ -664,6 +653,17 @@ def _replace_open_data_batch(
     root.mkdir(
         parents=True,
         exist_ok=True,
+    )
+    previous_stems = (
+        _previous_manifest_stems(
+            root
+        )
+    )
+    managed_stems = sorted(
+        set(
+            stems
+        )
+        | previous_stems
     )
 
     with tempfile.TemporaryDirectory(
