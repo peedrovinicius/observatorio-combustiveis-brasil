@@ -1,3 +1,5 @@
+import hashlib
+import json
 import io
 from pathlib import Path
 
@@ -1066,6 +1068,53 @@ def test_history_batch_rejects_duplicate_scopes(
             "{}",
         )
 
+
+
+
+def test_history_batch_rejects_versioned_manifest_hash_mismatch(
+    tmp_path: Path,
+) -> None:
+    content = _xlsx_bytes()
+    filename = (
+        "historico_semanal_brasil__novo.xlsx"
+    )
+    manifest = json.dumps(
+        {
+            "manifest_version": 1,
+            "files": [
+                {
+                    "scope": "brasil",
+                    "filename": filename,
+                    "detected_format": "xlsx",
+                    "bytes": len(
+                        content
+                    ),
+                    "sha256": "0" * 64,
+                }
+            ],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="SHA-256 do manifesto histórico",
+    ):
+        _replace_history_batch(
+            tmp_path,
+            [
+                (
+                    "brasil",
+                    filename,
+                    content,
+                )
+            ],
+            manifest,
+        )
+
+    assert not (
+        tmp_path
+        / filename
+    ).exists()
 
 
 def test_history_batch_rejects_invalid_manifest_before_replacement(
