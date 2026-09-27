@@ -4,6 +4,7 @@
 
 **Data Analytics de preços de combustíveis com dados públicos oficiais da ANP**
 
+[![CI](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/actions/workflows/ci.yml/badge.svg)](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![Pandas](https://img.shields.io/badge/Pandas-2.x-150458?logo=pandas&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Modelo%20Estrela-4169E1?logo=postgresql&logoColor=white)
@@ -55,7 +56,7 @@ Os detalhes estão em [`docs/modelo-dados.md`](docs/modelo-dados.md) e [`docs/da
 | Área | Tecnologia |
 | --- | --- |
 | Extração e transformação | Python, pandas, requests |
-| Qualidade | validações próprias, pytest |
+| Qualidade | validações próprias, pytest, GitHub Actions |
 | Banco de dados | PostgreSQL |
 | Modelagem | modelo estrela |
 | Análise | Python, SQL, Jupyter |
