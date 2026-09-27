@@ -145,6 +145,10 @@ Documentação:
 - [Relatório web](docs/site.md)
 - [Testes](docs/testes.md)
 
+## Contribuindo
+
+Contribuições externas são bem-vindas. Antes de abrir um Pull Request, consulte o [guia de contribuição](CONTRIBUTING.md) e use as issues para alinhar o escopo da mudança.
+
 ## Status
 
 Pipeline agregado e por posto, validação, modelos dimensionais, PostgreSQL, SQL, KPIs agregados e por estabelecimento, notebook, snapshots e relatório web estático implementados.
