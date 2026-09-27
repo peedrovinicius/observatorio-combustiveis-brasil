@@ -392,3 +392,39 @@ def test_validated_star_schema_requires_aggregate_provenance() -> None:
         build_validated_star_schema(
             frame
         )
+
+
+def test_validated_star_schema_rejects_blank_aggregate_provenance() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "data_final": [
+                "2026-01-10",
+            ],
+            "nivel_geografico": [
+                "brasil",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+            "fonte_arquivo": [
+                "historico.xlsx",
+            ],
+            "fonte_planilha": [
+                " ",
+            ],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="fonte_planilha",
+    ):
+        build_validated_star_schema(
+            frame
+        )
