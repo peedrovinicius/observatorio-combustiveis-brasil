@@ -3,6 +3,10 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from datetime import (
+    datetime,
+    timedelta,
+)
 from pathlib import Path
 
 MANIFEST_VERSION = 1
@@ -52,6 +56,59 @@ def _load_manifest(
         raise ValueError(
             "Versão de manifesto não suportada. "
             "Reexecute o downloader correspondente."
+        )
+
+    source = str(
+        data.get(
+            "source",
+            "",
+        )
+    ).strip()
+    source_page = str(
+        data.get(
+            "source_page",
+            "",
+        )
+    ).strip()
+    collected_at = str(
+        data.get(
+            "collected_at_utc",
+            "",
+        )
+    ).strip()
+
+    if not source:
+        raise ValueError(
+            "Manifesto de proveniência sem fonte."
+        )
+    if not source_page.startswith(
+        "https://"
+    ):
+        raise ValueError(
+            "Manifesto de proveniência sem "
+            "página oficial HTTPS válida."
+        )
+
+    try:
+        collected = datetime.fromisoformat(
+            collected_at.replace(
+                "Z",
+                "+00:00",
+            )
+        )
+    except ValueError as exc:
+        raise ValueError(
+            "Timestamp UTC inválido no manifesto."
+        ) from exc
+
+    if (
+        collected.tzinfo is None
+        or collected.utcoffset()
+        != timedelta(0)
+    ):
+        raise ValueError(
+            "Timestamp do manifesto deve "
+            "estar em UTC."
         )
 
     files = data.get(
