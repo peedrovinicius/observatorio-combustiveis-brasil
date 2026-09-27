@@ -69,6 +69,8 @@ A modelagem evita repetição de atributos textuais na fato e simplifica relacio
 
 A mesma estrutura também permite criar filtros consistentes por período, produto e geografia sem duplicar regras em cada visual.
 
+A fato agregada preserva obrigatoriamente `fonte_arquivo` e `fonte_planilha`, registrados na transformação. A modelagem rejeita observações sem essa proveniência para manter rastreabilidade até o arquivo e a aba de origem.
+
 ## Dados por posto
 
 Os registros por posto revendedor têm grão diferente dos dados agregados e, por isso, permanecem em uma segunda tabela fato específica para observações por estabelecimento.
