@@ -142,3 +142,14 @@ Os dados abertos por posto são baixados e validados integralmente antes de qual
 A publicação local trata todos os datasets descobertos na execução e o respectivo `manifest.json` como um único bundle. Uma falha de download, validação ou instalação preserva integralmente o snapshot anterior.
 
 A descoberta também valida a cobertura mínima das famílias de 2026 e rejeita identidades lógicas duplicadas, evitando aceitar silenciosamente uma página oficial parcialmente alterada.
+
+
+## 11. Verificação ativa da proveniência
+
+Os hashes registrados na aquisição são verificados novamente antes do uso da camada raw.
+
+Para a série histórica, cada arquivo XLSX precisa corresponder ao tamanho e SHA-256 do `history_manifest.json`, e não pode existir arquivo histórico adicional fora do manifesto.
+
+Para os dados por posto, a validação cobre tanto o CSV ou ZIP original quanto cada CSV extraído. A consolidação é bloqueada se houver arquivo ausente, alterado, adicional ou com caminho incompatível com o manifesto.
+
+Essa barreira impede que uma alteração local, corrupção de arquivo ou resíduo de execução anterior seja propagado silenciosamente para `data/processed/`.
