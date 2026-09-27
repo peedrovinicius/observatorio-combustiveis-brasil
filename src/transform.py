@@ -13,6 +13,12 @@ from .provenance import (
     verified_history_files,
 )
 
+class HeaderDetectionError(
+    ValueError
+):
+    pass
+
+
 HEADER_HINTS = {
     "DATA INICIAL",
     "DATA FINAL",
@@ -175,7 +181,7 @@ def detect_header_row(path: Path, sheet_name: str, max_rows: int = 30) -> int:
             best_score = score
 
     if best_row < 0 or best_score < 2:
-        raise ValueError(
+        raise HeaderDetectionError(
             f"Não foi possível detectar o cabeçalho da planilha '{sheet_name}' "
             f"em {path.name}. Melhor pontuação: {best_score}."
         )
@@ -333,7 +339,7 @@ def _prepare_workbook_outputs(
                 path,
                 sheet_name,
             )
-        except ValueError:
+        except HeaderDetectionError:
             continue
 
         if frame.empty:
