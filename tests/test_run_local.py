@@ -24,7 +24,8 @@ def test_run_local_checks_native_exit_codes() -> None:
     )
     assert (
         'Invoke-NativeChecked -FilePath "docker" '
-        '-Arguments @("compose", "up", "-d", "postgres")'
+        '-Arguments @("compose", "up", "-d", "--wait", '
+        '"--wait-timeout", "60", "postgres")'
         in script
     )
     assert (
@@ -53,3 +54,20 @@ def test_run_local_has_no_unchecked_core_commands() -> None:
     assert "& $python -m src.load_postgres" not in script
     assert "& $python -m src.snapshot" not in script
     assert "docker compose up -d postgres" not in script
+
+
+def test_run_local_waits_for_postgres_health() -> None:
+    script = (
+        PROJECT_ROOT
+        / "scripts"
+        / "run_local.ps1"
+    ).read_text(
+        encoding="utf-8",
+    )
+
+    assert '"--wait"' in script
+    assert '"--wait-timeout", "60"' in script
+    assert (
+        script.index('"--wait"')
+        < script.index('"src.load_postgres"')
+    )
