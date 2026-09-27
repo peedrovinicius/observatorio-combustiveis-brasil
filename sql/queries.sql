@@ -6,17 +6,19 @@ SELECT
     data_inicial,
     data_final,
     produto,
+    unidade_medida,
     preco_medio_revenda
 FROM vw_precos_semanais
 WHERE nivel_geografico = 'brasil'
-ORDER BY produto, data_inicial;
+ORDER BY produto, unidade_medida, data_inicial;
 
 
--- 2. Preço médio por UF na última semana disponível de cada produto.
+-- 2. Preço médio por UF na última semana disponível de cada produto e unidade.
 SELECT
     data_inicial,
     uf,
     produto,
+    unidade_medida,
     preco_medio_revenda,
     postos_pesquisados
 FROM vw_ultimo_periodo
@@ -24,15 +26,17 @@ WHERE nivel_geografico = 'estado'
   AND produto ILIKE 'GASOLINA%'
 ORDER BY
     produto,
+    unidade_medida,
     preco_medio_revenda DESC;
 
 
--- 3. Municípios com maiores preços na última semana de cada produto.
+-- 3. Municípios com maiores preços na última semana de cada produto e unidade.
 SELECT
     data_inicial,
     uf,
     municipio,
     produto,
+    unidade_medida,
     preco_medio_revenda,
     postos_pesquisados
 FROM vw_ultimo_periodo
@@ -40,6 +44,7 @@ WHERE nivel_geografico = 'municipio'
   AND produto ILIKE 'GASOLINA%'
 ORDER BY
     produto,
+    unidade_medida,
     preco_medio_revenda DESC
 LIMIT 20;
 
@@ -51,18 +56,21 @@ WITH mensal AS (
         ano,
         mes,
         produto,
+        unidade_medida,
         AVG(preco_medio_revenda) AS media_semanal_no_mes
     FROM vw_precos_semanais
     WHERE nivel_geografico = 'brasil'
     GROUP BY
         ano,
         mes,
-        produto
+        produto,
+        unidade_medida
 )
 SELECT
     ano,
     mes,
     produto,
+    unidade_medida,
     media_semanal_no_mes,
     ROUND(
         100.0
@@ -70,14 +78,14 @@ SELECT
             media_semanal_no_mes
             - LAG(media_semanal_no_mes)
                 OVER (
-                    PARTITION BY produto
+                    PARTITION BY produto, unidade_medida
                     ORDER BY ano, mes
                 )
         )
         / NULLIF(
             LAG(media_semanal_no_mes)
                 OVER (
-                    PARTITION BY produto
+                    PARTITION BY produto, unidade_medida
                     ORDER BY ano, mes
                 ),
             0
@@ -87,6 +95,7 @@ SELECT
 FROM mensal
 ORDER BY
     produto,
+    unidade_medida,
     ano,
     mes;
 
@@ -97,6 +106,7 @@ SELECT
     uf,
     municipio,
     produto,
+    unidade_medida,
     coef_variacao_revenda,
     preco_medio_revenda
 FROM vw_precos_semanais
@@ -113,6 +123,7 @@ WITH comparaveis AS (
         data_inicial,
         uf,
         municipio,
+        unidade_medida,
         MAX(preco_medio_revenda)
             FILTER (
                 WHERE produto ILIKE 'ETANOL%'
@@ -127,13 +138,15 @@ WITH comparaveis AS (
     GROUP BY
         data_inicial,
         uf,
-        municipio
+        municipio,
+        unidade_medida
 ),
 validos AS (
     SELECT
         data_inicial,
         uf,
         municipio,
+        unidade_medida,
         etanol,
         gasolina
     FROM comparaveis
@@ -144,7 +157,7 @@ ultima_comparavel AS (
     SELECT
         *,
         ROW_NUMBER() OVER (
-            PARTITION BY uf, municipio
+            PARTITION BY uf, municipio, unidade_medida
             ORDER BY data_inicial DESC
         ) AS ordem
     FROM validos
@@ -153,6 +166,7 @@ SELECT
     data_inicial,
     uf,
     municipio,
+    unidade_medida,
     etanol,
     gasolina,
     ROUND(
