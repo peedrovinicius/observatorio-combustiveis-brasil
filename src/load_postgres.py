@@ -568,6 +568,217 @@ def validate_csv_contracts() -> None:
         )
 
 
+def _read_csv_records(
+    path: Path,
+) -> list[dict[str, str]]:
+    with path.open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        return list(
+            csv.DictReader(handle)
+        )
+
+
+def _validate_station_relations() -> None:
+    paths = {
+        table: path
+        for table, path in LOAD_PLAN
+        if table in {
+            "dim_data_coleta",
+            "dim_produto_posto",
+            "dim_posto",
+            "fato_precos_postos",
+        }
+    }
+    required_tables = {
+        "dim_data_coleta",
+        "dim_produto_posto",
+        "dim_posto",
+        "fato_precos_postos",
+    }
+    if set(paths) != required_tables:
+        return
+
+    errors: list[str] = []
+    dimensions = {
+        table: _read_csv_records(
+            paths[table]
+        )
+        for table in (
+            "dim_data_coleta",
+            "dim_produto_posto",
+            "dim_posto",
+        )
+    }
+
+    def unique_index(
+        table: str,
+        column: str,
+    ) -> set[str]:
+        values: set[str] = set()
+        for row_number, row in enumerate(
+            dimensions[table],
+            start=2,
+        ):
+            value = row[column].strip()
+            if value in values:
+                errors.append(
+                    f"{table}: linha "
+                    f"{row_number}, "
+                    f"{column}: valor duplicado"
+                )
+            values.add(value)
+        return values
+
+    date_ids = unique_index(
+        "dim_data_coleta",
+        "data_coleta_id",
+    )
+    product_ids = unique_index(
+        "dim_produto_posto",
+        "produto_posto_id",
+    )
+    station_ids = unique_index(
+        "dim_posto",
+        "posto_id",
+    )
+    unique_index(
+        "dim_posto",
+        "posto_chave",
+    )
+
+    for (
+        table,
+        columns,
+    ) in (
+        (
+            "dim_data_coleta",
+            ("data_coleta",),
+        ),
+        (
+            "dim_produto_posto",
+            (
+                "produto",
+                "unidade_medida",
+            ),
+        ),
+    ):
+        seen: set[
+            tuple[str, ...]
+        ] = set()
+        for row_number, row in enumerate(
+            dimensions[table],
+            start=2,
+        ):
+            key = tuple(
+                row[column].strip()
+                for column in columns
+            )
+            if key in seen:
+                errors.append(
+                    f"{table}: linha "
+                    f"{row_number}: "
+                    "chave natural duplicada"
+                )
+            seen.add(key)
+
+    fact_ids: set[str] = set()
+    fact_grain: set[
+        tuple[str, str, str]
+    ] = set()
+    with paths[
+        "fato_precos_postos"
+    ].open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        reader = csv.DictReader(
+            handle
+        )
+        for row_number, row in enumerate(
+            reader,
+            start=2,
+        ):
+            fact_id = row[
+                "preco_posto_id"
+            ].strip()
+            if fact_id in fact_ids:
+                errors.append(
+                    "fato_precos_postos: "
+                    f"linha {row_number}, "
+                    "preco_posto_id: "
+                    "valor duplicado"
+                )
+            fact_ids.add(fact_id)
+
+            references = (
+                (
+                    "data_coleta_id",
+                    date_ids,
+                ),
+                (
+                    "produto_posto_id",
+                    product_ids,
+                ),
+                (
+                    "posto_id",
+                    station_ids,
+                ),
+            )
+            for column, valid_ids in (
+                references
+            ):
+                value = row[
+                    column
+                ].strip()
+                if value not in valid_ids:
+                    errors.append(
+                        "fato_precos_postos: "
+                        f"linha {row_number}, "
+                        f"{column}: referência "
+                        "inexistente"
+                    )
+
+            grain = (
+                row[
+                    "data_coleta_id"
+                ].strip(),
+                row[
+                    "produto_posto_id"
+                ].strip(),
+                row[
+                    "posto_id"
+                ].strip(),
+            )
+            if grain in fact_grain:
+                errors.append(
+                    "fato_precos_postos: "
+                    f"linha {row_number}: "
+                    "grão duplicado"
+                )
+            fact_grain.add(grain)
+
+            if len(errors) >= (
+                MAX_VALUE_ERRORS
+            ):
+                break
+
+    if errors:
+        raise ValueError(
+            "Integridade referencial dos "
+            "CSVs por posto inválida:\n"
+            + "\n".join(
+                f"- {item}"
+                for item in errors[
+                    :MAX_VALUE_ERRORS
+                ]
+            )
+        )
+
+
 def validate_input_files() -> None:
     missing = [
         path
@@ -586,6 +797,7 @@ def validate_input_files() -> None:
         )
 
     validate_csv_contracts()
+    _validate_station_relations()
 
 
 DOLLAR_QUOTE_PATTERN = re.compile(
