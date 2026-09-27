@@ -64,6 +64,9 @@ def build_quality_report(
     report: dict[str, object] = {
         "rows": int(len(frame)),
         "columns": int(len(frame.columns)),
+        "empty_dataset": bool(
+            frame.empty
+        ),
         "missing_required_columns": missing_columns,
         "nulls": {
             column: int(value)
@@ -412,7 +415,10 @@ def build_quality_report(
     report["status"] = (
         "passed"
         if (
-            all(
+            not report[
+                "empty_dataset"
+            ]
+            and all(
                 report[key] == 0
                 for key in blocking_keys
             )
