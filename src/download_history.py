@@ -25,6 +25,9 @@ from .file_formats import (
     UnsupportedDownloadError,
     detect_download_kind,
 )
+from .provenance import (
+    MANIFEST_VERSION,
+)
 
 TIMEOUT_SECONDS = 60
 USER_AGENT = "observatorio-combustiveis-brasil/1.0"
@@ -118,6 +121,137 @@ def _remove_file(
         path.unlink()
 
 
+def _validate_versioned_history_manifest(
+    manifest_data: dict[
+        str,
+        object,
+    ],
+    replacements: list[
+        tuple[
+            str,
+            str,
+            bytes,
+        ]
+    ],
+) -> None:
+    if (
+        manifest_data.get(
+            "manifest_version"
+        )
+        != MANIFEST_VERSION
+    ):
+        return
+
+    files = manifest_data.get(
+        "files"
+    )
+    if not isinstance(
+        files,
+        list,
+    ):
+        raise ValueError(
+            "Manifesto histórico versionado "
+            "não possui lista files válida."
+        )
+
+    by_scope: dict[
+        str,
+        dict[str, object],
+    ] = {}
+    for item in files:
+        if not isinstance(
+            item,
+            dict,
+        ):
+            raise ValueError(
+                "Manifesto histórico versionado "
+                "contém registro inválido."
+            )
+        scope = str(
+            item.get(
+                "scope",
+                "",
+            )
+        ).strip()
+        if (
+            not scope
+            or scope in by_scope
+        ):
+            raise ValueError(
+                "Manifesto histórico versionado "
+                "contém escopo ausente ou duplicado."
+            )
+        by_scope[
+            scope
+        ] = item
+
+    expected_scopes = {
+        scope
+        for scope, _, _
+        in replacements
+    }
+    if set(
+        by_scope
+    ) != expected_scopes:
+        raise ValueError(
+            "Escopos do manifesto histórico "
+            "não correspondem ao lote preparado."
+        )
+
+    for (
+        scope,
+        filename,
+        content,
+    ) in replacements:
+        item = by_scope[
+            scope
+        ]
+        if (
+            item.get(
+                "filename"
+            )
+            != filename
+        ):
+            raise ValueError(
+                "Nome de arquivo do manifesto "
+                "histórico diverge do lote preparado."
+            )
+        if (
+            item.get(
+                "detected_format"
+            )
+            != "xlsx"
+        ):
+            raise ValueError(
+                "Formato do manifesto histórico "
+                "deve ser xlsx."
+            )
+        if (
+            item.get(
+                "bytes"
+            )
+            != len(
+                content
+            )
+        ):
+            raise ValueError(
+                "Tamanho do manifesto histórico "
+                "diverge do lote preparado."
+            )
+        if (
+            item.get(
+                "sha256"
+            )
+            != _sha256(
+                content
+            )
+        ):
+            raise ValueError(
+                "SHA-256 do manifesto histórico "
+                "diverge do lote preparado."
+            )
+
+
 def _replace_history_batch(
     root: Path,
     replacements: list[
@@ -203,6 +337,11 @@ def _replace_history_batch(
         raise ValueError(
             "Manifesto histórico deve ser um objeto JSON."
         )
+
+    _validate_versioned_history_manifest(
+        manifest_data,
+        replacements,
+    )
 
     with tempfile.TemporaryDirectory(
         prefix=".history_stage_",
@@ -750,7 +889,9 @@ def main() -> None:
         )
 
     manifest_data = {
-        "manifest_version": 1,
+        "manifest_version": (
+            MANIFEST_VERSION
+        ),
         "source": "ANP",
         "source_page": (
             ANP_HISTORICAL_PAGE
