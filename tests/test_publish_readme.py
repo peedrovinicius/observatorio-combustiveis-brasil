@@ -321,3 +321,16 @@ def test_repository_public_snapshot_is_all_or_nothing() -> None:
         )
     else:
         assert block == ""
+
+
+def test_publish_readme_main_blocks_partial_publication() -> None:
+    from src.publish_readme import main
+
+    try:
+        main()
+    except SystemExit as error:
+        assert "src.snapshot" in str(error)
+    else:
+        raise AssertionError(
+            "Era esperado SystemExit"
+        )
