@@ -283,3 +283,36 @@ def test_validated_star_schema_blocks_impossible_aggregate_statistics() -> None:
         build_validated_star_schema(
             frame
         )
+
+
+def test_validated_star_schema_checks_single_published_price_bound() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "data_final": [
+                "2026-01-10",
+            ],
+            "nivel_geografico": [
+                "brasil",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+            "preco_minimo_revenda": [
+                6.1,
+            ],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="falhou na validação",
+    ):
+        build_validated_star_schema(
+            frame
+        )

@@ -303,28 +303,37 @@ def build_quality_report(
         )
         else 0
     )
+    mean_below_minimum = pd.Series(
+        False,
+        index=frame.index,
+        dtype="boolean",
+    )
+    if minimum is not None:
+        mean_below_minimum = (
+            minimum.notna()
+            & prices.notna()
+            & prices.lt(minimum)
+        )
+
+    mean_above_maximum = pd.Series(
+        False,
+        index=frame.index,
+        dtype="boolean",
+    )
+    if maximum is not None:
+        mean_above_maximum = (
+            maximum.notna()
+            & prices.notna()
+            & prices.gt(maximum)
+        )
+
     report[
         "mean_outside_min_max_rows"
-    ] = (
-        int(
-            (
-                (
-                    minimum.notna()
-                    & prices.notna()
-                    & prices.lt(minimum)
-                )
-                | (
-                    maximum.notna()
-                    & prices.notna()
-                    & prices.gt(maximum)
-                )
-            ).sum()
-        )
-        if (
-            minimum is not None
-            and maximum is not None
-        )
-        else 0
+    ] = int(
+        (
+            mean_below_minimum
+            | mean_above_maximum
+        ).sum()
     )
 
     if "postos_pesquisados" in frame.columns:
