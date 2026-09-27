@@ -689,3 +689,45 @@ def test_ratio_ignores_non_common_gasoline() -> None:
         ],
         2,
     ) == 6.20
+
+
+def test_ratio_accepts_plain_fuel_aliases() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-02-08",
+                "2026-02-08",
+            ],
+            "data_final": [
+                "2026-02-14",
+                "2026-02-14",
+            ],
+            "nivel_geografico": [
+                "municipio",
+                "municipio",
+            ],
+            "uf": ["CE", "CE"],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "produto": [
+                "ETANOL",
+                "GASOLINA",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
+            ],
+            "preco_medio_revenda": [
+                4.50,
+                6.20,
+            ],
+        }
+    )
+
+    result = build_ethanol_gasoline_ratio(
+        frame
+    )
+
+    assert len(result) == 1
