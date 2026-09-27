@@ -667,3 +667,23 @@ def verify_open_data_provenance(
         )
 
     return manifest
+
+
+
+def verified_history_files(
+    root: Path,
+) -> list[Path]:
+    manifest = (
+        verify_history_provenance(
+            root
+        )
+    )
+    return sorted(
+        root
+        / str(
+            item["filename"]
+        )
+        for item in manifest[
+            "files"
+        ]
+    )
