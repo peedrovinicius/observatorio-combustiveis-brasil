@@ -63,6 +63,9 @@ def _write_history_manifest(
         json.dumps(
             {
                 "manifest_version": 1,
+                "source": "ANP",
+                "source_page": "https://example.test/history",
+                "collected_at_utc": "2026-09-27T20:00:00+00:00",
                 "files": records,
             }
         ),
@@ -187,6 +190,9 @@ def _write_open_manifest(
         json.dumps(
             {
                 "manifest_version": 1,
+                "source": "ANP",
+                "source_page": "https://example.test/open-data",
+                "collected_at_utc": "2026-09-27T20:00:00+00:00",
                 "files": [
                     {
                         "dataset": (
@@ -420,3 +426,38 @@ def test_open_data_provenance_accepts_windows_legacy_separator(
     verify_open_data_provenance(
         tmp_path
     )
+
+
+
+def test_provenance_rejects_non_utc_timestamp(
+    tmp_path: Path,
+) -> None:
+    _write_history_manifest(
+        tmp_path
+    )
+    manifest_path = (
+        tmp_path
+        / "history_manifest.json"
+    )
+    manifest = json.loads(
+        manifest_path.read_text(
+            encoding="utf-8",
+        )
+    )
+    manifest[
+        "collected_at_utc"
+    ] = "2026-09-27T17:00:00-03:00"
+    manifest_path.write_text(
+        json.dumps(
+            manifest
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="deve estar em UTC",
+    ):
+        verify_history_provenance(
+            tmp_path
+        )
