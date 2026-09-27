@@ -15,16 +15,18 @@ Este dicionário será atualizado conforme os schemas reais das planilhas da ANP
 | `municipio` | Município pesquisado |
 | `produto` | Combustível ou produto pesquisado |
 | `postos_pesquisados` | Quantidade de postos pesquisados no recorte agregado |
-| `unidade_medida` | Unidade utilizada pela ANP |
+| `unidade_medida` | Unidade utilizada pela ANP; na camada por posto, `produto` e `unidade_medida` formam conjuntamente a identidade da série analítica |
 | `preco_medio_revenda` | Preço médio de revenda no recorte agregado |
 | `preco_minimo_revenda` | Menor preço de revenda no recorte, quando publicado |
 | `preco_maximo_revenda` | Maior preço de revenda no recorte, quando publicado |
 | `desvio_padrao_revenda` | Desvio padrão dos preços de revenda, quando publicado |
 | `coef_variacao_revenda` | Coeficiente de variação, quando publicado |
-| `razao_social` | Identificação textual do revendedor, quando disponível |
-| `cnpj_revenda` | CNPJ do revendedor, quando disponível |
+| `razao_social` | Identificação textual do revendedor na camada agregada, quando disponível |
+| `revenda` | Nome do estabelecimento na camada por posto, conforme publicado pela ANP |
+| `cnpj_revenda` | CNPJ do revendedor como texto, preservando zeros à esquerda e letras quando presentes no formato alfanumérico |
 | `logradouro` | Logradouro do estabelecimento, quando disponível |
 | `numero` | Número do endereço, quando disponível |
+| `complemento` | Complemento do endereço do estabelecimento, quando disponível |
 | `bairro` | Bairro, quando disponível |
 | `cep` | CEP, quando disponível |
 | `preco_revenda` | Preço observado no posto revendedor |
