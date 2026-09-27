@@ -5,7 +5,10 @@ import pandas as pd
 from .atomic_outputs import replace_csv_batch
 from .config import PROCESSED_DIR
 from .consolidate import OUTPUT_NAME
-from .quality import build_quality_report
+from .quality import (
+    build_quality_report,
+    normalize_geographic_level,
+)
 
 MODEL_DIR = PROCESSED_DIR / "model"
 
@@ -112,8 +115,10 @@ def build_star_schema(frame: pd.DataFrame) -> dict[str, pd.DataFrame]:
         working[column] = _normalized_text(working[column])
 
     working["nivel_geografico"] = (
-        working["nivel_geografico"]
-        .str.lower()
+        normalize_geographic_level(
+            working["nivel_geografico"]
+        )
+        .fillna("")
     )
     working["uf"] = (
         working["uf"]
