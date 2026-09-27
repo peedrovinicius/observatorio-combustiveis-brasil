@@ -38,15 +38,18 @@ WITH ultima_data_produto AS (
     SELECT
         produto,
         unidade_medida,
+        nivel_geografico,
         MAX(data_inicial) AS data_inicial
     FROM vw_precos_semanais
     GROUP BY
         produto,
-        unidade_medida
+        unidade_medida,
+        nivel_geografico
 )
 SELECT v.*
 FROM vw_precos_semanais v
 JOIN ultima_data_produto u
     ON u.produto = v.produto
     AND u.unidade_medida IS NOT DISTINCT FROM v.unidade_medida
+    AND u.nivel_geografico = v.nivel_geografico
     AND u.data_inicial = v.data_inicial;
