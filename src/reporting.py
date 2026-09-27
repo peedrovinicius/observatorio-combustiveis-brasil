@@ -1562,17 +1562,15 @@ def _publish_report_bundle(
             had_insights
             and backup_insights.exists()
         ):
-            shutil.move(
-                str(backup_insights),
-                str(insights_path),
+            backup_insights.rename(
+                insights_path
             )
         if (
             had_assets
             and backup_assets.exists()
         ):
-            shutil.move(
-                str(backup_assets),
-                str(assets_dir),
+            backup_assets.rename(
+                assets_dir
             )
         raise
 
