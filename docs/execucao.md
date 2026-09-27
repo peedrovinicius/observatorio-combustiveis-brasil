@@ -231,3 +231,18 @@ A consolidação agregada publica `data/processed/precos_semanais_2026.csv` e `r
 A camada por posto aplica a mesma regra a `data/processed/precos_postos_2026.csv` e `reports/station_ingestion_audit_2026.json`.
 
 O CSV e o JSON são preparados em staging. A troca só acontece depois que ambos existem e possuem conteúdo. Se a instalação do segundo arquivo falhar, o primeiro arquivo novo é removido e o par anterior é restaurado.
+
+
+## Cadeia de frescor das saídas
+
+A publicação visual valida a ordem temporal dos artefatos antes de gerar ou versionar resultados. A cadeia de frescor validada é:
+
+```text
+base processada
+-> relatório de qualidade aprovado
+-> analytics
+-> reporting
+-> snapshot público
+```
+
+Se uma etapa anterior for regenerada depois de uma etapa posterior, a publicação é bloqueada e informa qual módulo precisa ser reexecutado.
