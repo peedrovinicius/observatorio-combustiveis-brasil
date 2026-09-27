@@ -103,6 +103,53 @@ def _common_gasoline(
     return None
 
 
+def _single_unit_subset(
+    frame: pd.DataFrame,
+    product: str,
+) -> tuple[pd.DataFrame, str]:
+    subset = frame.loc[
+        frame["produto"].eq(product)
+    ].copy()
+
+    if (
+        subset.empty
+        or "unidade_medida"
+        not in subset.columns
+    ):
+        return subset, product
+
+    unit_key = (
+        subset["unidade_medida"]
+        .astype("string")
+        .fillna("")
+        .str.strip()
+    )
+    units = sorted(
+        set(
+            unit_key.tolist()
+        )
+    )
+    if len(units) > 1:
+        return (
+            subset.iloc[0:0].copy(),
+            (
+                "Gasolina comum "
+                "com múltiplas unidades"
+            ),
+        )
+
+    unit = units[0] if units else ""
+    subset = subset.loc[
+        unit_key.eq(unit)
+    ].copy()
+    label = (
+        f"{product} · {unit}"
+        if unit
+        else product
+    )
+    return subset, label
+
+
 def _kpi_cards(
     kpis: pd.DataFrame,
 ) -> str:
@@ -115,11 +162,24 @@ def _kpi_cards(
         )
         .iterrows()
     ):
+        product_text = str(
+            row[
+                "produto"
+            ]
+        )
+        unit = row.get(
+            "unidade_medida"
+        )
+        unit_text = (
+            str(unit).strip()
+            if pd.notna(unit)
+            else ""
+        )
         product = html.escape(
-            str(
-                row[
-                    "produto"
-                ]
+            (
+                f"{product_text} · {unit_text}"
+                if unit_text
+                else product_text
             )
         )
         cards.append(
@@ -170,14 +230,20 @@ def _ranking_rows(
             "Gasolina comum indisponível",
         )
 
+    frame, series_label = (
+        _single_unit_subset(
+            ranking,
+            product,
+        )
+    )
+    if frame.empty:
+        return (
+            "",
+            series_label,
+        )
+
     frame = (
-        ranking.loc[
-            ranking[
-                "produto"
-            ].eq(product)
-        ]
-        .copy()
-        .sort_values(
+        frame.sort_values(
             "preco_medio_revenda",
             ascending=False,
             kind="stable",
@@ -207,7 +273,7 @@ def _ranking_rows(
 
     return (
         "\n".join(rows),
-        str(product),
+        str(series_label),
     )
 
 
