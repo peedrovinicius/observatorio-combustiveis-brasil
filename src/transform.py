@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import tempfile
@@ -13,6 +14,8 @@ from .numeric_parsing import (
     parse_decimal_series,
 )
 from .provenance import (
+    TRANSFORM_MANIFEST_VERSION,
+    sha256_file,
     verified_history_files,
 )
 
@@ -36,6 +39,11 @@ HEADER_HINTS = {
     "BANDEIRA",
     "CNPJ DA REVENDA",
 }
+
+HISTORY_TRANSFORM_MANIFEST = (
+    PROCESSED_DIR
+    / "history_transform_manifest.json"
+)
 
 HISTORY_FILE_PATTERN = re.compile(
     r"^historico_semanal_(.+?)__",
@@ -337,10 +345,35 @@ def _replace_processed_batch(
             ],
         ]
     ],
+    *,
+    manifest_destination: Path | None = None,
+    source_manifest_sha256: str | None = None,
 ) -> list[Path]:
     if not prepared_batches:
         raise ValueError(
             "Lote processado vazio."
+        )
+
+    if (
+        manifest_destination
+        is None
+    ) != (
+        source_manifest_sha256
+        is None
+    ):
+        raise ValueError(
+            "Manifesto processado e SHA-256 "
+            "da origem devem ser informados juntos."
+        )
+    if (
+        manifest_destination
+        is not None
+        and manifest_destination.parent.resolve()
+        != directory.resolve()
+    ):
+        raise ValueError(
+            "Manifesto processado deve ficar "
+            "no mesmo diretório dos CSVs."
         )
 
     history_scopes = [
@@ -392,8 +425,11 @@ def _replace_processed_batch(
         staged: list[
             Path
         ] = []
+        manifest_records: list[
+            dict[str, object]
+        ] = []
 
-        for _, outputs in (
+        for scope, outputs in (
             prepared_batches
         ):
             for filename, frame in outputs:
@@ -410,6 +446,131 @@ def _replace_processed_batch(
                     target
                 )
 
+                if (
+                    manifest_destination
+                    is not None
+                ):
+                    if scope is None:
+                        raise ValueError(
+                            "Manifesto da transformação "
+                            "exige escopo histórico."
+                        )
+
+                    source_files = (
+                        frame[
+                            "fonte_arquivo"
+                        ]
+                        .astype(
+                            "string"
+                        )
+                        .dropna()
+                        .str.strip()
+                        .loc[
+                            lambda values:
+                            values.ne("")
+                        ]
+                        .unique()
+                        .tolist()
+                    )
+                    source_sheets = (
+                        frame[
+                            "fonte_planilha"
+                        ]
+                        .astype(
+                            "string"
+                        )
+                        .dropna()
+                        .str.strip()
+                        .loc[
+                            lambda values:
+                            values.ne("")
+                        ]
+                        .unique()
+                        .tolist()
+                    )
+                    if (
+                        len(
+                            source_files
+                        )
+                        != 1
+                        or len(
+                            source_sheets
+                        )
+                        != 1
+                    ):
+                        raise ValueError(
+                            "Cada CSV processado deve "
+                            "ter uma única origem de "
+                            "arquivo e planilha."
+                        )
+
+                    manifest_records.append(
+                        {
+                            "scope": scope,
+                            "filename": filename,
+                            "source_file": (
+                                source_files[
+                                    0
+                                ]
+                            ),
+                            "source_sheet": (
+                                source_sheets[
+                                    0
+                                ]
+                            ),
+                            "rows": int(
+                                len(
+                                    frame
+                                )
+                            ),
+                            "columns": int(
+                                len(
+                                    frame.columns
+                                )
+                            ),
+                            "bytes": (
+                                target.stat().st_size
+                            ),
+                            "sha256": (
+                                sha256_file(
+                                    target
+                                )
+                            ),
+                        }
+                    )
+
+        staged_manifest: (
+            Path
+            | None
+        ) = None
+        if (
+            manifest_destination
+            is not None
+        ):
+            staged_manifest = (
+                stage_root
+                / manifest_destination.name
+            )
+            staged_manifest.write_text(
+                json.dumps(
+                    {
+                        "manifest_version": (
+                            TRANSFORM_MANIFEST_VERSION
+                        ),
+                        "source_manifest": (
+                            "history_manifest.json"
+                        ),
+                        "source_manifest_sha256": (
+                            source_manifest_sha256
+                        ),
+                        "files": manifest_records,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+
         backup_root = (
             stage_root
             / "backup"
@@ -425,6 +586,14 @@ def _replace_processed_batch(
                     directory,
                     scope,
                 )
+            )
+        if (
+            manifest_destination
+            is not None
+            and manifest_destination.exists()
+        ):
+            existing_files.append(
+                manifest_destination
             )
 
         backed_up: list[
@@ -484,6 +653,24 @@ def _replace_processed_batch(
                     destination
                 )
 
+            if (
+                staged_manifest
+                is not None
+                and manifest_destination
+                is not None
+            ):
+                shutil.move(
+                    str(
+                        staged_manifest
+                    ),
+                    str(
+                        manifest_destination
+                    ),
+                )
+                installed.append(
+                    manifest_destination
+                )
+
             return outputs
         except Exception:
             for path in reversed(
@@ -523,6 +710,9 @@ def transform_workbook(
 
 def transform_workbooks(
     paths: list[Path],
+    *,
+    manifest_destination: Path | None = None,
+    source_manifest_sha256: str | None = None,
 ) -> list[Path]:
     prepared_batches = [
         _prepare_workbook_outputs(
@@ -533,7 +723,14 @@ def transform_workbooks(
     return _replace_processed_batch(
         PROCESSED_DIR,
         prepared_batches,
+        manifest_destination=(
+            manifest_destination
+        ),
+        source_manifest_sha256=(
+            source_manifest_sha256
+        ),
     )
+
 
 def main() -> None:
     excel_files = (
@@ -543,7 +740,16 @@ def main() -> None:
     )
 
     outputs = transform_workbooks(
-        excel_files
+        excel_files,
+        manifest_destination=(
+            HISTORY_TRANSFORM_MANIFEST
+        ),
+        source_manifest_sha256=(
+            sha256_file(
+                RAW_DIR
+                / "history_manifest.json"
+            )
+        ),
     )
     for output in outputs:
         print(
