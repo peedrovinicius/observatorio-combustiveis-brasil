@@ -17,37 +17,62 @@ ORDER BY produto, unidade_medida, data_inicial;
 SELECT
     data_inicial,
     uf,
+    estado,
     produto,
     unidade_medida,
+    postos_pesquisados,
     preco_medio_revenda,
-    postos_pesquisados
+    preco_minimo_revenda,
+    preco_maximo_revenda,
+    RANK() OVER (
+        PARTITION BY
+            produto,
+            unidade_medida
+        ORDER BY
+            preco_medio_revenda DESC
+    ) AS ranking_mais_caro,
+    RANK() OVER (
+        PARTITION BY
+            produto,
+            unidade_medida
+        ORDER BY
+            preco_medio_revenda ASC
+    ) AS ranking_mais_barato
 FROM vw_ultimo_periodo
 WHERE nivel_geografico = 'estado'
 ORDER BY
     produto,
     unidade_medida,
-    preco_medio_revenda DESC;
+    ranking_mais_caro,
+    uf;
 
 
 -- 3. Municípios com maiores preços na última semana de cada produto e unidade.
-WITH municipios_ordenados AS (
+WITH municipios_ranqueados AS (
     SELECT
         data_inicial,
         uf,
         municipio,
         produto,
         unidade_medida,
-        preco_medio_revenda,
         postos_pesquisados,
-        ROW_NUMBER() OVER (
+        preco_medio_revenda,
+        preco_minimo_revenda,
+        preco_maximo_revenda,
+        RANK() OVER (
             PARTITION BY
                 produto,
                 unidade_medida
             ORDER BY
-                preco_medio_revenda DESC,
-                uf,
-                municipio
-        ) AS ordem
+                preco_medio_revenda DESC
+        ) AS ranking_mais_caro,
+        RANK() OVER (
+            PARTITION BY
+                produto,
+                unidade_medida
+            ORDER BY
+                preco_medio_revenda ASC
+        ) AS ranking_mais_barato
     FROM vw_ultimo_periodo
     WHERE nivel_geografico = 'municipio'
 )
@@ -57,14 +82,20 @@ SELECT
     municipio,
     produto,
     unidade_medida,
+    postos_pesquisados,
     preco_medio_revenda,
-    postos_pesquisados
-FROM municipios_ordenados
-WHERE ordem <= 20
+    preco_minimo_revenda,
+    preco_maximo_revenda,
+    ranking_mais_caro,
+    ranking_mais_barato
+FROM municipios_ranqueados
+WHERE ranking_mais_caro <= 20
 ORDER BY
     produto,
     unidade_medida,
-    ordem;
+    ranking_mais_caro,
+    uf,
+    municipio;
 
 
 -- 4. Média mensal das observações semanais no nível Brasil.
@@ -75,7 +106,10 @@ WITH mensal AS (
         mes,
         produto,
         unidade_medida,
-        AVG(preco_medio_revenda) AS media_semanal_no_mes
+        AVG(preco_medio_revenda) AS media_das_semanas,
+        MIN(preco_medio_revenda) AS menor_semana,
+        MAX(preco_medio_revenda) AS maior_semana,
+        COUNT(DISTINCT data_inicial) AS semanas_observadas
     FROM vw_precos_semanais
     WHERE nivel_geografico = 'brasil'
     GROUP BY
@@ -89,19 +123,22 @@ SELECT
     mes,
     produto,
     unidade_medida,
-    media_semanal_no_mes,
+    media_das_semanas,
+    menor_semana,
+    maior_semana,
+    semanas_observadas,
     ROUND(
         100.0
         * (
-            media_semanal_no_mes
-            - LAG(media_semanal_no_mes)
+            media_das_semanas
+            - LAG(media_das_semanas)
                 OVER (
                     PARTITION BY produto, unidade_medida
                     ORDER BY ano, mes
                 )
         )
         / NULLIF(
-            LAG(media_semanal_no_mes)
+            LAG(media_das_semanas)
                 OVER (
                     PARTITION BY produto, unidade_medida
                     ORDER BY ano, mes
@@ -109,7 +146,7 @@ SELECT
             0
         ),
         2
-    ) AS variacao_percentual_mes
+    ) AS variacao_mensal_pct
 FROM mensal
 ORDER BY
     produto,
@@ -222,8 +259,8 @@ SELECT
     uf,
     municipio,
     unidade_medida,
-    etanol,
-    gasolina,
+    etanol AS preco_etanol,
+    gasolina AS preco_gasolina_comum,
     ROUND(
         100.0
         * etanol
@@ -232,9 +269,9 @@ SELECT
             0
         ),
         2
-    ) AS relacao_etanol_gasolina_percentual
+    ) AS relacao_etanol_gasolina_pct
 FROM ultima_comparavel
 WHERE ordem = 1
 ORDER BY
     data_inicial DESC,
-    relacao_etanol_gasolina_percentual;
+    relacao_etanol_gasolina_pct;

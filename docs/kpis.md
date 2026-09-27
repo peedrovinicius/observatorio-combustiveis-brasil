@@ -46,6 +46,8 @@ Os rankings utilizam o preço médio publicado na semana mais recente disponíve
 
 Os exports Python e as consultas SQL de referência preservam todos os produtos. Recortes específicos, como gasolina comum no relatório visual, são aplicados somente na camada de apresentação e não alteram o dataset de ranking.
 
+As consultas SQL usam os mesmos nomes principais dos exports Python para posições de ranking, métricas mensais e relação etanol/gasolina. Rankings usam `RANK`, preservando a regra de mesma posição mínima em caso de empate.
+
 Assim, uma série continua aparecendo no ranking mesmo quando outra possui uma publicação mais recente.
 
 São produzidas duas posições:

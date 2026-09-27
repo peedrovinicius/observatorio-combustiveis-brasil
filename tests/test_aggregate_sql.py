@@ -122,12 +122,12 @@ def test_city_top_20_is_partitioned_by_product_unit() -> None:
         encoding="utf-8",
     )
 
-    assert "WITH municipios_ordenados AS" in sql
+    assert "WITH municipios_ranqueados AS" in sql
     assert (
         "PARTITION BY\n                produto,\n                unidade_medida"
         in sql
     )
-    assert "WHERE ordem <= 20" in sql
+    assert "WHERE ranking_mais_caro <= 20" in sql
     assert "LIMIT 20" not in sql
 
 
@@ -174,3 +174,38 @@ def test_ranking_queries_do_not_pre_filter_product() -> None:
     )[0]
 
     assert "ILIKE 'GASOLINA%'" not in ranking_section
+
+
+def test_ranking_sql_exposes_python_contract_columns() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+
+    assert "AS ranking_mais_caro" in sql
+    assert "AS ranking_mais_barato" in sql
+    assert "preco_minimo_revenda" in sql
+    assert "preco_maximo_revenda" in sql
+
+
+def test_monthly_sql_uses_python_export_names() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+
+    assert "AS media_das_semanas" in sql
+    assert "AS menor_semana" in sql
+    assert "AS maior_semana" in sql
+    assert "AS semanas_observadas" in sql
+    assert "AS variacao_mensal_pct" in sql
+    assert "media_semanal_no_mes" not in sql
+    assert "variacao_percentual_mes" not in sql
+
+
+def test_ratio_sql_uses_python_export_names() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+
+    assert "etanol AS preco_etanol" in sql
+    assert "gasolina AS preco_gasolina_comum" in sql
+    assert "AS relacao_etanol_gasolina_pct" in sql
