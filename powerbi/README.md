@@ -164,6 +164,8 @@ As medidas estão em [`medidas.dax`](medidas.dax).
 
 As medidas de preço exigem uma única série no contexto do visual. No modelo agregado, isso significa um único produto, uma única unidade de medida, um único nível geográfico e uma única localidade. Essa proteção impede calcular silenciosamente média das médias oficiais de várias localidades. No modelo por posto, a série é identificada por `produto_posto_id`, que já representa produto + unidade. Se o contexto misturar séries incompatíveis, as medidas retornam vazio.
 
+Nos cards de uma localidade, `Última Data Disponível` e `Preço Semana Anterior` preservam o filtro da localidade atual. Para comparações entre localidades, `Última Data Comparável do Nível` remove apenas a localidade e encontra a data comum mais recente para o produto, unidade e nível geográfico selecionados. Não use a data comparável como data do card de uma única UF ou município.
+
 Para cards de cobertura agregada, use `Postos Pesquisados Última Semana` quando a intenção for mostrar a cobertura da observação corrente. A medida simples `Postos Pesquisados` continua disponível para tabelas ou contextos em que a soma faça sentido.
 
 ## Regra importante

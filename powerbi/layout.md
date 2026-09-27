@@ -119,6 +119,8 @@ A página apresenta a razão observada. Qualquer interpretação de vantagem eco
 
 Medidas agregadas de preço devem operar em uma única combinação de produto, unidade de medida, nível geográfico e localidade. Comparações entre localidades devem ocorrer por categorias do visual, não por média aritmética entre agregados oficiais.
 
+Para cards de uma única localidade, a última data e a semana anterior devem ser calculadas dentro da própria localidade. Para rankings ou comparações entre localidades do mesmo nível, use uma data comparável comum ao produto e à unidade, sem substituir a data local do card.
+
 Na camada por posto, produto e unidade de medida também definem conjuntamente a série. A última data de coleta é obtida para a série inteira e não separadamente por cada município ou bandeira.
 
 ## Convenções

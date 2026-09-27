@@ -47,13 +47,29 @@ RETURN
     )
 
 Última Data Disponível =
+IF (
+    [Série Agregada Única],
+    MAXX (
+        FILTER (
+            ALL ( dim_data[data_inicial] ),
+            CALCULATE (
+                COUNTROWS ( fato_precos_semanais )
+            ) > 0
+        ),
+        dim_data[data_inicial]
+    )
+)
+
+Última Data Comparável do Nível =
 VAR Nivel =
     SELECTEDVALUE ( dim_localidade[nivel_geografico] )
 VAR Unidade =
     SELECTEDVALUE ( fato_precos_semanais[unidade_medida] )
 RETURN
     IF (
-        [Série Agregada Única],
+        HASONEVALUE ( dim_produto[produto] )
+            && HASONEVALUE ( fato_precos_semanais[unidade_medida] )
+            && HASONEVALUE ( dim_localidade[nivel_geografico] ),
         MAXX (
             FILTER (
                 ALL ( dim_data[data_inicial] ),
@@ -86,26 +102,13 @@ RETURN
 Preço Semana Anterior =
 VAR UltimaData =
     [Última Data Disponível]
-VAR Nivel =
-    SELECTEDVALUE ( dim_localidade[nivel_geografico] )
-VAR Unidade =
-    SELECTEDVALUE ( fato_precos_semanais[unidade_medida] )
 VAR DataAnterior =
     MAXX (
         FILTER (
             ALL ( dim_data[data_inicial] ),
             dim_data[data_inicial] < UltimaData
                 && CALCULATE (
-                    COUNTROWS ( fato_precos_semanais ),
-                    REMOVEFILTERS ( dim_localidade ),
-                    TREATAS (
-                        { Nivel },
-                        dim_localidade[nivel_geografico]
-                    ),
-                    TREATAS (
-                        { Unidade },
-                        fato_precos_semanais[unidade_medida]
-                    )
+                    COUNTROWS ( fato_precos_semanais )
                 ) > 0
         ),
         dim_data[data_inicial]

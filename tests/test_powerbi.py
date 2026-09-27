@@ -34,6 +34,10 @@ def test_aggregate_measures_require_single_product_unit_series() -> None:
         in dax
     )
     assert (
+        "Última Data Comparável do Nível ="
+        in dax
+    )
+    assert (
         "REMOVEFILTERS ( dim_localidade )"
         in dax
     )
@@ -72,16 +76,62 @@ def test_station_measures_require_single_product_unit_series() -> None:
     )
 
 
-def test_aggregate_date_scan_reapplies_selected_unit() -> None:
+def test_aggregate_local_date_scan_preserves_current_locality() -> None:
     dax = _dax()
 
+    local_measure = dax.split(
+        "Última Data Disponível =",
+        1,
+    )[1].split(
+        "Última Data Comparável do Nível =",
+        1,
+    )[0]
+
+    assert (
+        "REMOVEFILTERS ( dim_localidade )"
+        not in local_measure
+    )
+    assert "TREATAS (" not in local_measure
+
+
+def test_aggregate_comparable_date_scan_reapplies_level_and_unit() -> None:
+    dax = _dax()
+
+    comparable_measure = dax.split(
+        "Última Data Comparável do Nível =",
+        1,
+    )[1].split(
+        "Preço Última Semana =",
+        1,
+    )[0]
+
+    assert (
+        "REMOVEFILTERS ( dim_localidade )"
+        in comparable_measure
+    )
     assert (
         "VAR Unidade =\n    SELECTEDVALUE ( fato_precos_semanais[unidade_medida] )"
-        in dax
+        in comparable_measure
     )
     assert (
-        dax.count(
-            "TREATAS (\n                        { Unidade },\n                        fato_precos_semanais[unidade_medida]\n                    )"
-        )
-        >= 2
+        "TREATAS (\n                        { Unidade },\n                        fato_precos_semanais[unidade_medida]\n                    )"
+        in comparable_measure
     )
+
+
+def test_previous_week_preserves_current_locality() -> None:
+    dax = _dax()
+
+    measure = dax.split(
+        "Preço Semana Anterior =",
+        1,
+    )[1].split(
+        "Variação Semanal % =",
+        1,
+    )[0]
+
+    assert (
+        "REMOVEFILTERS ( dim_localidade )"
+        not in measure
+    )
+    assert "TREATAS (" not in measure

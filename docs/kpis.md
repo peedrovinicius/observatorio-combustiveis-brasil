@@ -10,7 +10,9 @@ No Power BI, medidas de preço agregado exigem uma única localidade além de pr
 
 ### Preço atual
 
-Último preço médio de revenda publicado para a combinação de produto e nível geográfico selecionada.
+Último preço médio de revenda publicado para a combinação de produto, unidade de medida e localidade selecionada.
+
+No Power BI, o card preserva a localidade atual ao localizar a última data. Rankings entre localidades usam separadamente uma data comparável comum à série, evitando misturar a semântica do card local com a semântica de comparação geográfica.
 
 ### Variação semanal
 
