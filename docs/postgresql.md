@@ -53,6 +53,7 @@ Antes de abrir a conexão, a carga valida:
 - colunas desconhecidas;
 - colunas obrigatórias de cada tabela;
 - compatibilidade entre os arquivos gerados e o schema PostgreSQL;
+- proveniência obrigatória (`fonte_arquivo` e `fonte_planilha`) na fato agregada;
 - presença da `posto_chave` determinística na dimensão de estabelecimentos;
 - presença de UF, município e proveniência nos registros por posto;
 - limites de texto compatíveis com `VARCHAR` e `CHAR`;
@@ -151,6 +152,8 @@ A carga reforça também as chaves naturais das dimensões antes do `COPY`.
 `dim_localidade` usa um índice único sobre nível geográfico, região, UF, estado e município, normalizando valores nulos. Isso é necessário porque níveis como Brasil e região possuem naturalmente atributos geográficos não preenchidos.
 
 `dim_produto_posto` exige unidade de medida e usa unicidade lógica por produto e unidade.
+
+Na camada agregada, `fonte_arquivo` e `fonte_planilha` são obrigatórios na fato. A restrição é reaplicada depois do `TRUNCATE` para manter compatibilidade com bancos locais antigos e impedir cargas sem rastreabilidade.
 
 Na camada por posto, `uf`, `municipio` e `fonte_arquivo` também são obrigatórios no PostgreSQL. As três exigências reproduzem o contrato já aplicado pelo pipeline e impedem que uma carga manual crie registros sem geografia mínima ou sem rastreabilidade da origem.
 
