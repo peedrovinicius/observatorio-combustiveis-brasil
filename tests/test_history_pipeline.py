@@ -1371,6 +1371,14 @@ def test_transform_batch_install_failure_restores_all_processed_scopes(
         "estados-antigo",
         encoding="utf-8",
     )
+    old_manifest = (
+        processed
+        / "history_transform_manifest.json"
+    )
+    old_manifest.write_text(
+        '{"versao":"antiga"}',
+        encoding="utf-8",
+    )
 
     brazil = (
         tmp_path
@@ -1443,7 +1451,13 @@ def test_transform_batch_install_failure_restores_all_processed_scopes(
             [
                 brazil,
                 states,
-            ]
+            ],
+            manifest_destination=(
+                old_manifest
+            ),
+            source_manifest_sha256=(
+                "a" * 64
+            ),
         )
 
     assert (
@@ -1457,6 +1471,12 @@ def test_transform_batch_install_failure_restores_all_processed_scopes(
             encoding="utf-8"
         )
         == "estados-antigo"
+    )
+    assert (
+        old_manifest.read_text(
+            encoding="utf-8"
+        )
+        == '{"versao":"antiga"}'
     )
     assert not (
         processed
