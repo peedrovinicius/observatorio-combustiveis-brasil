@@ -153,3 +153,6 @@ Para a série histórica, cada arquivo XLSX precisa corresponder ao tamanho e SH
 Para os dados por posto, a validação cobre tanto o CSV ou ZIP original quanto cada CSV extraído. A consolidação é bloqueada se houver arquivo ausente, alterado, adicional ou com caminho incompatível com o manifesto.
 
 Essa barreira impede que uma alteração local, corrupção de arquivo ou resíduo de execução anterior seja propagado silenciosamente para `data/processed/`.
+
+
+A lista de XLSX usada pela inspeção e transformação vem do manifesto já validado. A presença de outros arquivos no diretório raw não amplia implicitamente o conjunto de entrada.
