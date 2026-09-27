@@ -31,6 +31,28 @@ ORDER BY
 
 
 -- 3. Municípios com maiores preços na última semana de cada produto e unidade.
+WITH municipios_ordenados AS (
+    SELECT
+        data_inicial,
+        uf,
+        municipio,
+        produto,
+        unidade_medida,
+        preco_medio_revenda,
+        postos_pesquisados,
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                produto,
+                unidade_medida
+            ORDER BY
+                preco_medio_revenda DESC,
+                uf,
+                municipio
+        ) AS ordem
+    FROM vw_ultimo_periodo
+    WHERE nivel_geografico = 'municipio'
+      AND produto ILIKE 'GASOLINA%'
+)
 SELECT
     data_inicial,
     uf,
@@ -39,14 +61,12 @@ SELECT
     unidade_medida,
     preco_medio_revenda,
     postos_pesquisados
-FROM vw_ultimo_periodo
-WHERE nivel_geografico = 'municipio'
-  AND produto ILIKE 'GASOLINA%'
+FROM municipios_ordenados
+WHERE ordem <= 20
 ORDER BY
     produto,
     unidade_medida,
-    preco_medio_revenda DESC
-LIMIT 20;
+    ordem;
 
 
 -- 4. Média mensal das observações semanais no nível Brasil.
