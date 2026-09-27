@@ -502,21 +502,20 @@ def transform_workbooks(
     )
 
 def main() -> None:
-    verify_history_provenance(
-        RAW_DIR
-    )
-
-    excel_files = sorted(
-        path
-        for path in RAW_DIR.iterdir()
-        if path.is_file() and path.suffix.lower() in {".xlsx", ".xls"}
-    )
-
-    if not excel_files:
-        raise SystemExit(
-            "Nenhuma planilha encontrada em data/raw. "
-            "Execute primeiro: python -m src.download_history"
+    manifest = (
+        verify_history_provenance(
+            RAW_DIR
         )
+    )
+    excel_files = sorted(
+        RAW_DIR
+        / str(
+            item["filename"]
+        )
+        for item in manifest[
+            "files"
+        ]
+    )
 
     outputs = transform_workbooks(
         excel_files
