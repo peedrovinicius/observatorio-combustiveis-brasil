@@ -33,7 +33,7 @@ def validate_artifact_freshness(
             for path in missing
         )
         raise FileNotFoundError(
-            f"{label}: arquivos ausentes:\n"
+            f"{label}: Arquivos ausentes:\n"
             f"{formatted}"
         )
 
@@ -51,7 +51,7 @@ def validate_artifact_freshness(
             for path in empty
         )
         raise ValueError(
-            f"{label}: arquivos vazios:\n"
+            f"{label}: Arquivos vazios:\n"
             f"{formatted}"
         )
 
