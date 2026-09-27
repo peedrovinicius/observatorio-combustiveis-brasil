@@ -229,9 +229,11 @@ def _prepare_workbook_outputs(
             continue
 
         safe_sheet = re.sub(
-            r"[^A-Za-z0-9_-]+",
+            r"[^A-Za-z0-9]+",
             "_",
-            sheet_name,
+            normalize_text(
+                sheet_name
+            ),
         ).strip("_").lower()
         filename = (
             f"{stem}__{safe_sheet}.csv"
