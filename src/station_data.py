@@ -20,6 +20,9 @@ from .config import (
 from .provenance import (
     verify_open_data_provenance,
 )
+from .numeric_parsing import (
+    parse_decimal_series,
+)
 
 STATION_OUTPUT = PROCESSED_DIR / "precos_postos_2026.csv"
 STATION_MODEL_DIR = PROCESSED_DIR / "model_postos"
@@ -97,34 +100,12 @@ def _normalize_name(value: object) -> str:
     return COLUMN_ALIASES.get(text, text)
 
 
-def _parse_decimal(series: pd.Series) -> pd.Series:
-    def parse(value: object) -> float | None:
-        if pd.isna(value):
-            return None
-        if isinstance(value, (int, float)):
-            return float(value)
-
-        text = (
-            str(value)
-            .strip()
-            .replace("R$", "")
-            .replace(" ", "")
-        )
-        if not text:
-            return None
-        if "," in text:
-            text = (
-                text
-                .replace(".", "")
-                .replace(",", ".")
-            )
-
-        try:
-            return float(text)
-        except ValueError:
-            return None
-
-    return series.map(parse)
+def _parse_decimal(
+    series: pd.Series,
+) -> pd.Series:
+    return parse_decimal_series(
+        series
+    )
 
 
 def normalize_cnpj(
@@ -481,10 +462,38 @@ def prepare_station_file(
     source_root: Path | None = None,
 ) -> pd.DataFrame:
     frame = _read_csv(path)
-    frame.columns = [
-        _normalize_name(column)
+    normalized_columns = [
+        _normalize_name(
+            column
+        )
         for column in frame.columns
     ]
+    duplicates = sorted(
+        {
+            column
+            for column
+            in normalized_columns
+            if (
+                column
+                and normalized_columns.count(
+                    column
+                )
+                > 1
+            )
+        }
+    )
+    if duplicates:
+        raise ValueError(
+            f"{path.name}: colunas duplicadas "
+            "após normalização: "
+            + ", ".join(
+                duplicates
+            )
+        )
+
+    frame.columns = (
+        normalized_columns
+    )
 
     missing = (
         REQUIRED_SOURCE_COLUMNS
@@ -822,6 +831,9 @@ def consolidate_station_data_with_audit(
         + int(
             item["precos_nao_positivos"]
         )
+        + int(
+            item["linhas_fora_2026"]
+        )
         for item in file_audits
     )
     identity_issue_total = (
@@ -837,6 +849,10 @@ def consolidate_station_data_with_audit(
         if (
             invalid_total == 0
             and identity_issue_total == 0
+            and overlap[
+                "grupos_com_preco_divergente"
+            ]
+            == 0
         )
         else "review"
     )
