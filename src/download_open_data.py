@@ -24,6 +24,9 @@ from .file_formats import (
     detect_download_kind,
     extension_for_kind,
 )
+from .provenance import (
+    MANIFEST_VERSION,
+)
 
 TIMEOUT_SECONDS = 60
 USER_AGENT = "observatorio-combustiveis-brasil/1.0"
@@ -710,6 +713,57 @@ def _replace_open_data_batch(
                     "deve ser um objeto."
                 )
 
+            if (
+                manifest_base.get(
+                    "manifest_version"
+                )
+                == MANIFEST_VERSION
+            ):
+                if (
+                    record.get(
+                        "dataset"
+                    )
+                    != stem
+                ):
+                    raise ValueError(
+                        "Dataset do manifesto não "
+                        "corresponde ao lote preparado."
+                    )
+                if (
+                    record.get(
+                        "detected_format"
+                    )
+                    != kind
+                ):
+                    raise ValueError(
+                        "Formato do manifesto não "
+                        "corresponde ao conteúdo preparado."
+                    )
+                if (
+                    record.get(
+                        "bytes"
+                    )
+                    != len(
+                        content
+                    )
+                ):
+                    raise ValueError(
+                        "Tamanho do manifesto não "
+                        "corresponde ao conteúdo preparado."
+                    )
+                if (
+                    record.get(
+                        "sha256"
+                    )
+                    != _sha256(
+                        content
+                    )
+                ):
+                    raise ValueError(
+                        "SHA-256 do manifesto não "
+                        "corresponde ao conteúdo preparado."
+                    )
+
             raw_path, extracted = (
                 _replace_dataset_artifacts(
                     stage_root,
@@ -1101,7 +1155,9 @@ def main() -> None:
         )
 
     manifest_base = {
-        "manifest_version": 1,
+        "manifest_version": (
+            MANIFEST_VERSION
+        ),
         "source": (
             "Agência Nacional do Petróleo, "
             "Gás Natural e Biocombustíveis - ANP"
