@@ -14,7 +14,6 @@ import pandas as pd
 from .config import (
     PROCESSED_DIR,
     PROJECT_ROOT,
-    REPORTS_DIR,
 )
 from .publication_contract import (
     PUBLIC_IMAGE_FILES,
