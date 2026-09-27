@@ -113,3 +113,43 @@ Os registros também preservam, quando fornecidos pelo servidor, `ETag` e `Last-
 
 
 A inspeção e a transformação não varrem livremente todos os XLSX presentes em `data/raw/`. Depois da validação, ambas consomem exclusivamente os arquivos listados no manifesto histórico aprovado. Um arquivo adicional com outro nome não entra no processamento.
+
+
+## Contrato dos manifestos
+
+Os manifestos atuais usam `manifest_version = 1`.
+
+Campos obrigatórios no nível do manifesto:
+
+- `manifest_version`;
+- `source`;
+- `source_page`;
+- `collected_at_utc`, em UTC;
+- `files`, como lista não vazia.
+
+Cada arquivo histórico registra, no mínimo:
+
+- `scope`;
+- `source_page`;
+- `discovered_url`;
+- `final_url`;
+- `filename`;
+- `detected_format`;
+- `bytes`;
+- `sha256`;
+- `collected_at_utc`.
+
+Cada dataset por posto registra, no mínimo:
+
+- `dataset`;
+- `url`;
+- `final_url`;
+- `filename`;
+- `detected_format`;
+- `bytes`;
+- `sha256`;
+- `extracted_csvs`;
+- `extracted_files`, com caminho, tamanho e SHA-256 de cada CSV extraído;
+- `collected_at_utc`.
+
+`ETag` e `Last-Modified` são preservados quando o servidor os fornece, mas não substituem o SHA-256.
