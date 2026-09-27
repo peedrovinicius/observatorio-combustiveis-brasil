@@ -30,6 +30,10 @@ def test_aggregate_measures_require_single_product_unit_series() -> None:
         in dax
     )
     assert (
+        "HASONEVALUE ( dim_localidade[localidade_id] )"
+        in dax
+    )
+    assert (
         "REMOVEFILTERS ( dim_localidade )"
         in dax
     )
