@@ -7,6 +7,7 @@
 Série Agregada Única =
 HASONEVALUE ( dim_produto[produto] )
     && HASONEVALUE ( fato_precos_semanais[unidade_medida] )
+    && HASONEVALUE ( dim_localidade[nivel_geografico] )
 
 Preço Médio Publicado =
 IF (
@@ -45,18 +46,26 @@ RETURN
     )
 
 Última Data Disponível =
-IF (
-    [Série Agregada Única],
-    MAXX (
-        FILTER (
-            ALL ( dim_data[data_inicial] ),
-            CALCULATE (
-                COUNTROWS ( fato_precos_semanais )
-            ) > 0
-        ),
-        dim_data[data_inicial]
+VAR Nivel =
+    SELECTEDVALUE ( dim_localidade[nivel_geografico] )
+RETURN
+    IF (
+        [Série Agregada Única],
+        MAXX (
+            FILTER (
+                ALL ( dim_data[data_inicial] ),
+                CALCULATE (
+                    COUNTROWS ( fato_precos_semanais ),
+                    REMOVEFILTERS ( dim_localidade ),
+                    TREATAS (
+                        { Nivel },
+                        dim_localidade[nivel_geografico]
+                    )
+                ) > 0
+            ),
+            dim_data[data_inicial]
+        )
     )
-)
 
 Preço Última Semana =
 VAR UltimaData =
@@ -70,13 +79,20 @@ RETURN
 Preço Semana Anterior =
 VAR UltimaData =
     [Última Data Disponível]
+VAR Nivel =
+    SELECTEDVALUE ( dim_localidade[nivel_geografico] )
 VAR DataAnterior =
     MAXX (
         FILTER (
             ALL ( dim_data[data_inicial] ),
             dim_data[data_inicial] < UltimaData
                 && CALCULATE (
-                    COUNTROWS ( fato_precos_semanais )
+                    COUNTROWS ( fato_precos_semanais ),
+                    REMOVEFILTERS ( dim_localidade ),
+                    TREATAS (
+                        { Nivel },
+                        dim_localidade[nivel_geografico]
+                    )
                 ) > 0
         ),
         dim_data[data_inicial]
@@ -152,7 +168,8 @@ IF (
         FILTER (
             ALL ( dim_data_coleta[data_coleta] ),
             CALCULATE (
-                COUNTROWS ( fato_precos_postos )
+                COUNTROWS ( fato_precos_postos ),
+                REMOVEFILTERS ( dim_posto )
             ) > 0
         ),
         dim_data_coleta[data_coleta]
