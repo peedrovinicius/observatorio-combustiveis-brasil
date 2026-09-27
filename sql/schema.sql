@@ -44,8 +44,8 @@ CREATE TABLE IF NOT EXISTS fato_precos_semanais (
         CHECK (desvio_padrao_revenda >= 0),
     coef_variacao_revenda NUMERIC(12, 6)
         CHECK (coef_variacao_revenda >= 0),
-    fonte_arquivo VARCHAR(255),
-    fonte_planilha VARCHAR(255),
+    fonte_arquivo VARCHAR(255) NOT NULL,
+    fonte_planilha VARCHAR(255) NOT NULL,
     CHECK (
         preco_minimo_revenda IS NULL
         OR preco_maximo_revenda IS NULL
