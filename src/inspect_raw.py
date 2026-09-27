@@ -9,6 +9,9 @@ from .atomic_outputs import (
     replace_text_file,
 )
 from .config import RAW_DIR
+from .provenance import (
+    verify_history_provenance,
+)
 
 
 def _inspect_excel(path: Path) -> dict[str, object]:
@@ -74,6 +77,10 @@ def inspect(path: Path) -> dict[str, object]:
 
 
 def main() -> None:
+    verify_history_provenance(
+        RAW_DIR
+    )
+
     files = [
         path
         for path in RAW_DIR.iterdir()
