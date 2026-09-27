@@ -146,20 +146,24 @@ WITH comparaveis AS (
         unidade_medida,
         MAX(preco_medio_revenda)
             FILTER (
-                WHERE produto ILIKE 'ETANOL%'
+                WHERE produto ILIKE '%ETANOL%'
+                  AND produto ILIKE '%HIDRAT%'
             ) AS etanol,
         COUNT(*)
             FILTER (
-                WHERE produto ILIKE 'ETANOL%'
+                WHERE produto ILIKE '%ETANOL%'
+                  AND produto ILIKE '%HIDRAT%'
             ) AS etanol_observacoes,
         MAX(preco_medio_revenda)
             FILTER (
-                WHERE produto ILIKE 'GASOLINA%'
+                WHERE produto ILIKE '%GASOLINA%'
+                  AND produto ILIKE '%COMUM%'
                   AND produto NOT ILIKE '%ADITIV%'
             ) AS gasolina,
         COUNT(*)
             FILTER (
-                WHERE produto ILIKE 'GASOLINA%'
+                WHERE produto ILIKE '%GASOLINA%'
+                  AND produto ILIKE '%COMUM%'
                   AND produto NOT ILIKE '%ADITIV%'
             ) AS gasolina_observacoes
     FROM vw_precos_semanais
