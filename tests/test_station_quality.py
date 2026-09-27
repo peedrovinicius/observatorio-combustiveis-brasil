@@ -363,3 +363,23 @@ def test_station_quality_counts_homonymous_municipalities_by_uf() -> None:
 
     assert report["municipios"] == 2
     assert report["postos_distintos"] == 2
+
+
+def test_station_quality_rejects_empty_dataset() -> None:
+    frame = pd.DataFrame(
+        columns=[
+            "data_coleta",
+            "uf",
+            "municipio",
+            "produto",
+            "preco_revenda",
+            "unidade_medida",
+        ]
+    )
+
+    report = build_station_quality_report(
+        frame
+    )
+
+    assert report["empty_dataset"] is True
+    assert report["status"] == "failed"
