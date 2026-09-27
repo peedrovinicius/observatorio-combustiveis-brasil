@@ -1396,11 +1396,18 @@ def test_transform_batch_install_failure_restores_all_processed_scopes(
     original_move = (
         transform_module.shutil.move
     )
+    failed = False
 
     def failing_move(
         source: str,
         destination: str,
     ):
+        nonlocal failed
+        if failed:
+            raise AssertionError(
+                "rollback não deve reutilizar shutil.move"
+            )
+
         source_path = Path(
             source
         )
@@ -1413,6 +1420,7 @@ def test_transform_batch_install_failure_restores_all_processed_scopes(
             and destination_path.parent
             == processed
         ):
+            failed = True
             raise OSError(
                 "falha simulada"
             )
