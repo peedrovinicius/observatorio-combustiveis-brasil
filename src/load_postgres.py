@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import csv
 import re
+from datetime import date
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 import psycopg
@@ -129,6 +131,79 @@ REQUIRED_TABLE_COLUMNS = {
     },
 }
 
+STATION_TEXT_LIMITS = {
+    "dim_produto_posto": {
+        "produto": 150,
+        "unidade_medida": 40,
+    },
+    "dim_posto": {
+        "posto_chave": 64,
+        "cnpj_revenda": 30,
+        "revenda": 255,
+        "bandeira": 180,
+        "regiao": 10,
+        "uf": 2,
+        "municipio": 160,
+        "logradouro": 255,
+        "numero": 40,
+        "complemento": 255,
+        "bairro": 160,
+        "cep": 20,
+    },
+    "fato_precos_postos": {
+        "fonte_arquivo": 255,
+    },
+}
+
+STATION_NONEMPTY_COLUMNS = {
+    "dim_data_coleta": {
+        "data_coleta_id",
+        "data_coleta",
+        "ano",
+        "mes",
+        "semana_iso",
+    },
+    "dim_produto_posto": {
+        "produto_posto_id",
+        "produto",
+        "unidade_medida",
+    },
+    "dim_posto": {
+        "posto_id",
+        "posto_chave",
+        "uf",
+        "municipio",
+    },
+    "fato_precos_postos": {
+        "preco_posto_id",
+        "data_coleta_id",
+        "produto_posto_id",
+        "posto_id",
+        "preco_revenda",
+        "fonte_arquivo",
+    },
+}
+
+STATION_ID_COLUMNS = {
+    "dim_data_coleta": {
+        "data_coleta_id",
+    },
+    "dim_produto_posto": {
+        "produto_posto_id",
+    },
+    "dim_posto": {
+        "posto_id",
+    },
+    "fato_precos_postos": {
+        "preco_posto_id",
+        "data_coleta_id",
+        "produto_posto_id",
+        "posto_id",
+    },
+}
+
+MAX_VALUE_ERRORS = 25
+
 
 def required_files() -> list[Path]:
     return [path for _, path in LOAD_PLAN]
@@ -150,6 +225,299 @@ def _read_csv_header(path: Path) -> list[str]:
             raise ValueError(
                 f"CSV vazio: {path}"
             ) from exc
+
+
+def _is_blank(value: str | None) -> bool:
+    return (
+        value is None
+        or not value.strip()
+    )
+
+
+def _decimal_contract_error(
+    value: str,
+    precision: int,
+    scale: int,
+) -> str | None:
+    try:
+        number = Decimal(value)
+    except InvalidOperation:
+        return "valor decimal inválido"
+
+    if not number.is_finite():
+        return "valor decimal não finito"
+
+    _, digits, exponent = (
+        number.as_tuple()
+    )
+    decimal_places = max(
+        -exponent,
+        0,
+    )
+    integer_digits = max(
+        len(digits) + exponent,
+        0,
+    )
+
+    if decimal_places > scale:
+        return (
+            f"excede {scale} casas decimais "
+            "e exigiria arredondamento"
+        )
+    if integer_digits > (
+        precision - scale
+    ):
+        return (
+            "excede o limite de "
+            f"NUMERIC({precision}, {scale})"
+        )
+
+    return None
+
+
+def _validate_station_csv_values(
+    table: str,
+    path: Path,
+) -> list[str]:
+    if table not in (
+        STATION_NONEMPTY_COLUMNS
+    ):
+        return []
+
+    errors: list[str] = []
+    with path.open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        reader = csv.DictReader(
+            handle
+        )
+        for row_number, row in enumerate(
+            reader,
+            start=2,
+        ):
+            def add_error(
+                column: str,
+                message: str,
+            ) -> None:
+                if len(errors) < (
+                    MAX_VALUE_ERRORS
+                ):
+                    errors.append(
+                        f"{table}: linha "
+                        f"{row_number}, "
+                        f"{column}: {message}"
+                    )
+
+            for column in (
+                STATION_NONEMPTY_COLUMNS[
+                    table
+                ]
+            ):
+                if _is_blank(
+                    row.get(column)
+                ):
+                    add_error(
+                        column,
+                        "valor obrigatório vazio",
+                    )
+
+            for column, limit in (
+                STATION_TEXT_LIMITS
+                .get(
+                    table,
+                    {},
+                )
+                .items()
+            ):
+                value = row.get(column)
+                if (
+                    not _is_blank(value)
+                    and len(value.strip())
+                    > limit
+                ):
+                    add_error(
+                        column,
+                        "excede o limite de "
+                        f"{limit} caracteres",
+                    )
+
+            for column in (
+                STATION_ID_COLUMNS[
+                    table
+                ]
+            ):
+                value = row.get(column)
+                if _is_blank(value):
+                    continue
+                if not re.fullmatch(
+                    r"[1-9][0-9]*",
+                    value.strip(),
+                ):
+                    add_error(
+                        column,
+                        "deve ser inteiro positivo",
+                    )
+
+            if table == (
+                "dim_data_coleta"
+            ):
+                raw_date = row.get(
+                    "data_coleta"
+                )
+                parsed_date = None
+                if not _is_blank(
+                    raw_date
+                ):
+                    try:
+                        parsed_date = (
+                            date.fromisoformat(
+                                raw_date.strip()
+                            )
+                        )
+                    except ValueError:
+                        add_error(
+                            "data_coleta",
+                            "data ISO inválida",
+                        )
+
+                components = {}
+                for column in (
+                    "ano",
+                    "mes",
+                    "semana_iso",
+                ):
+                    value = row.get(
+                        column
+                    )
+                    if _is_blank(value):
+                        continue
+                    try:
+                        components[
+                            column
+                        ] = int(
+                            value.strip()
+                        )
+                    except ValueError:
+                        add_error(
+                            column,
+                            "deve ser inteiro",
+                        )
+
+                if parsed_date is not None:
+                    expected = {
+                        "ano": (
+                            parsed_date.year
+                        ),
+                        "mes": (
+                            parsed_date.month
+                        ),
+                        "semana_iso": (
+                            parsed_date
+                            .isocalendar()
+                            .week
+                        ),
+                    }
+                    for (
+                        column,
+                        expected_value,
+                    ) in expected.items():
+                        actual = (
+                            components.get(
+                                column
+                            )
+                        )
+                        if (
+                            actual is not None
+                            and actual
+                            != expected_value
+                        ):
+                            add_error(
+                                column,
+                                "incompatível com "
+                                "data_coleta",
+                            )
+
+            if table == "dim_posto":
+                station_key = row.get(
+                    "posto_chave"
+                )
+                if (
+                    not _is_blank(
+                        station_key
+                    )
+                    and re.fullmatch(
+                        r"[0-9a-f]{64}",
+                        station_key.strip(),
+                    )
+                    is None
+                ):
+                    add_error(
+                        "posto_chave",
+                        "deve ser SHA-256 "
+                        "hexadecimal com "
+                        "64 caracteres",
+                    )
+
+                uf = row.get("uf")
+                if (
+                    not _is_blank(uf)
+                    and re.fullmatch(
+                        r"[A-Z]{2}",
+                        uf.strip(),
+                    )
+                    is None
+                ):
+                    add_error(
+                        "uf",
+                        "deve conter duas "
+                        "letras maiúsculas",
+                    )
+
+            if table == (
+                "fato_precos_postos"
+            ):
+                for column in (
+                    "preco_revenda",
+                    "preco_compra",
+                ):
+                    value = row.get(column)
+                    if _is_blank(value):
+                        continue
+                    error = (
+                        _decimal_contract_error(
+                            value.strip(),
+                            12,
+                            4,
+                        )
+                    )
+                    if error is not None:
+                        add_error(
+                            column,
+                            error,
+                        )
+                        continue
+
+                    if (
+                        column
+                        == "preco_revenda"
+                        and Decimal(
+                            value.strip()
+                        )
+                        <= 0
+                    ):
+                        add_error(
+                            column,
+                            "deve ser maior que zero",
+                        )
+
+            if len(errors) >= (
+                MAX_VALUE_ERRORS
+            ):
+                break
+
+    return errors
 
 
 def validate_csv_contracts() -> None:
@@ -180,6 +548,17 @@ def validate_csv_contracts() -> None:
             errors.append(
                 f"{table}: colunas obrigatórias ausentes: "
                 + ", ".join(missing)
+            )
+
+        if (
+            not unknown
+            and not missing
+        ):
+            errors.extend(
+                _validate_station_csv_values(
+                    table,
+                    path,
+                )
             )
 
     if errors:
