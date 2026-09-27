@@ -18,6 +18,8 @@ from .config import (
     REPORTS_DIR,
 )
 from .provenance import (
+    STATION_TRANSFORM_MANIFEST_VERSION,
+    sha256_file,
     verify_open_data_provenance,
 )
 from .numeric_parsing import (
@@ -25,6 +27,10 @@ from .numeric_parsing import (
 )
 
 STATION_OUTPUT = PROCESSED_DIR / "precos_postos_2026.csv"
+STATION_TRANSFORM_MANIFEST = (
+    PROCESSED_DIR
+    / "station_transform_manifest.json"
+)
 STATION_MODEL_DIR = PROCESSED_DIR / "model_postos"
 STATION_INGESTION_AUDIT = (
     REPORTS_DIR / "station_ingestion_audit_2026.json"
@@ -1165,6 +1171,71 @@ def main() -> None:
             ),
             encoding="utf-8",
         )
+        staged_manifest = (
+            stage
+            / STATION_TRANSFORM_MANIFEST.name
+        )
+        staged_manifest.write_text(
+            json.dumps(
+                {
+                    "manifest_version": (
+                        STATION_TRANSFORM_MANIFEST_VERSION
+                    ),
+                    "source_manifest": (
+                        "manifest.json"
+                    ),
+                    "source_manifest_sha256": (
+                        sha256_file(
+                            RAW_OPEN_DATA_DIR
+                            / "manifest.json"
+                        )
+                    ),
+                    "files": [
+                        {
+                            "role": "station_data",
+                            "filename": (
+                                STATION_OUTPUT.name
+                            ),
+                            "rows": int(
+                                len(
+                                    frame
+                                )
+                            ),
+                            "columns": int(
+                                len(
+                                    frame.columns
+                                )
+                            ),
+                            "bytes": (
+                                staged_output.stat().st_size
+                            ),
+                            "sha256": (
+                                sha256_file(
+                                    staged_output
+                                )
+                            ),
+                        },
+                        {
+                            "role": "ingestion_audit",
+                            "filename": (
+                                STATION_INGESTION_AUDIT.name
+                            ),
+                            "bytes": (
+                                staged_audit.stat().st_size
+                            ),
+                            "sha256": (
+                                sha256_file(
+                                    staged_audit
+                                )
+                            ),
+                        },
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
         replace_staged_files(
             [
@@ -1175,6 +1246,10 @@ def main() -> None:
                 (
                     staged_audit,
                     STATION_INGESTION_AUDIT,
+                ),
+                (
+                    staged_manifest,
+                    STATION_TRANSFORM_MANIFEST,
                 ),
             ]
         )
