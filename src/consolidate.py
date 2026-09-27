@@ -11,10 +11,12 @@ from .atomic_outputs import (
 )
 from .config import (
     PROCESSED_DIR,
+    RAW_DIR,
     REPORTS_DIR,
 )
 from .provenance import (
     HISTORY_SCOPES,
+    verify_history_transform_provenance,
 )
 from .transform import (
     history_scope_from_path,
@@ -283,6 +285,7 @@ def build_analytics_table_with_audit(
     *,
     history_only: bool = False,
     require_complete_history: bool = False,
+    input_files: list[Path] | None = None,
 ) -> tuple[
     pd.DataFrame,
     dict[str, object],
@@ -292,9 +295,15 @@ def build_analytics_table_with_audit(
         dict[str, object]
     ] = []
 
-    files = _candidate_files(
-        directory,
-        history_only=history_only,
+    files = (
+        sorted(
+            input_files
+        )
+        if input_files is not None
+        else _candidate_files(
+            directory,
+            history_only=history_only,
+        )
     )
     if require_complete_history:
         _validate_history_scope_coverage(
@@ -574,11 +583,17 @@ def main() -> None:
         parents=True,
         exist_ok=True,
     )
+    verified_files = (
+        verify_history_transform_provenance(
+            PROCESSED_DIR,
+            RAW_DIR,
+        )
+    )
     frame, audit = (
         build_analytics_table_with_audit(
             PROCESSED_DIR,
-            history_only=True,
             require_complete_history=True,
+            input_files=verified_files,
         )
     )
 
