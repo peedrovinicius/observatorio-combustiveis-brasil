@@ -530,9 +530,8 @@ def _replace_dataset_artifacts(
                 backed_up
             ):
                 if backup.exists():
-                    shutil.move(
-                        str(backup),
-                        str(original),
+                    backup.rename(
+                        original
                     )
             raise
 
