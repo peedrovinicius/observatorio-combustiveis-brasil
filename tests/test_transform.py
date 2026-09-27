@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from src.transform import detect_header_row, normalize_column, read_excel_sheet
 
@@ -42,3 +43,90 @@ def test_read_excel_sheet_normalizes_schema_and_types(tmp_path: Path) -> None:
     assert list(frame["preco_medio_revenda"]) == [6.12, 4.89]
     assert "fonte_arquivo" in frame.columns
     assert "fonte_planilha" in frame.columns
+
+
+
+def test_read_excel_sheet_rejects_duplicate_normalized_columns(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "duplicate-columns.xlsx"
+    )
+    rows = [
+        [
+            "DATA INICIAL",
+            "UF",
+            "ESTADO SIGLA",
+            "PRODUTO",
+            "PREÇO MÉDIO REVENDA",
+        ],
+        [
+            "20/09/2026",
+            "CE",
+            "CE",
+            "GASOLINA",
+            "6,10",
+        ],
+    ]
+    pd.DataFrame(
+        rows
+    ).to_excel(
+        path,
+        index=False,
+        header=False,
+        sheet_name="Dados",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Colunas duplicadas após normalização",
+    ):
+        read_excel_sheet(
+            path,
+            "Dados",
+        )
+
+
+def test_read_excel_sheet_preserves_fractional_station_count_for_quality(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "fractional-count.xlsx"
+    )
+    rows = [
+        [
+            "DATA INICIAL",
+            "PRODUTO",
+            "PREÇO MÉDIO REVENDA",
+            "NÚMERO DE POSTOS PESQUISADOS",
+        ],
+        [
+            "20/09/2026",
+            "GASOLINA",
+            "6,10",
+            "1,5",
+        ],
+    ]
+    pd.DataFrame(
+        rows
+    ).to_excel(
+        path,
+        index=False,
+        header=False,
+        sheet_name="Dados",
+    )
+
+    frame = read_excel_sheet(
+        path,
+        "Dados",
+    )
+
+    assert (
+        frame.loc[
+            0,
+            "postos_pesquisados",
+        ]
+        == 1.5
+    )
