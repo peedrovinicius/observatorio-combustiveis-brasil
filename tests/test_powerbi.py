@@ -26,6 +26,18 @@ def test_aggregate_measures_require_single_product_unit_series() -> None:
         in dax
     )
     assert (
+        "HASONEVALUE ( dim_localidade[nivel_geografico] )"
+        in dax
+    )
+    assert (
+        "REMOVEFILTERS ( dim_localidade )"
+        in dax
+    )
+    assert (
+        "TREATAS ("
+        in dax
+    )
+    assert (
         "Preço Última Semana ="
         in dax
     )
@@ -44,6 +56,10 @@ def test_station_measures_require_single_product_unit_series() -> None:
     )
     assert (
         "HASONEVALUE ( dim_produto_posto[produto_posto_id] )"
+        in dax
+    )
+    assert (
+        "REMOVEFILTERS ( dim_posto )"
         in dax
     )
     assert (
