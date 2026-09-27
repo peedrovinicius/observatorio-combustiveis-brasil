@@ -766,3 +766,19 @@ def test_select_common_gasoline_accepts_plain_station_label() -> None:
         )
         == "GASOLINA"
     )
+
+
+def test_select_common_gasoline_rejects_multiple_common_aliases() -> None:
+    products = pd.Series(
+        [
+            "GASOLINA",
+            "GASOLINA COMUM",
+        ]
+    )
+
+    assert (
+        _select_common_gasoline(
+            products
+        )
+        is None
+    )

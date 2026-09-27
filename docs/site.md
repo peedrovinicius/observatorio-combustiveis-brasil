@@ -66,4 +66,6 @@ Se a saída analítica não contiver gasolina comum, o site informa `Gasolina co
 
 Se houver mais de uma unidade de medida para gasolina comum, o ranking também não combina os preços. O site informa a ambiguidade em vez de ordenar grandezas incompatíveis.
 
+Da mesma forma, se mais de um rótulo de produto for reconhecido simultaneamente como gasolina comum no mesmo recorte, o site não escolhe um alias pela ordem dos dados. O ranking é tratado como indisponível até que a série esteja inequivocamente identificada.
+
 Essa regra mantém o HTML consistente com os gráficos e com a definição metodológica do ranking.

@@ -50,14 +50,14 @@ def _format_percent(
 def _select_common_gasoline(
     products: pd.Series,
 ) -> str | None:
-    values = [
-        str(value)
-        for value
-        in products.dropna().unique()
-    ]
-    for value in values:
+    matches: list[str] = []
+
+    for raw_value in (
+        products.dropna().unique()
+    ):
+        value = str(raw_value)
         upper = value.strip().upper()
-        if (
+        is_common = (
             upper == "GASOLINA"
             or (
                 "GASOLINA" in upper
@@ -65,10 +65,16 @@ def _select_common_gasoline(
                 and "ADITIV"
                 not in upper
             )
-        ):
-            return value
-    return None
+        )
+        if is_common:
+            matches.append(value)
 
+    unique_matches = list(
+        dict.fromkeys(matches)
+    )
+    if len(unique_matches) != 1:
+        return None
+    return unique_matches[0]
 
 def _single_unit_subset(
     frame: pd.DataFrame,
