@@ -454,6 +454,15 @@ def build_analytics_table_with_audit(
         )
         for item in file_audits
     )
+    geography_mismatch_rows = sum(
+        int(
+            item.get(
+                "linhas_nivel_geografico_incompativel",
+                0,
+            )
+        )
+        for item in file_audits
+    )
 
     audit = {
         "arquivos_encontrados": int(
@@ -470,15 +479,7 @@ def build_analytics_table_with_audit(
             processed_without_2026
         ),
         "linhas_nivel_geografico_incompativel": int(
-            sum(
-                int(
-                    item.get(
-                        "linhas_nivel_geografico_incompativel",
-                        0,
-                    )
-                )
-                for item in file_audits
-            )
+            geography_mismatch_rows
         ),
         "linhas_lidas_total": int(
             sum(
@@ -539,6 +540,8 @@ def build_analytics_table_with_audit(
                 invalid_dates == 0
                 and ignored_files == 0
                 and processed_without_2026
+                == 0
+                and geography_mismatch_rows
                 == 0
                 and conflicting_duplicate_rows
                 == 0
