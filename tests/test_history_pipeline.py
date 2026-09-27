@@ -7,6 +7,8 @@ import pandas as pd
 import pytest
 
 from src.consolidate import (
+    _candidate_files,
+    _validate_history_scope_coverage,
     build_analytics_table,
     build_analytics_table_with_audit,
     infer_geographic_level,
@@ -1500,3 +1502,128 @@ def test_transform_rejects_duplicate_normalized_sheet_names(
         transform_workbook(
             workbook
         )
+
+
+
+def test_strict_aggregate_candidates_ignore_unrelated_csv(
+    tmp_path: Path,
+) -> None:
+    history = (
+        tmp_path
+        / "historico_semanal_brasil__dados__dados.csv"
+    )
+    unrelated = (
+        tmp_path
+        / "manual.csv"
+    )
+    history.write_text(
+        "x",
+        encoding="utf-8",
+    )
+    unrelated.write_text(
+        "x",
+        encoding="utf-8",
+    )
+
+    assert _candidate_files(
+        tmp_path,
+        history_only=True,
+    ) == [
+        history
+    ]
+
+
+def test_history_scope_coverage_requires_all_four_scopes(
+    tmp_path: Path,
+) -> None:
+    files = []
+    for scope in (
+        "brasil",
+        "regioes",
+        "estados",
+    ):
+        path = (
+            tmp_path
+            / (
+                f"historico_semanal_{scope}"
+                "__dados__dados.csv"
+            )
+        )
+        path.write_text(
+            "x",
+            encoding="utf-8",
+        )
+        files.append(
+            path
+        )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Cobertura processada histórica incompleta",
+    ):
+        _validate_history_scope_coverage(
+            files
+        )
+
+
+def test_consolidation_preserves_conflicting_duplicate_rows(
+    tmp_path: Path,
+) -> None:
+    first = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "data_final": [
+                "2026-01-10",
+            ],
+            "municipio": [
+                "FORTALEZA",
+            ],
+            "uf": ["CE"],
+            "produto": [
+                "GASOLINA",
+            ],
+            "unidade_medida": [
+                "R$/L",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+        }
+    )
+    second = first.copy()
+    second.loc[
+        0,
+        "preco_medio_revenda",
+    ] = 6.2
+
+    first.to_csv(
+        tmp_path / "a.csv",
+        index=False,
+    )
+    second.to_csv(
+        tmp_path / "b.csv",
+        index=False,
+    )
+
+    frame, audit = (
+        build_analytics_table_with_audit(
+            tmp_path
+        )
+    )
+
+    assert len(frame) == 2
+    assert (
+        audit[
+            "linhas_removidas_por_duplicidade"
+        ]
+        == 0
+    )
+    assert (
+        audit[
+            "linhas_com_duplicidade_divergente"
+        ]
+        == 2
+    )
+    assert audit["status"] == "review"
