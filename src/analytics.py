@@ -115,11 +115,11 @@ def _prepare(frame: pd.DataFrame) -> pd.DataFrame:
         working["unidade_medida"] = (
             working["unidade_medida"]
             .astype("string")
+            .fillna("")
             .str.strip()
-            .replace("", pd.NA)
         )
     else:
-        working["unidade_medida"] = pd.NA
+        working["unidade_medida"] = ""
     working["preco_medio_revenda"] = pd.to_numeric(
         working["preco_medio_revenda"],
         errors="coerce",
