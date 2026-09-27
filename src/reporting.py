@@ -120,6 +120,64 @@ def _single_unit_subset(
     return subset, label
 
 
+def _ranking_period_label(
+    frame: pd.DataFrame,
+) -> str | None:
+    if (
+        frame.empty
+        or "data_inicial"
+        not in frame.columns
+    ):
+        return None
+
+    starts = (
+        pd.to_datetime(
+            frame["data_inicial"],
+            errors="coerce",
+        )
+        .dropna()
+        .dt.normalize()
+        .unique()
+    )
+    if len(starts) != 1:
+        return (
+            "período ambíguo"
+            if len(starts) > 1
+            else None
+        )
+
+    start = pd.Timestamp(
+        starts[0]
+    )
+    label = start.strftime(
+        "%d/%m/%Y"
+    )
+
+    if "data_final" in frame.columns:
+        ends = (
+            pd.to_datetime(
+                frame["data_final"],
+                errors="coerce",
+            )
+            .dropna()
+            .dt.normalize()
+            .unique()
+        )
+        if len(ends) > 1:
+            return "período ambíguo"
+        if len(ends) == 1:
+            label += (
+                " a "
+                + pd.Timestamp(
+                    ends[0]
+                ).strftime(
+                    "%d/%m/%Y"
+                )
+            )
+
+    return "semana " + label
+
+
 def _location_label(
     row: pd.Series,
 ) -> str:
@@ -273,6 +331,42 @@ def build_insights_markdown(
                     ]
                 )
             else:
+                period_label = (
+                    _ranking_period_label(
+                        subset
+                    )
+                )
+                if period_label == (
+                    "período ambíguo"
+                ):
+                    lines.extend(
+                        [
+                            (
+                                "Ranking não exibido: "
+                                "a série contém múltiplas "
+                                "datas e não é temporalmente "
+                                "comparável."
+                            ),
+                            "",
+                        ]
+                    )
+                    subset = (
+                        subset.iloc[
+                            0:0
+                        ].copy()
+                    )
+                elif period_label:
+                    lines.extend(
+                        [
+                            (
+                                "Período: "
+                                f"**{period_label}**"
+                            ),
+                            "",
+                        ]
+                    )
+
+            if not subset.empty:
                 subset = subset.sort_values(
                     "preco_medio_revenda",
                     ascending=False,
@@ -569,6 +663,24 @@ def plot_state_ranking(
         )
         return
 
+    period_label = (
+        _ranking_period_label(
+            frame
+        )
+    )
+    if period_label == (
+        "período ambíguo"
+    ):
+        _save_empty_chart(
+            output,
+            "Ranking de preços por UF",
+            (
+                "Ranking indisponível: "
+                "a série contém múltiplas datas."
+            ),
+        )
+        return
+
     frame = (
         frame.sort_values(
             "preco_medio_revenda",
@@ -598,8 +710,13 @@ def plot_state_ranking(
             "preco_medio_revenda"
         ],
     )
-    ax.set_title(
+    title = (
         f"10 maiores preços médios por UF - {series_label}"
+    )
+    if period_label:
+        title += f" - {period_label}"
+    ax.set_title(
+        title
     )
     ax.set_xlabel(
         "Preço médio de revenda"

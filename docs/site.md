@@ -62,6 +62,8 @@ Somente depois da geração completa o conjunto substitui a versão anterior. Em
 
 O ranking por UF do site usa somente gasolina comum e exige uma única unidade de medida no recorte.
 
+O período da série também é exibido junto ao ranking. Se uma mesma combinação de produto e unidade chegar com múltiplas datas, o ranking não é exibido, pois essas linhas não seriam temporalmente comparáveis.
+
 Se a saída analítica não contiver gasolina comum, o site informa `Gasolina comum indisponível` e não substitui o produto por etanol, gasolina aditivada ou qualquer outro combustível disponível no arquivo.
 
 Se houver mais de uma unidade de medida para gasolina comum, o ranking também não combina os preços. O site informa a ambiguidade em vez de ordenar grandezas incompatíveis.

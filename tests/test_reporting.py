@@ -782,3 +782,80 @@ def test_select_common_gasoline_rejects_multiple_common_aliases() -> None:
         )
         is None
     )
+
+
+def test_insights_expose_ranking_period() -> None:
+    kpis = pd.DataFrame()
+    ranking = pd.DataFrame(
+        {
+            "produto": [
+                "GASOLINA COMUM",
+                "GASOLINA COMUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
+            ],
+            "data_inicial": [
+                "2026-09-20",
+                "2026-09-20",
+            ],
+            "data_final": [
+                "2026-09-26",
+                "2026-09-26",
+            ],
+            "uf": [
+                "CE",
+                "SP",
+            ],
+            "preco_medio_revenda": [
+                6.30,
+                6.10,
+            ],
+        }
+    )
+
+    markdown = build_insights_markdown(
+        kpis,
+        ranking,
+    )
+
+    assert (
+        "Período: **semana 20/09/2026 a 26/09/2026**"
+        in markdown
+    )
+
+
+def test_insights_reject_ranking_with_multiple_dates() -> None:
+    ranking = pd.DataFrame(
+        {
+            "produto": [
+                "GASOLINA COMUM",
+                "GASOLINA COMUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
+            ],
+            "data_inicial": [
+                "2026-09-13",
+                "2026-09-20",
+            ],
+            "uf": [
+                "CE",
+                "SP",
+            ],
+            "preco_medio_revenda": [
+                6.30,
+                6.10,
+            ],
+        }
+    )
+
+    markdown = build_insights_markdown(
+        pd.DataFrame(),
+        ranking,
+    )
+
+    assert "múltiplas datas" in markdown
+    assert "### 5 maiores preços médios" not in markdown

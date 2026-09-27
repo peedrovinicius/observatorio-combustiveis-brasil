@@ -28,6 +28,8 @@ def _write_inputs(root: Path) -> tuple[Path, Path, Path]:
     pd.DataFrame(
         {
             "produto": ["GASOLINA COMUM", "GASOLINA COMUM"],
+            "data_inicial": ["2026-09-20", "2026-09-20"],
+            "data_final": ["2026-09-26", "2026-09-26"],
             "uf": ["CE", "SP"],
             "preco_medio_revenda": [6.30, 6.10],
             "postos_pesquisados": [20, 40],
@@ -60,6 +62,7 @@ def test_build_site_uses_real_values_from_inputs(
     assert "+1,50%" in text
     assert "CE" in text
     assert "R$ 6,30" in text
+    assert "semana 20/09/2026 a 26/09/2026" in text
     assert "placeholder" not in text.lower()
 
     for filename in SITE_IMAGES:
@@ -225,15 +228,15 @@ def test_build_site_does_not_substitute_another_product_for_common_gasoline(
     )
 
     assert (
-        "Produto: Gasolina comum indisponível"
+        "Série: Gasolina comum indisponível"
         in text
     )
     assert (
-        "Produto: ETANOL HIDRATADO"
+        "Série: ETANOL HIDRATADO"
         not in text
     )
     assert (
-        "Produto: GASOLINA ADITIVADA"
+        "Série: GASOLINA ADITIVADA"
         not in text
     )
 
@@ -381,3 +384,39 @@ def test_quality_cards_prefers_total_station_identity_count() -> None:
     assert "Postos distintos" in cards
     assert "<strong>25</strong>" in cards
     assert "Postos por CNPJ" not in cards
+
+
+def test_ranking_rows_rejects_multiple_dates() -> None:
+    from src.site import _ranking_rows
+
+    ranking = pd.DataFrame(
+        {
+            "produto": [
+                "GASOLINA COMUM",
+                "GASOLINA COMUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
+            ],
+            "data_inicial": [
+                "2026-09-13",
+                "2026-09-20",
+            ],
+            "uf": [
+                "CE",
+                "SP",
+            ],
+            "preco_medio_revenda": [
+                6.30,
+                6.10,
+            ],
+        }
+    )
+
+    rows, label = _ranking_rows(
+        ranking
+    )
+
+    assert rows == ""
+    assert "período ambíguo" in label

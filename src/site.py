@@ -219,6 +219,65 @@ def _kpi_cards(
     return "\n".join(cards)
 
 
+def _ranking_period_label(
+    frame: pd.DataFrame,
+) -> str | None:
+    if (
+        frame.empty
+        or "data_inicial"
+        not in frame.columns
+    ):
+        return None
+
+    starts = (
+        pd.to_datetime(
+            frame["data_inicial"],
+            errors="coerce",
+        )
+        .dropna()
+        .dt.normalize()
+        .unique()
+    )
+    if len(starts) != 1:
+        return (
+            "período ambíguo"
+            if len(starts) > 1
+            else None
+        )
+
+    start = pd.Timestamp(
+        starts[0]
+    )
+    label = start.strftime(
+        "%d/%m/%Y"
+    )
+
+    if "data_final" in frame.columns:
+        ends = (
+            pd.to_datetime(
+                frame["data_final"],
+                errors="coerce",
+            )
+            .dropna()
+            .dt.normalize()
+            .unique()
+        )
+        if len(ends) > 1:
+            return "período ambíguo"
+        if len(ends) == 1:
+            end = pd.Timestamp(
+                ends[0]
+            )
+            label += (
+                " a "
+                + end.strftime(
+                    "%d/%m/%Y"
+                )
+            )
+
+    return "semana " + label
+
+
 def _ranking_rows(
     ranking: pd.DataFrame,
 ) -> tuple[str, str]:
@@ -258,6 +317,27 @@ def _ranking_rows(
         return (
             "",
             series_label,
+        )
+
+    period_label = (
+        _ranking_period_label(
+            frame
+        )
+    )
+    if period_label == (
+        "período ambíguo"
+    ):
+        return (
+            "",
+            (
+                f"{series_label} · "
+                "período ambíguo"
+            ),
+        )
+    if period_label:
+        series_label = (
+            f"{series_label} · "
+            f"{period_label}"
         )
 
     frame = (
@@ -527,7 +607,7 @@ def build_site(
           <h2>Ranking por UF</h2>
         </div>
         <div class="panel table-panel">
-          <p class="note">Produto: {html.escape(ranking_product)}</p>
+          <p class="note">Série: {html.escape(ranking_product)}</p>
           <table>
             <thead>
               <tr>
