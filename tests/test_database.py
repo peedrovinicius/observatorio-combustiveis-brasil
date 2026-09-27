@@ -763,3 +763,80 @@ def test_station_csv_contract_rejects_external_text_whitespace(
         match="espaços externos",
     ):
         validate_csv_contracts()
+
+
+def test_aggregate_csv_contract_rejects_text_overflow(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "dim_produto.csv"
+    path.write_text(
+        "produto_id,produto\n"
+        f"1,{'A' * 151}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [("dim_produto", path)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="150 caracteres",
+    ):
+        validate_csv_contracts()
+
+
+def test_aggregate_csv_contract_rejects_inconsistent_date_dimension(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "dim_data.csv"
+    path.write_text(
+        "data_id,data_inicial,data_final,ano,mes,"
+        "semana_iso,trimestre\n"
+        "1,2026-01-04,2026-01-10,2026,2,1,1\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [("dim_data", path)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="incompatível com data_inicial",
+    ):
+        validate_csv_contracts()
+
+
+def test_aggregate_csv_contract_rejects_decimal_rounding(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "fato_precos_semanais.csv"
+    path.write_text(
+        "preco_fato_id,data_id,produto_id,localidade_id,"
+        "preco_medio_revenda\n"
+        "1,1,1,1,6.12345\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [("fato_precos_semanais", path)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="arredondamento",
+    ):
+        validate_csv_contracts()

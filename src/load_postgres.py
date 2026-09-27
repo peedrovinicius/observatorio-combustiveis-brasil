@@ -131,6 +131,69 @@ REQUIRED_TABLE_COLUMNS = {
     },
 }
 
+AGGREGATE_TEXT_LIMITS = {
+    "dim_produto": {
+        "produto": 150,
+    },
+    "dim_localidade": {
+        "nivel_geografico": 20,
+        "regiao": 40,
+        "uf": 2,
+        "estado": 120,
+        "municipio": 160,
+    },
+    "fato_precos_semanais": {
+        "unidade_medida": 30,
+        "fonte_arquivo": 255,
+        "fonte_planilha": 255,
+    },
+}
+
+AGGREGATE_NONEMPTY_COLUMNS = {
+    "dim_data": {
+        "data_id",
+        "data_inicial",
+        "data_final",
+        "ano",
+        "mes",
+        "semana_iso",
+        "trimestre",
+    },
+    "dim_produto": {
+        "produto_id",
+        "produto",
+    },
+    "dim_localidade": {
+        "localidade_id",
+        "nivel_geografico",
+    },
+    "fato_precos_semanais": {
+        "preco_fato_id",
+        "data_id",
+        "produto_id",
+        "localidade_id",
+        "preco_medio_revenda",
+    },
+}
+
+AGGREGATE_ID_COLUMNS = {
+    "dim_data": {
+        "data_id",
+    },
+    "dim_produto": {
+        "produto_id",
+    },
+    "dim_localidade": {
+        "localidade_id",
+    },
+    "fato_precos_semanais": {
+        "preco_fato_id",
+        "data_id",
+        "produto_id",
+        "localidade_id",
+    },
+}
+
 STATION_TEXT_LIMITS = {
     "dim_produto_posto": {
         "produto": 150,
@@ -273,6 +336,337 @@ def _decimal_contract_error(
         )
 
     return None
+
+
+def _validate_aggregate_csv_values(
+    table: str,
+    path: Path,
+) -> list[str]:
+    if table not in (
+        AGGREGATE_NONEMPTY_COLUMNS
+    ):
+        return []
+
+    errors: list[str] = []
+    with path.open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        reader = csv.DictReader(
+            handle
+        )
+        for row_number, row in enumerate(
+            reader,
+            start=2,
+        ):
+            def add_error(
+                column: str,
+                message: str,
+            ) -> None:
+                if len(errors) < (
+                    MAX_VALUE_ERRORS
+                ):
+                    errors.append(
+                        f"{table}: linha "
+                        f"{row_number}, "
+                        f"{column}: {message}"
+                    )
+
+            for column in (
+                AGGREGATE_NONEMPTY_COLUMNS[
+                    table
+                ]
+            ):
+                if _is_blank(
+                    row.get(column)
+                ):
+                    add_error(
+                        column,
+                        "valor obrigatório vazio",
+                    )
+
+            for column, limit in (
+                AGGREGATE_TEXT_LIMITS
+                .get(
+                    table,
+                    {},
+                )
+                .items()
+            ):
+                value = row.get(column)
+                if _is_blank(value):
+                    continue
+                if value != value.strip():
+                    add_error(
+                        column,
+                        "não deve conter espaços "
+                        "externos",
+                    )
+                if len(value) > limit:
+                    add_error(
+                        column,
+                        "excede o limite de "
+                        f"{limit} caracteres",
+                    )
+
+            for column in (
+                AGGREGATE_ID_COLUMNS[
+                    table
+                ]
+            ):
+                value = row.get(column)
+                if _is_blank(value):
+                    continue
+                if not re.fullmatch(
+                    r"[1-9][0-9]*",
+                    value.strip(),
+                ):
+                    add_error(
+                        column,
+                        "deve ser inteiro positivo",
+                    )
+
+            if table == "dim_data":
+                parsed_dates: dict[
+                    str,
+                    date,
+                ] = {}
+                for column in (
+                    "data_inicial",
+                    "data_final",
+                ):
+                    value = row.get(column)
+                    if _is_blank(value):
+                        continue
+                    try:
+                        parsed_dates[
+                            column
+                        ] = date.fromisoformat(
+                            value.strip()
+                        )
+                    except ValueError:
+                        add_error(
+                            column,
+                            "data ISO inválida",
+                        )
+
+                start = parsed_dates.get(
+                    "data_inicial"
+                )
+                end = parsed_dates.get(
+                    "data_final"
+                )
+                if (
+                    start is not None
+                    and end is not None
+                    and end < start
+                ):
+                    add_error(
+                        "data_final",
+                        "não pode ser anterior "
+                        "a data_inicial",
+                    )
+
+                components = {}
+                for column in (
+                    "ano",
+                    "mes",
+                    "semana_iso",
+                    "trimestre",
+                ):
+                    value = row.get(column)
+                    if _is_blank(value):
+                        continue
+                    try:
+                        components[
+                            column
+                        ] = int(
+                            value.strip()
+                        )
+                    except ValueError:
+                        add_error(
+                            column,
+                            "deve ser inteiro",
+                        )
+
+                if start is not None:
+                    expected = {
+                        "ano": start.year,
+                        "mes": start.month,
+                        "semana_iso": (
+                            start
+                            .isocalendar()
+                            .week
+                        ),
+                        "trimestre": (
+                            (start.month - 1)
+                            // 3
+                            + 1
+                        ),
+                    }
+                    for (
+                        column,
+                        expected_value,
+                    ) in expected.items():
+                        actual = (
+                            components.get(
+                                column
+                            )
+                        )
+                        if (
+                            actual is not None
+                            and actual
+                            != expected_value
+                        ):
+                            add_error(
+                                column,
+                                "incompatível com "
+                                "data_inicial",
+                            )
+
+            if table == (
+                "dim_localidade"
+            ):
+                level = row.get(
+                    "nivel_geografico"
+                )
+                if (
+                    not _is_blank(level)
+                    and level
+                    not in {
+                        "brasil",
+                        "regiao",
+                        "estado",
+                        "municipio",
+                    }
+                ):
+                    add_error(
+                        "nivel_geografico",
+                        "nível geográfico inválido",
+                    )
+                uf = row.get("uf")
+                if (
+                    not _is_blank(uf)
+                    and re.fullmatch(
+                        r"[A-Z]{2}",
+                        uf,
+                    )
+                    is None
+                ):
+                    add_error(
+                        "uf",
+                        "deve conter duas "
+                        "letras maiúsculas",
+                    )
+
+            if table == (
+                "fato_precos_semanais"
+            ):
+                integer_value = row.get(
+                    "postos_pesquisados"
+                )
+                if not _is_blank(
+                    integer_value
+                ):
+                    if not re.fullmatch(
+                        r"[0-9]+",
+                        integer_value.strip(),
+                    ):
+                        add_error(
+                            "postos_pesquisados",
+                            "deve ser inteiro "
+                            "não negativo",
+                        )
+
+                decimal_specs = {
+                    "preco_medio_revenda": (
+                        12,
+                        4,
+                    ),
+                    "preco_minimo_revenda": (
+                        12,
+                        4,
+                    ),
+                    "preco_maximo_revenda": (
+                        12,
+                        4,
+                    ),
+                    "desvio_padrao_revenda": (
+                        12,
+                        6,
+                    ),
+                    "coef_variacao_revenda": (
+                        12,
+                        6,
+                    ),
+                }
+                parsed: dict[
+                    str,
+                    Decimal,
+                ] = {}
+                for (
+                    column,
+                    (
+                        precision,
+                        scale,
+                    ),
+                ) in decimal_specs.items():
+                    value = row.get(column)
+                    if _is_blank(value):
+                        continue
+                    error = (
+                        _decimal_contract_error(
+                            value.strip(),
+                            precision,
+                            scale,
+                        )
+                    )
+                    if error is not None:
+                        add_error(
+                            column,
+                            error,
+                        )
+                        continue
+                    parsed[column] = Decimal(
+                        value.strip()
+                    )
+
+                average = parsed.get(
+                    "preco_medio_revenda"
+                )
+                if (
+                    average is not None
+                    and average <= 0
+                ):
+                    add_error(
+                        "preco_medio_revenda",
+                        "deve ser maior que zero",
+                    )
+
+                minimum = parsed.get(
+                    "preco_minimo_revenda"
+                )
+                maximum = parsed.get(
+                    "preco_maximo_revenda"
+                )
+                if (
+                    minimum is not None
+                    and maximum is not None
+                    and minimum > maximum
+                ):
+                    add_error(
+                        "preco_minimo_revenda",
+                        "não pode exceder "
+                        "preco_maximo_revenda",
+                    )
+
+            if len(errors) >= (
+                MAX_VALUE_ERRORS
+            ):
+                break
+
+    return errors
 
 
 def _validate_station_csv_values(
@@ -558,6 +952,12 @@ def validate_csv_contracts() -> None:
             not unknown
             and not missing
         ):
+            errors.extend(
+                _validate_aggregate_csv_values(
+                    table,
+                    path,
+                )
+            )
             errors.extend(
                 _validate_station_csv_values(
                     table,

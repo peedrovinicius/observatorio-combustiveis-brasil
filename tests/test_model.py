@@ -5,6 +5,10 @@ from src.build_model import (
     build_star_schema,
     build_validated_star_schema,
 )
+from src.load_postgres import (
+    REQUIRED_TABLE_COLUMNS,
+    TABLE_COLUMNS,
+)
 
 
 def test_star_schema_builds_dimensions_and_fact() -> None:
@@ -161,4 +165,38 @@ def test_validated_star_schema_blocks_municipality_without_state_context() -> No
     ):
         build_validated_star_schema(
             frame
+        )
+
+
+def test_aggregate_model_headers_match_postgres_contract() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "data_final": [
+                "2026-01-10",
+            ],
+            "nivel_geografico": [
+                "brasil",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+        }
+    )
+
+    tables = build_validated_star_schema(
+        frame
+    )
+
+    for table, modeled in tables.items():
+        columns = set(modeled.columns)
+        assert columns <= TABLE_COLUMNS[table]
+        assert (
+            REQUIRED_TABLE_COLUMNS[table]
+            <= columns
         )

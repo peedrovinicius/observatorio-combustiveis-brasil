@@ -51,6 +51,7 @@ A suíte verifica, entre outros pontos:
 - analytics por posto preservam séries independentes por combinação de produto e unidade de medida;
 - barreira de qualidade antes dos analytics por posto;
 - contrato dos CSVs com PostgreSQL;
+- validação de tipos e limites dos CSVs agregados antes do COPY;
 - alinhamento automático entre cabeçalhos gerados pelo modelo por posto, contrato da carga e colunas declaradas no SQL;
 - limites de texto, hash SHA-256, coerência temporal e precisão decimal antes do COPY;
 - integridade referencial dos CSVs por posto antes da conexão com PostgreSQL;
