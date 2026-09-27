@@ -100,11 +100,7 @@ def _common_gasoline(
             not in upper
         ):
             return value
-    return (
-        values[0]
-        if values
-        else None
-    )
+    return None
 
 
 def _kpi_cards(
@@ -148,6 +144,21 @@ def _kpi_cards(
 def _ranking_rows(
     ranking: pd.DataFrame,
 ) -> tuple[str, str]:
+    required = {
+        "produto",
+        "preco_medio_revenda",
+    }
+    if (
+        ranking.empty
+        or not required.issubset(
+            ranking.columns
+        )
+    ):
+        return (
+            "",
+            "Gasolina comum indisponível",
+        )
+
     product = (
         _common_gasoline(
             ranking["produto"]
@@ -156,7 +167,7 @@ def _ranking_rows(
     if product is None:
         return (
             "",
-            "Produto indisponível",
+            "Gasolina comum indisponível",
         )
 
     frame = (

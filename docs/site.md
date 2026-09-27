@@ -56,3 +56,12 @@ A geração com `src.snapshot` não publica `docs/index.html`, `docs/assets/`, `
 Todo o conjunto é montado primeiro em staging. A página HTML usa as imagens do snapshot em staging e o README também é atualizado em staging.
 
 Somente depois da geração completa o conjunto substitui a versão anterior. Em caso de falha durante a troca, o site, as imagens, o relatório e o README anteriores são restaurados juntos.
+
+
+## Seleção de combustível no ranking
+
+O ranking por UF do site usa somente gasolina comum.
+
+Se a saída analítica não contiver gasolina comum, o site informa `Gasolina comum indisponível` e não substitui o produto por etanol, gasolina aditivada ou qualquer outro combustível disponível no arquivo.
+
+Essa regra mantém o HTML consistente com os gráficos e com a definição metodológica do ranking.

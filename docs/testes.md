@@ -54,6 +54,7 @@ A suíte verifica, entre outros pontos:
 - publicação transacional de snapshot, site e README;
 - rollback integral do snapshot versionável quando a instalação falha;
 - construção do relatório web;
+- proibição de substituição silenciosa da gasolina comum por outro produto no site;
 - regra de estilo que bloqueia travessões tipográficos nos arquivos textuais do repositório.
 
 ## Integração offline

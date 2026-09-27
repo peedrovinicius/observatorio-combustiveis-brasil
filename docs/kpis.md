@@ -49,6 +49,8 @@ São produzidas duas posições:
 
 Empates recebem a mesma posição mínima.
 
+Quando o site apresenta o recorte visual de gasolina, somente gasolina comum é elegível. Na ausência desse produto, a interface informa indisponibilidade em vez de substituir por outro combustível.
+
 ### Relação etanol/gasolina
 
 ```text
