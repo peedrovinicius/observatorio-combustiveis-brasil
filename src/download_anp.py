@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
 
-from .config import ANP_WEEKLY_PAGE, RAW_DIR
+from .config import ANP_WEEKLY_PAGE
 
 TIMEOUT_SECONDS = 60
 USER_AGENT = "observatorio-combustiveis-brasil/1.0"
