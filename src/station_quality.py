@@ -4,6 +4,9 @@ import json
 
 import pandas as pd
 
+from .atomic_outputs import (
+    replace_text_file,
+)
 from .config import REPORTS_DIR
 from .station_data import (
     BUSINESS_KEY,
@@ -353,13 +356,13 @@ def main() -> None:
         REPORTS_DIR
         / "quality_postos_2026.json"
     )
-    output.write_text(
+    replace_text_file(
+        output,
         json.dumps(
             report,
             ensure_ascii=False,
             indent=2,
         ),
-        encoding="utf-8",
     )
 
     print(
