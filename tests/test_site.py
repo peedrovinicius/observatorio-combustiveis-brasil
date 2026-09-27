@@ -479,3 +479,16 @@ def test_ranking_rows_formats_station_count_as_integer() -> None:
 
     assert "<td>1.234</td>" in rows
     assert "1234.0" not in rows
+
+
+def test_site_main_blocks_partial_publication() -> None:
+    from src.site import main
+
+    try:
+        main()
+    except SystemExit as error:
+        assert "src.snapshot" in str(error)
+    else:
+        raise AssertionError(
+            "Era esperado SystemExit"
+        )
