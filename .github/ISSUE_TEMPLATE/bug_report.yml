@@ -1,0 +1,31 @@
+name: Relatar problema
+description: Reporte um erro de dados, pipeline, SQL, relatório ou documentação.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: Obrigado por ajudar a melhorar o Observatório de Combustíveis Brasil.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema
+      description: Descreva o comportamento observado.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento esperado
+      description: O que deveria ter acontecido?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto
+      description: Informe fonte, arquivo, produto, unidade de medida, localidade ou etapa do pipeline, quando aplicável.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidências
+      description: Inclua logs, mensagens de erro ou passos mínimos para reprodução.

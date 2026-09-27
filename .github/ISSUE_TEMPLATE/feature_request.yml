@@ -1,0 +1,43 @@
+name: Propor melhoria
+description: Sugira uma melhoria técnica, analítica ou de documentação.
+title: "[Melhoria] "
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivação
+      description: Qual problema ou oportunidade esta proposta atende?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Escopo sugerido
+      description: Descreva uma solução objetiva e delimitada.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área principal
+      options:
+        - Ingestão e qualidade
+        - Modelagem e PostgreSQL
+        - Analytics e KPIs
+        - Power BI e DAX
+        - Relatório web
+        - Documentação
+        - Infraestrutura e CI
+    validations:
+      required: true
+  - type: textarea
+    id: methodology
+    attributes:
+      label: Impacto metodológico
+      description: Informe se a proposta altera fonte, grão, unidade de medida, KPI ou regra analítica.
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribuição
+      options:
+        - label: Tenho interesse em implementar esta melhoria.
