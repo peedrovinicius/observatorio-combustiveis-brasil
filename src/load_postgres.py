@@ -112,6 +112,8 @@ REQUIRED_TABLE_COLUMNS = {
         "produto_id",
         "localidade_id",
         "preco_medio_revenda",
+        "fonte_arquivo",
+        "fonte_planilha",
     },
     "dim_data_coleta": TABLE_COLUMNS["dim_data_coleta"],
     "dim_produto_posto": TABLE_COLUMNS["dim_produto_posto"],
@@ -173,6 +175,8 @@ AGGREGATE_NONEMPTY_COLUMNS = {
         "produto_id",
         "localidade_id",
         "preco_medio_revenda",
+        "fonte_arquivo",
+        "fonte_planilha",
     },
 }
 
@@ -1805,6 +1809,16 @@ def _truncate_tables(
 def _finalize_model_constraints(
     connection: psycopg.Connection,
 ) -> None:
+    connection.execute(
+        "ALTER TABLE fato_precos_semanais "
+        "ALTER COLUMN fonte_arquivo "
+        "SET NOT NULL"
+    )
+    connection.execute(
+        "ALTER TABLE fato_precos_semanais "
+        "ALTER COLUMN fonte_planilha "
+        "SET NOT NULL"
+    )
     connection.execute(
         "ALTER TABLE dim_posto "
         "ALTER COLUMN posto_chave "
