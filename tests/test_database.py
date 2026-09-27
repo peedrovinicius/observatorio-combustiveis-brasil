@@ -840,3 +840,156 @@ def test_aggregate_csv_contract_rejects_decimal_rounding(
         match="arredondamento",
     ):
         validate_csv_contracts()
+
+
+def _write_valid_aggregate_contract_bundle(
+    tmp_path: Path,
+) -> list[tuple[str, Path]]:
+    data = tmp_path / "dim_data.csv"
+    product = tmp_path / "dim_produto.csv"
+    locality = tmp_path / "dim_localidade.csv"
+    fact = tmp_path / "fato_precos_semanais.csv"
+
+    data.write_text(
+        "data_id,data_inicial,data_final,ano,mes,"
+        "semana_iso,trimestre\n"
+        "1,2026-01-04,2026-01-10,2026,1,1,1\n",
+        encoding="utf-8",
+    )
+    product.write_text(
+        "produto_id,produto\n"
+        "1,GASOLINA\n",
+        encoding="utf-8",
+    )
+    locality.write_text(
+        "localidade_id,nivel_geografico,regiao,uf,estado,municipio\n"
+        "1,municipio,NORDESTE,CE,CEARA,FORTALEZA\n",
+        encoding="utf-8",
+    )
+    fact.write_text(
+        "preco_fato_id,data_id,produto_id,localidade_id,"
+        "unidade_medida,preco_medio_revenda\n"
+        "1,1,1,1,R$/L,6.1234\n",
+        encoding="utf-8",
+    )
+
+    return [
+        ("dim_data", data),
+        ("dim_produto", product),
+        ("dim_localidade", locality),
+        ("fato_precos_semanais", fact),
+    ]
+
+
+def test_aggregate_relations_reject_missing_foreign_key(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    plan = _write_valid_aggregate_contract_bundle(
+        tmp_path
+    )
+    fact = dict(plan)[
+        "fato_precos_semanais"
+    ]
+    fact.write_text(
+        "preco_fato_id,data_id,produto_id,localidade_id,"
+        "unidade_medida,preco_medio_revenda\n"
+        "1,1,99,1,R$/L,6.1234\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        plan,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="referência inexistente",
+    ):
+        validate_input_files()
+
+
+def test_aggregate_relations_reject_duplicate_fact_grain(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    plan = _write_valid_aggregate_contract_bundle(
+        tmp_path
+    )
+    fact = dict(plan)[
+        "fato_precos_semanais"
+    ]
+    fact.write_text(
+        "preco_fato_id,data_id,produto_id,localidade_id,"
+        "unidade_medida,preco_medio_revenda\n"
+        "1,1,1,1,R$/L,6.1234\n"
+        "2,1,1,1,R$/L,6.1200\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        plan,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="grão duplicado",
+    ):
+        validate_input_files()
+
+
+def test_aggregate_csv_contract_rejects_date_outside_2026(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "dim_data.csv"
+    path.write_text(
+        "data_id,data_inicial,data_final,ano,mes,"
+        "semana_iso,trimestre\n"
+        "1,2025-12-28,2026-01-03,2025,12,52,4\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [("dim_data", path)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="deve pertencer a 2026",
+    ):
+        validate_csv_contracts()
+
+
+def test_station_csv_contract_rejects_date_outside_2026(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "dim_data_coleta.csv"
+    path.write_text(
+        "data_coleta_id,data_coleta,ano,mes,semana_iso\n"
+        "1,2025-12-31,2025,12,1\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [("dim_data_coleta", path)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="deve pertencer a 2026",
+    ):
+        validate_csv_contracts()

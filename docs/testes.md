@@ -52,6 +52,8 @@ A suíte verifica, entre outros pontos:
 - barreira de qualidade antes dos analytics por posto;
 - contrato dos CSVs com PostgreSQL;
 - validação de tipos e limites dos CSVs agregados antes do COPY;
+- integridade referencial dos CSVs agregados antes da conexão com PostgreSQL;
+- bloqueio pré-carga de dimensões temporais fora de 2026;
 - alinhamento automático entre cabeçalhos gerados pelo modelo por posto, contrato da carga e colunas declaradas no SQL;
 - limites de texto, hash SHA-256, coerência temporal e precisão decimal antes do COPY;
 - integridade referencial dos CSVs por posto antes da conexão com PostgreSQL;
