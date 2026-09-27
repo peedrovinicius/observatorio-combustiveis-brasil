@@ -32,6 +32,13 @@ AGGREGATE_REQUIRED_COLUMNS = {
     "preco_medio_revenda",
 }
 
+EXPECTED_LEVEL_BY_HISTORY_SCOPE = {
+    "brasil": "brasil",
+    "regioes": "regiao",
+    "estados": "estado",
+    "municipios_2026": "municipio",
+}
+
 
 def infer_geographic_level(
     frame: pd.DataFrame,
@@ -218,12 +225,39 @@ def _prepare_aggregate_file(
         in_2026
     ].copy()
     if frame.empty:
+        audit[
+            "linhas_nivel_geografico_incompativel"
+        ] = 0
         return frame, audit
 
     frame[
         "nivel_geografico"
     ] = infer_geographic_level(
         frame
+    )
+
+    scope = history_scope_from_path(
+        path
+    )
+    expected_level = (
+        EXPECTED_LEVEL_BY_HISTORY_SCOPE.get(
+            scope
+        )
+    )
+    audit[
+        "linhas_nivel_geografico_incompativel"
+    ] = (
+        int(
+            frame[
+                "nivel_geografico"
+            ]
+            .ne(
+                expected_level
+            )
+            .sum()
+        )
+        if expected_level
+        else 0
     )
     frame["ano"] = (
         frame[
@@ -280,6 +314,29 @@ def build_analytics_table_with_audit(
             and not frame.empty
         ):
             frames.append(frame)
+
+    if require_complete_history:
+        incompatible = [
+            item[
+                "fonte_arquivo"
+            ]
+            for item in file_audits
+            if int(
+                item.get(
+                    "linhas_nivel_geografico_incompativel",
+                    0,
+                )
+            )
+            > 0
+        ]
+        if incompatible:
+            raise RuntimeError(
+                "Nível geográfico incompatível "
+                "com o escopo histórico em: "
+                + ", ".join(
+                    incompatible
+                )
+            )
 
     if not frames:
         raise RuntimeError(
@@ -411,6 +468,17 @@ def build_analytics_table_with_audit(
         ),
         "arquivos_processados_sem_linhas_2026": int(
             processed_without_2026
+        ),
+        "linhas_nivel_geografico_incompativel": int(
+            sum(
+                int(
+                    item.get(
+                        "linhas_nivel_geografico_incompativel",
+                        0,
+                    )
+                )
+                for item in file_audits
+            )
         ),
         "linhas_lidas_total": int(
             sum(
