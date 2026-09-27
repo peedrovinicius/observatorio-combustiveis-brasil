@@ -581,3 +581,56 @@ def test_ratio_does_not_mix_different_units() -> None:
         ],
         2,
     ) == 72.58
+
+
+def test_ratio_rejects_ambiguous_fuel_class() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-02-08",
+                "2026-02-08",
+                "2026-02-08",
+            ],
+            "data_final": [
+                "2026-02-14",
+                "2026-02-14",
+                "2026-02-14",
+            ],
+            "nivel_geografico": [
+                "municipio",
+                "municipio",
+                "municipio",
+            ],
+            "uf": [
+                "CE",
+                "CE",
+                "CE",
+            ],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "produto": [
+                "ETANOL HIDRATADO",
+                "GASOLINA COMUM",
+                "GASOLINA PREMIUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
+                "R$/L",
+            ],
+            "preco_medio_revenda": [
+                4.50,
+                6.20,
+                7.10,
+            ],
+        }
+    )
+
+    result = build_ethanol_gasoline_ratio(
+        frame
+    )
+
+    assert result.empty
