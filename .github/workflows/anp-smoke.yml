@@ -1,0 +1,45 @@
+name: ANP Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 10 * * 1"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/anp-smoke.yml"
+      - "src/anp_smoke.py"
+      - "src/config.py"
+      - "src/download_history.py"
+      - "src/download_open_data.py"
+      - "src/file_formats.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: anp-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Python 3.11
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install runtime dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Probe ANP official sources
+        run: python -m src.anp_smoke
