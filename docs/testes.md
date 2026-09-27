@@ -88,7 +88,8 @@ A suíte verifica, entre outros pontos:
 - rollback integral do snapshot versionável quando a instalação falha;
 - construção do relatório web;
 - proibição de substituição silenciosa da gasolina comum por outro produto no site;
-- regra de estilo que bloqueia travessões tipográficos nos arquivos textuais do repositório.
+- regra de estilo que bloqueia travessões tipográficos nos arquivos textuais do repositório;
+- higiene dos notebooks, sem outputs ou contadores de execução versionados.
 
 ## Integração offline
 
