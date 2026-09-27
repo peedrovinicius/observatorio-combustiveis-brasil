@@ -384,6 +384,17 @@ def _replace_dataset_artifacts(
         parents=True,
         exist_ok=True,
     )
+    previous_stems = (
+        _previous_manifest_stems(
+            root
+        )
+    )
+    managed_stems = sorted(
+        set(
+            stems
+        )
+        | previous_stems
+    )
 
     with tempfile.TemporaryDirectory(
         prefix=".dataset_stage_",
@@ -532,6 +543,86 @@ def _replace_dataset_artifacts(
                         str(original),
                     )
             raise
+
+
+def _previous_manifest_stems(
+    root: Path,
+) -> set[str]:
+    manifest_path = (
+        root
+        / "manifest.json"
+    )
+    if not manifest_path.exists():
+        return set()
+
+    try:
+        data = json.loads(
+            manifest_path.read_text(
+                encoding="utf-8",
+            )
+        )
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "Manifesto anterior de dados abertos "
+            "não é JSON válido."
+        ) from exc
+
+    if not isinstance(
+        data,
+        dict,
+    ):
+        raise ValueError(
+            "Manifesto anterior de dados abertos "
+            "deve ser um objeto JSON."
+        )
+
+    files = data.get(
+        "files",
+        [],
+    )
+    if not isinstance(
+        files,
+        list,
+    ):
+        raise ValueError(
+            "Manifesto anterior de dados abertos "
+            "não possui lista files válida."
+        )
+
+    stems: set[str] = set()
+    for item in files:
+        if not isinstance(
+            item,
+            dict,
+        ):
+            raise ValueError(
+                "Manifesto anterior contém "
+                "registro de arquivo inválido."
+            )
+        filename = str(
+            item.get(
+                "filename",
+                "",
+            )
+        ).strip()
+        if (
+            not filename
+            or Path(
+                filename
+            ).name
+            != filename
+        ):
+            raise ValueError(
+                "Manifesto anterior contém "
+                "nome de arquivo inválido."
+            )
+        stems.add(
+            Path(
+                filename
+            ).stem
+        )
+
+    return stems
 
 
 def _replace_open_data_batch(
@@ -692,7 +783,7 @@ def _replace_open_data_batch(
         existing_paths: list[
             Path
         ] = []
-        for stem in stems:
+        for stem in managed_stems:
             existing_paths.extend(
                 path
                 for path in (
