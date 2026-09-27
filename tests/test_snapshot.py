@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -6,6 +7,7 @@ import src.snapshot as snapshot_module
 from src.snapshot import (
     SNAPSHOT_IMAGES,
     _replace_snapshot_bundle,
+    _validate_report_bundle_freshness,
     publish_snapshot,
 )
 
@@ -504,4 +506,80 @@ def test_publish_snapshot_rejects_empty_required_file(
             / "snapshot",
             tmp_path
             / "resultados.md",
+        )
+
+
+def test_report_bundle_freshness_accepts_current_artifacts(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.csv"
+    artifact = tmp_path / "chart.png"
+    source.write_text(
+        "dados",
+        encoding="utf-8",
+    )
+    artifact.write_bytes(
+        b"png"
+    )
+    os.utime(
+        source,
+        (100, 100),
+    )
+    os.utime(
+        artifact,
+        (200, 200),
+    )
+
+    _validate_report_bundle_freshness(
+        [source],
+        [artifact],
+    )
+
+
+def test_report_bundle_freshness_rejects_stale_artifact(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.csv"
+    artifact = tmp_path / "chart.png"
+    source.write_text(
+        "dados",
+        encoding="utf-8",
+    )
+    artifact.write_bytes(
+        b"png"
+    )
+    os.utime(
+        source,
+        (200, 200),
+    )
+    os.utime(
+        artifact,
+        (100, 100),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Bundle visual desatualizado",
+    ):
+        _validate_report_bundle_freshness(
+            [source],
+            [artifact],
+        )
+
+
+def test_report_bundle_freshness_requires_all_inputs(
+    tmp_path: Path,
+) -> None:
+    artifact = tmp_path / "chart.png"
+    artifact.write_bytes(
+        b"png"
+    )
+
+    with pytest.raises(
+        FileNotFoundError,
+        match="Arquivos ausentes",
+    ):
+        _validate_report_bundle_freshness(
+            [tmp_path / "missing.csv"],
+            [artifact],
         )
