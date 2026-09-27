@@ -750,3 +750,19 @@ def test_select_common_gasoline_ignores_premium() -> None:
         )
         == "GASOLINA COMUM"
     )
+
+
+def test_select_common_gasoline_accepts_plain_station_label() -> None:
+    products = pd.Series(
+        [
+            "GASOLINA",
+            "ETANOL",
+        ]
+    )
+
+    assert (
+        _select_common_gasoline(
+            products
+        )
+        == "GASOLINA"
+    )
