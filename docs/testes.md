@@ -31,6 +31,7 @@ A suíte verifica, entre outros pontos:
 - identidade e deduplicação de postos;
 - precedência entre publicações sobrepostas;
 - auditoria de exclusões agregadas e por posto;
+- publicação transacional das bases consolidadas junto das respectivas auditorias;
 - substituição transacional dos lotes de modelo e analytics;
 - rollback integral dos CSVs derivados quando uma escrita ou instalação falha;
 - modelo estrela agregado;

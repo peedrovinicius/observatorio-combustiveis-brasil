@@ -178,3 +178,133 @@ def replace_csv_batch(
                         str(original),
                     )
             raise
+
+
+
+def replace_staged_files(
+    replacements: list[
+        tuple[
+            Path,
+            Path,
+        ]
+    ],
+) -> None:
+    if not replacements:
+        raise ValueError(
+            "Lote de arquivos vazio."
+        )
+
+    staged_paths = [
+        staged
+        for staged, _
+        in replacements
+    ]
+    destinations = [
+        destination
+        for _, destination
+        in replacements
+    ]
+
+    if len(destinations) != len(
+        set(destinations)
+    ):
+        raise ValueError(
+            "Lote de arquivos contém "
+            "destinos duplicados."
+        )
+
+    for staged in staged_paths:
+        if not staged.is_file():
+            raise FileNotFoundError(
+                "Arquivo em staging não encontrado: "
+                f"{staged}"
+            )
+        if staged.stat().st_size <= 0:
+            raise ValueError(
+                "Arquivo em staging está vazio: "
+                f"{staged.name}"
+            )
+
+    stage_parents = {
+        staged.parent
+        for staged in staged_paths
+    }
+    if len(stage_parents) != 1:
+        raise ValueError(
+            "Arquivos em staging devem "
+            "compartilhar o mesmo diretório."
+        )
+
+    stage_root = next(
+        iter(
+            stage_parents
+        )
+    )
+    backup = (
+        stage_root
+        / "backup"
+    )
+    backup.mkdir(
+        exist_ok=False
+    )
+
+    backed_up: list[
+        tuple[
+            Path,
+            Path,
+        ]
+    ] = []
+    installed: list[
+        Path
+    ] = []
+
+    try:
+        for index, destination in enumerate(
+            destinations
+        ):
+            destination.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+            if not destination.exists():
+                continue
+
+            backup_path = (
+                backup
+                / f"{index}_{destination.name}"
+            )
+            shutil.move(
+                str(destination),
+                str(backup_path),
+            )
+            backed_up.append(
+                (
+                    destination,
+                    backup_path,
+                )
+            )
+
+        for staged, destination in replacements:
+            shutil.move(
+                str(staged),
+                str(destination),
+            )
+            installed.append(
+                destination
+            )
+    except Exception:
+        for destination in reversed(
+            installed
+        ):
+            if destination.exists():
+                destination.unlink()
+
+        for destination, backup_path in reversed(
+            backed_up
+        ):
+            if backup_path.exists():
+                shutil.move(
+                    str(backup_path),
+                    str(destination),
+                )
+        raise

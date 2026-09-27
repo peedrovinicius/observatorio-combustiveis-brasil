@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import json
+import tempfile
 from pathlib import Path
 
 import pandas as pd
 
+from .atomic_outputs import (
+    replace_staged_files,
+)
 from .config import (
     PROCESSED_DIR,
     REPORTS_DIR,
@@ -410,24 +414,49 @@ def main() -> None:
         PROCESSED_DIR
         / OUTPUT_NAME
     )
-    frame.to_csv(
-        output,
-        index=False,
-        encoding="utf-8",
-    )
 
-    REPORTS_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-    AGGREGATE_INGESTION_AUDIT.write_text(
-        json.dumps(
-            audit,
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
+    with tempfile.TemporaryDirectory(
+        prefix=".aggregate_bundle_",
+        dir=PROCESSED_DIR.parent,
+    ) as temporary:
+        stage = Path(
+            temporary
+        )
+        staged_output = (
+            stage
+            / OUTPUT_NAME
+        )
+        staged_audit = (
+            stage
+            / AGGREGATE_INGESTION_AUDIT.name
+        )
+
+        frame.to_csv(
+            staged_output,
+            index=False,
+            encoding="utf-8",
+        )
+        staged_audit.write_text(
+            json.dumps(
+                audit,
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+        replace_staged_files(
+            [
+                (
+                    staged_output,
+                    output,
+                ),
+                (
+                    staged_audit,
+                    AGGREGATE_INGESTION_AUDIT,
+                ),
+            ]
+        )
 
     print(
         "Tabela analítica: "

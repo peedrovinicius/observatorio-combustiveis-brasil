@@ -6,6 +6,7 @@ import pytest
 import src.atomic_outputs as atomic_outputs
 from src.atomic_outputs import (
     replace_csv_batch,
+    replace_staged_files,
 )
 
 
@@ -283,3 +284,248 @@ def test_replace_csv_batch_rejects_unsafe_names(
                 name: _table(1),
             },
         )
+
+
+
+def test_replace_staged_files_replaces_pair_together(
+    tmp_path: Path,
+) -> None:
+    stage = (
+        tmp_path
+        / "stage"
+    )
+    stage.mkdir()
+
+    staged_csv = (
+        stage
+        / "dados.csv"
+    )
+    staged_json = (
+        stage
+        / "auditoria.json"
+    )
+    staged_csv.write_text(
+        "novo-csv",
+        encoding="utf-8",
+    )
+    staged_json.write_text(
+        '{"status":"novo"}',
+        encoding="utf-8",
+    )
+
+    destination = (
+        tmp_path
+        / "destino"
+    )
+    csv_path = (
+        destination
+        / "dados.csv"
+    )
+    json_path = (
+        tmp_path
+        / "reports"
+        / "auditoria.json"
+    )
+    csv_path.parent.mkdir(
+        parents=True,
+    )
+    json_path.parent.mkdir(
+        parents=True,
+    )
+    csv_path.write_text(
+        "csv-antigo",
+        encoding="utf-8",
+    )
+    json_path.write_text(
+        '{"status":"antigo"}',
+        encoding="utf-8",
+    )
+
+    replace_staged_files(
+        [
+            (
+                staged_csv,
+                csv_path,
+            ),
+            (
+                staged_json,
+                json_path,
+            ),
+        ]
+    )
+
+    assert (
+        csv_path.read_text(
+            encoding="utf-8"
+        )
+        == "novo-csv"
+    )
+    assert (
+        json_path.read_text(
+            encoding="utf-8"
+        )
+        == '{"status":"novo"}'
+    )
+
+
+def test_replace_staged_files_install_failure_restores_pair(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stage = (
+        tmp_path
+        / "stage"
+    )
+    stage.mkdir()
+
+    staged_csv = (
+        stage
+        / "dados.csv"
+    )
+    staged_json = (
+        stage
+        / "auditoria.json"
+    )
+    staged_csv.write_text(
+        "novo-csv",
+        encoding="utf-8",
+    )
+    staged_json.write_text(
+        '{"status":"novo"}',
+        encoding="utf-8",
+    )
+
+    csv_path = (
+        tmp_path
+        / "processed"
+        / "dados.csv"
+    )
+    json_path = (
+        tmp_path
+        / "reports"
+        / "auditoria.json"
+    )
+    csv_path.parent.mkdir(
+        parents=True,
+    )
+    json_path.parent.mkdir(
+        parents=True,
+    )
+    csv_path.write_text(
+        "csv-antigo",
+        encoding="utf-8",
+    )
+    json_path.write_text(
+        '{"status":"antigo"}',
+        encoding="utf-8",
+    )
+
+    original_move = (
+        atomic_outputs.shutil.move
+    )
+
+    def failing_move(
+        source: str,
+        destination: str,
+    ):
+        source_path = Path(
+            source
+        )
+        destination_path = Path(
+            destination
+        )
+        if (
+            source_path.name
+            == "auditoria.json"
+            and destination_path
+            == json_path
+        ):
+            raise OSError(
+                "falha simulada"
+            )
+        return original_move(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        atomic_outputs.shutil,
+        "move",
+        failing_move,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="falha simulada",
+    ):
+        replace_staged_files(
+            [
+                (
+                    staged_csv,
+                    csv_path,
+                ),
+                (
+                    staged_json,
+                    json_path,
+                ),
+            ]
+        )
+
+    assert (
+        csv_path.read_text(
+            encoding="utf-8"
+        )
+        == "csv-antigo"
+    )
+    assert (
+        json_path.read_text(
+            encoding="utf-8"
+        )
+        == '{"status":"antigo"}'
+    )
+
+
+def test_replace_staged_files_rejects_empty_input_before_replacement(
+    tmp_path: Path,
+) -> None:
+    stage = (
+        tmp_path
+        / "stage"
+    )
+    stage.mkdir()
+    staged = (
+        stage
+        / "dados.csv"
+    )
+    staged.write_bytes(
+        b""
+    )
+
+    destination = (
+        tmp_path
+        / "dados.csv"
+    )
+    destination.write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="está vazio",
+    ):
+        replace_staged_files(
+            [
+                (
+                    staged,
+                    destination,
+                )
+            ]
+        )
+
+    assert (
+        destination.read_text(
+            encoding="utf-8"
+        )
+        == "antigo"
+    )

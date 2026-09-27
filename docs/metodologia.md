@@ -79,8 +79,9 @@ A consolidação seleciona tabelas agregadas com preço médio de revenda e:
 - adiciona ano, mês e semana ISO;
 - alinha schemas;
 - contabiliza e remove duplicidades pela chave analítica disponível;
-- gera `data/processed/precos_semanais_2026.csv`;
-- grava `reports/aggregate_ingestion_audit_2026.json`.
+- prepara `data/processed/precos_semanais_2026.csv`;
+- prepara `reports/aggregate_ingestion_audit_2026.json`;
+- publica base consolidada e auditoria juntas, com rollback do par anterior se a instalação falhar.
 
 Registros fora de 2026 são uma exclusão esperada para o recorte anual. Datas iniciais inválidas deixam a auditoria com status `review`, preservando visibilidade sobre linhas que não chegaram à base final.
 

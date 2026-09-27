@@ -3,11 +3,15 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import tempfile
 import unicodedata
 from pathlib import Path
 
 import pandas as pd
 
+from .atomic_outputs import (
+    replace_staged_files,
+)
 from .config import (
     PROCESSED_DIR,
     RAW_OPEN_DATA_DIR,
@@ -846,24 +850,49 @@ def main() -> None:
         parents=True,
         exist_ok=True,
     )
-    frame.to_csv(
-        STATION_OUTPUT,
-        index=False,
-        encoding="utf-8",
-    )
 
-    REPORTS_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-    STATION_INGESTION_AUDIT.write_text(
-        json.dumps(
-            audit,
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
+    with tempfile.TemporaryDirectory(
+        prefix=".station_bundle_",
+        dir=PROCESSED_DIR.parent,
+    ) as temporary:
+        stage = Path(
+            temporary
+        )
+        staged_output = (
+            stage
+            / STATION_OUTPUT.name
+        )
+        staged_audit = (
+            stage
+            / STATION_INGESTION_AUDIT.name
+        )
+
+        frame.to_csv(
+            staged_output,
+            index=False,
+            encoding="utf-8",
+        )
+        staged_audit.write_text(
+            json.dumps(
+                audit,
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+        replace_staged_files(
+            [
+                (
+                    staged_output,
+                    STATION_OUTPUT,
+                ),
+                (
+                    staged_audit,
+                    STATION_INGESTION_AUDIT,
+                ),
+            ]
+        )
 
     print(
         "Auditoria de ingestão: "

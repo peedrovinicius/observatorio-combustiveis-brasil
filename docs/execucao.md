@@ -210,3 +210,12 @@ O `README.md` é copiado para staging e recebe o bloco de resultados somente nes
 A substituição dos cinco alvos só começa quando todo o conjunto foi gerado. Os alvos anteriores são mantidos em backup temporário durante a troca. Se qualquer instalação falhar, os itens novos já instalados são removidos e o snapshot versionável anterior é restaurado integralmente.
 
 Arquivos de documentação que não fazem parte desse bundle, como `docs/site.css`, metodologia e documentação técnica, não são substituídos pela rotina.
+
+
+## Consolidação e auditoria como bundle
+
+A consolidação agregada publica `data/processed/precos_semanais_2026.csv` e `reports/aggregate_ingestion_audit_2026.json` como um único par lógico.
+
+A camada por posto aplica a mesma regra a `data/processed/precos_postos_2026.csv` e `reports/station_ingestion_audit_2026.json`.
+
+O CSV e o JSON são preparados em staging. A troca só acontece depois que ambos existem e possuem conteúdo. Se a instalação do segundo arquivo falhar, o primeiro arquivo novo é removido e o par anterior é restaurado.
