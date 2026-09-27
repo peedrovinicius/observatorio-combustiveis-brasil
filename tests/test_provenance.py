@@ -13,6 +13,7 @@ from src.provenance import (
     verify_history_provenance,
     verify_history_transform_provenance,
     verify_open_data_provenance,
+    verify_station_transform_provenance,
 )
 
 
@@ -841,4 +842,217 @@ def test_history_transform_provenance_rejects_extra_history_csv(
         verify_history_transform_provenance(
             processed,
             raw,
+        )
+
+
+
+def _write_station_transform_manifest(
+    raw_root: Path,
+    processed_root: Path,
+    reports_root: Path,
+) -> None:
+    raw_root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    processed_root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    reports_root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    _write_open_manifest(
+        raw_root
+    )
+
+    station = (
+        b"data_coleta,uf,municipio,produto,"
+        b"preco_revenda,unidade_medida,fonte_arquivo\n"
+        b"2026-09-20,CE,FORTALEZA,GASOLINA,"
+        b"6.10,R$ / litro,dados.csv\n"
+    )
+    station_path = (
+        processed_root
+        / "precos_postos_2026.csv"
+    )
+    station_path.write_bytes(
+        station
+    )
+
+    audit = {
+        "status": "passed",
+        "linhas_finais": 1,
+    }
+    audit_path = (
+        reports_root
+        / "station_ingestion_audit_2026.json"
+    )
+    audit_path.write_text(
+        json.dumps(
+            audit
+        ),
+        encoding="utf-8",
+    )
+
+    raw_manifest = (
+        raw_root
+        / "manifest.json"
+    )
+    manifest = {
+        "manifest_version": 1,
+        "source_manifest": "manifest.json",
+        "source_manifest_sha256": _sha256(
+            raw_manifest.read_bytes()
+        ),
+        "files": [
+            {
+                "role": "station_data",
+                "filename": station_path.name,
+                "rows": 1,
+                "columns": 7,
+                "bytes": station_path.stat().st_size,
+                "sha256": _sha256(
+                    station_path.read_bytes()
+                ),
+            },
+            {
+                "role": "ingestion_audit",
+                "filename": audit_path.name,
+                "bytes": audit_path.stat().st_size,
+                "sha256": _sha256(
+                    audit_path.read_bytes()
+                ),
+            },
+        ],
+    }
+    (
+        processed_root
+        / "station_transform_manifest.json"
+    ).write_text(
+        json.dumps(
+            manifest
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_station_transform_provenance_accepts_exact_bundle(
+    tmp_path: Path,
+) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    reports = tmp_path / "reports"
+    _write_station_transform_manifest(
+        raw,
+        processed,
+        reports,
+    )
+
+    result = (
+        verify_station_transform_provenance(
+            processed,
+            raw,
+            reports,
+        )
+    )
+
+    assert (
+        result["station_data"].name
+        == "precos_postos_2026.csv"
+    )
+
+
+def test_station_transform_provenance_rejects_modified_csv(
+    tmp_path: Path,
+) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    reports = tmp_path / "reports"
+    _write_station_transform_manifest(
+        raw,
+        processed,
+        reports,
+    )
+    (
+        processed
+        / "precos_postos_2026.csv"
+    ).write_text(
+        "alterado",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="divergente do manifesto",
+    ):
+        verify_station_transform_provenance(
+            processed,
+            raw,
+            reports,
+        )
+
+
+def test_station_transform_provenance_rejects_modified_audit(
+    tmp_path: Path,
+) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    reports = tmp_path / "reports"
+    _write_station_transform_manifest(
+        raw,
+        processed,
+        reports,
+    )
+    (
+        reports
+        / "station_ingestion_audit_2026.json"
+    ).write_text(
+        '{"linhas_finais":999}',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="divergente do manifesto",
+    ):
+        verify_station_transform_provenance(
+            processed,
+            raw,
+            reports,
+        )
+
+
+def test_station_transform_provenance_rejects_changed_raw_manifest(
+    tmp_path: Path,
+) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    reports = tmp_path / "reports"
+    _write_station_transform_manifest(
+        raw,
+        processed,
+        reports,
+    )
+    raw_manifest = (
+        raw
+        / "manifest.json"
+    )
+    raw_manifest.write_text(
+        raw_manifest.read_text(
+            encoding="utf-8"
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Manifesto raw por posto atual diverge",
+    ):
+        verify_station_transform_provenance(
+            processed,
+            raw,
+            reports,
         )
