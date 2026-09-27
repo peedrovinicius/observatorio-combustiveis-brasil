@@ -63,65 +63,12 @@ def _download(session: requests.Session, url: str) -> tuple[bytes, str, str]:
 
 
 def main() -> None:
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
-
-    session = requests.Session()
-    session.headers.update({"User-Agent": USER_AGENT})
-
-    try:
-        page = session.get(ANP_WEEKLY_PAGE, timeout=TIMEOUT_SECONDS)
-        page.raise_for_status()
-    except requests.RequestException as exc:
-        raise SystemExit(
-            "Falha ao acessar a página oficial da ANP. "
-            "Verifique sua conexão e tente novamente. "
-            f"Detalhe: {exc}"
-        ) from exc
-
-    links = _discover_latest_links(page.text)
-
-    collected_at = datetime.now(timezone.utc).isoformat()
-    files: list[dict[str, object]] = []
-
-    for dataset_name, file_url in links.items():
-        try:
-            content, final_url, content_type = _download(session, file_url)
-        except requests.RequestException as exc:
-            raise SystemExit(
-                f"Falha ao baixar o dataset {dataset_name} da ANP: {exc}"
-            ) from exc
-
-        fallback = f"{dataset_name}.bin"
-        filename = _safe_filename(final_url, fallback)
-        destination = RAW_DIR / filename
-        destination.write_bytes(content)
-
-        files.append(
-            {
-                "dataset": dataset_name,
-                "source_page": ANP_WEEKLY_PAGE,
-                "discovered_url": file_url,
-                "final_url": final_url,
-                "filename": filename,
-                "content_type": content_type,
-                "bytes": len(content),
-                "sha256": _sha256(content),
-                "collected_at_utc": collected_at,
-            }
-        )
-        print(f"Salvo: {destination.relative_to(RAW_DIR.parent.parent)}")
-
-    manifest = {
-        "source": "Agência Nacional do Petróleo, Gás Natural e Biocombustíveis - ANP",
-        "source_page": ANP_WEEKLY_PAGE,
-        "collected_at_utc": collected_at,
-        "files": files,
-    }
-    manifest_path = RAW_DIR / "manifest.json"
-    manifest_path.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    raise SystemExit(
+        "O downloader legado src.download_anp foi desativado. "
+        "Use python -m src.download_history para a série agregada "
+        "e python -m src.download_open_data para os dados por posto, "
+        "ou execute python -m src.pipeline."
     )
-    print(f"Manifesto: {manifest_path.relative_to(RAW_DIR.parent.parent)}")
 
 
 if __name__ == "__main__":
