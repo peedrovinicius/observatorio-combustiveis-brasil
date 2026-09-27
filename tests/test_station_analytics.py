@@ -115,7 +115,7 @@ def test_station_coverage_summarizes_year() -> None:
     ) == 6.20
 
 
-def test_latest_distribution_uses_latest_date_per_product() -> None:
+def test_latest_distribution_uses_latest_date_per_series() -> None:
     result = (
         build_latest_municipality_distribution(
             _sample()
@@ -385,3 +385,67 @@ def test_validated_station_analytics_blocks_duplicate_business_key() -> None:
         build_validated_station_analytics_exports(
             frame
         )
+
+
+def test_station_analytics_sort_units_deterministically() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_coleta": [
+                "2026-09-20",
+                "2026-09-20",
+            ],
+            "uf": ["CE", "CE"],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO B",
+            ],
+            "cnpj_revenda": [
+                "00000001000136",
+                "00000002000180",
+            ],
+            "produto": [
+                "PRODUTO TESTE",
+                "PRODUTO TESTE",
+            ],
+            "unidade_medida": [
+                "R$ / m³",
+                "R$ / litro",
+            ],
+            "preco_revenda": [
+                5.0,
+                6.0,
+            ],
+            "bandeira": [
+                "A",
+                "B",
+            ],
+        }
+    )
+
+    distribution = (
+        build_latest_municipality_distribution(
+            frame
+        )
+    )
+    brands = build_latest_brand_summary(
+        frame,
+        min_observations=1,
+        min_stations=1,
+    )
+
+    assert list(
+        distribution["unidade_medida"]
+    ) == [
+        "R$ / litro",
+        "R$ / m³",
+    ]
+    assert list(
+        brands["unidade_medida"]
+    ) == [
+        "R$ / litro",
+        "R$ / m³",
+    ]

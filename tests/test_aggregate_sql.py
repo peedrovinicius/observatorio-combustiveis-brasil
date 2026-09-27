@@ -12,13 +12,13 @@ QUERIES_SQL = (
 )
 
 
-def test_latest_aggregate_view_is_per_product() -> None:
+def test_latest_aggregate_view_is_per_product_unit_level() -> None:
     sql = VIEWS_SQL.read_text(
         encoding="utf-8",
     )
 
     assert (
-        "WITH ultima_data_produto AS"
+        "WITH ultima_data_serie AS"
         in sql
     )
     assert (

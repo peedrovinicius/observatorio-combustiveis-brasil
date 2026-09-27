@@ -34,7 +34,7 @@ JOIN dim_localidade l
     ON l.localidade_id = f.localidade_id;
 
 CREATE OR REPLACE VIEW vw_ultimo_periodo AS
-WITH ultima_data_produto AS (
+WITH ultima_data_serie AS (
     SELECT
         produto,
         unidade_medida,
@@ -48,7 +48,7 @@ WITH ultima_data_produto AS (
 )
 SELECT v.*
 FROM vw_precos_semanais v
-JOIN ultima_data_produto u
+JOIN ultima_data_serie u
     ON u.produto = v.produto
     AND u.unidade_medida IS NOT DISTINCT FROM v.unidade_medida
     AND u.nivel_geografico = v.nivel_geografico

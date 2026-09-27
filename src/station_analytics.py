@@ -330,6 +330,7 @@ def build_latest_municipality_distribution(
     ].sort_values(
         [
             "produto",
+            "unidade_medida",
             "uf",
             "municipio",
         ],
@@ -420,10 +421,12 @@ def build_latest_brand_summary(
     ].sort_values(
         [
             "produto",
+            "unidade_medida",
             "amostra_suficiente",
             "preco_medio_observado",
         ],
         ascending=[
+            True,
             True,
             False,
             True,
