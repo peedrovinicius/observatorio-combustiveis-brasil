@@ -90,4 +90,11 @@ Registros com fallback incompleto permanecem separados na consolidação e não 
 
 A validação de qualidade posterior trata CNPJ inválido e fallback incompleto como problemas bloqueantes antes da modelagem.
 
-Os CSVs da camada por posto são lidos inicialmente como texto. Isso preserva zeros à esquerda em identificadores como CNPJ e CEP antes das conversões específicas de data e preço.
+
+## Preservação de identificadores na leitura
+
+Os CSVs da camada por posto são lidos inicialmente como texto. Isso preserva zeros à esquerda em campos cadastrais como CNPJ e CEP antes das conversões específicas de data e preço.
+
+A normalização do CNPJ ocorre somente depois da leitura textual, evitando que um identificador como `00000000000100` seja convertido em número e perca zeros significativos.
+
+CNPJs estruturalmente inválidos não participam da deduplicação nem da auditoria de sobreposição, mesmo quando os campos de fallback estão completos. Essas linhas permanecem separadas para inspeção e são bloqueadas pela validação de qualidade.

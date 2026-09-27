@@ -371,9 +371,14 @@ def deduplicate_station_rows(
     issues = station_identity_issue_masks(
         working
     )
-    reliable_identity = ~issues[
-        "fallback_incomplete"
-    ]
+    reliable_identity = ~(
+        issues[
+            "fallback_incomplete"
+        ]
+        | issues[
+            "invalid_cnpj"
+        ]
+    )
 
     reliable = (
         working.loc[
@@ -597,9 +602,14 @@ def _overlap_audit(
         working
     )
     working = working.loc[
-        ~issues[
-            "fallback_incomplete"
-        ]
+        ~(
+            issues[
+                "fallback_incomplete"
+            ]
+            | issues[
+                "invalid_cnpj"
+            ]
+        )
     ].copy()
     if working.empty:
         return {
