@@ -4,14 +4,27 @@
 
 -- Modelo agregado oficial
 
+Série Agregada Única =
+HASONEVALUE ( dim_produto[produto] )
+    && HASONEVALUE ( fato_precos_semanais[unidade_medida] )
+
 Preço Médio Publicado =
-AVERAGE ( fato_precos_semanais[preco_medio_revenda] )
+IF (
+    [Série Agregada Única],
+    AVERAGE ( fato_precos_semanais[preco_medio_revenda] )
+)
 
 Preço Mínimo Publicado =
-MIN ( fato_precos_semanais[preco_minimo_revenda] )
+IF (
+    [Série Agregada Única],
+    MIN ( fato_precos_semanais[preco_minimo_revenda] )
+)
 
 Preço Máximo Publicado =
-MAX ( fato_precos_semanais[preco_maximo_revenda] )
+IF (
+    [Série Agregada Única],
+    MAX ( fato_precos_semanais[preco_maximo_revenda] )
+)
 
 Amplitude de Preço Publicado =
 [Preço Máximo Publicado] - [Preço Mínimo Publicado]
@@ -19,15 +32,30 @@ Amplitude de Preço Publicado =
 Postos Pesquisados =
 SUM ( fato_precos_semanais[postos_pesquisados] )
 
-Última Data Disponível =
-MAXX (
-    FILTER (
-        ALL ( dim_data[data_inicial] ),
+Postos Pesquisados Última Semana =
+VAR UltimaData =
+    [Última Data Disponível]
+RETURN
+    IF (
+        [Série Agregada Única],
         CALCULATE (
-            COUNTROWS ( fato_precos_semanais )
-        ) > 0
-    ),
-    dim_data[data_inicial]
+            [Postos Pesquisados],
+            dim_data[data_inicial] = UltimaData
+        )
+    )
+
+Última Data Disponível =
+IF (
+    [Série Agregada Única],
+    MAXX (
+        FILTER (
+            ALL ( dim_data[data_inicial] ),
+            CALCULATE (
+                COUNTROWS ( fato_precos_semanais )
+            ) > 0
+        ),
+        dim_data[data_inicial]
+    )
 )
 
 Preço Última Semana =
@@ -66,25 +94,46 @@ DIVIDE (
 )
 
 Desvio Padrão Publicado =
-AVERAGE ( fato_precos_semanais[desvio_padrao_revenda] )
+IF (
+    [Série Agregada Única],
+    AVERAGE ( fato_precos_semanais[desvio_padrao_revenda] )
+)
 
 Coeficiente de Variação Publicado =
-AVERAGE ( fato_precos_semanais[coef_variacao_revenda] )
+IF (
+    [Série Agregada Única],
+    AVERAGE ( fato_precos_semanais[coef_variacao_revenda] )
+)
 
 
 -- Modelo por posto
 
+Série por Posto Única =
+HASONEVALUE ( dim_produto_posto[produto_posto_id] )
+
 Preço Médio Observado Postos =
-AVERAGE ( fato_precos_postos[preco_revenda] )
+IF (
+    [Série por Posto Única],
+    AVERAGE ( fato_precos_postos[preco_revenda] )
+)
 
 Mediana Observada Postos =
-MEDIAN ( fato_precos_postos[preco_revenda] )
+IF (
+    [Série por Posto Única],
+    MEDIAN ( fato_precos_postos[preco_revenda] )
+)
 
 Preço Mínimo Observado Postos =
-MIN ( fato_precos_postos[preco_revenda] )
+IF (
+    [Série por Posto Única],
+    MIN ( fato_precos_postos[preco_revenda] )
+)
 
 Preço Máximo Observado Postos =
-MAX ( fato_precos_postos[preco_revenda] )
+IF (
+    [Série por Posto Única],
+    MAX ( fato_precos_postos[preco_revenda] )
+)
 
 Amplitude Observada Postos =
 [Preço Máximo Observado Postos]
@@ -97,14 +146,17 @@ Postos Distintos =
 DISTINCTCOUNT ( fato_precos_postos[posto_id] )
 
 Última Data de Coleta =
-MAXX (
-    FILTER (
-        ALL ( dim_data_coleta[data_coleta] ),
-        CALCULATE (
-            COUNTROWS ( fato_precos_postos )
-        ) > 0
-    ),
-    dim_data_coleta[data_coleta]
+IF (
+    [Série por Posto Única],
+    MAXX (
+        FILTER (
+            ALL ( dim_data_coleta[data_coleta] ),
+            CALCULATE (
+                COUNTROWS ( fato_precos_postos )
+            ) > 0
+        ),
+        dim_data_coleta[data_coleta]
+    )
 )
 
 Preço Médio Última Coleta =
