@@ -38,6 +38,7 @@ erDiagram
         bigint produto_id FK
         bigint localidade_id FK
         integer postos_pesquisados
+        varchar unidade_medida
         numeric preco_medio_revenda
         numeric preco_minimo_revenda
         numeric preco_maximo_revenda
