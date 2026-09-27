@@ -88,6 +88,15 @@ def build_star_schema(frame: pd.DataFrame) -> dict[str, pd.DataFrame]:
             working[column] = ""
         working[column] = _normalized_text(working[column])
 
+    working["nivel_geografico"] = (
+        working["nivel_geografico"]
+        .str.lower()
+    )
+    working["uf"] = (
+        working["uf"]
+        .str.upper()
+    )
+
     dim_localidade = (
         working[LOCATION_COLUMNS]
         .drop_duplicates()

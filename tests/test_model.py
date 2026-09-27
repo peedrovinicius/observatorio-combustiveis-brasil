@@ -200,3 +200,44 @@ def test_aggregate_model_headers_match_postgres_contract() -> None:
             REQUIRED_TABLE_COLUMNS[table]
             <= columns
         )
+
+
+def test_model_normalizes_geographic_level_and_uf_case() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "data_final": [
+                "2026-01-10",
+            ],
+            "nivel_geografico": [
+                " Município ",
+            ],
+            "uf": [
+                "ce",
+            ],
+            "municipio": [
+                "FORTALEZA",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+        }
+    )
+
+    tables = build_validated_star_schema(
+        frame
+    )
+    locality = tables[
+        "dim_localidade"
+    ].iloc[0]
+
+    assert (
+        locality["nivel_geografico"]
+        == "municipio"
+    )
+    assert locality["uf"] == "CE"
