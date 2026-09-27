@@ -734,3 +734,19 @@ def test_single_unit_subset_rejects_mixed_units() -> None:
 
     assert subset.empty
     assert "múltiplas unidades" in label
+
+
+def test_select_common_gasoline_ignores_premium() -> None:
+    products = pd.Series(
+        [
+            "GASOLINA PREMIUM",
+            "GASOLINA COMUM",
+        ]
+    )
+
+    assert (
+        _select_common_gasoline(
+            products
+        )
+        == "GASOLINA COMUM"
+    )
