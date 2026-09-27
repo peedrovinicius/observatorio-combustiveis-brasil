@@ -90,9 +90,11 @@ A `dim_posto` usa uma estratégia SCD tipo 1 simples: mantém um único registro
 
 Além da chave substituta `posto_id`, a dimensão persiste `posto_chave`, uma chave técnica determinística SHA-256 com 64 caracteres derivada da identidade do estabelecimento. Ela é reproduzível entre execuções e possui restrição de unicidade no PostgreSQL. A identidade textual completa não precisa ser usada como índice, evitando chaves excessivamente largas.
 
-O CNPJ é normalizado preservando caracteres alfanuméricos válidos nas 14 posições cadastrais. Isso evita colisões causadas pela remoção de letras em inscrições no novo formato.
+O CNPJ é lido como texto e normalizado preservando zeros à esquerda e caracteres alfanuméricos nas 14 posições cadastrais. As 12 primeiras posições aceitam letras ou números e as duas últimas permanecem numéricas. Essa validação é estrutural e não recalcula os dígitos verificadores.
 
-Quando o CNPJ não está disponível, o projeto usa uma identidade de fallback baseada em UF, município, revenda, logradouro e número. Revenda, logradouro e número são obrigatórios para que essa identidade alternativa seja considerada confiável. Nesse caso, mudanças nesses atributos podem representar uma nova identidade, pois não há uma chave cadastral mais forte disponível na fonte.
+Quando o CNPJ não está disponível, o projeto usa uma identidade de fallback baseada em UF, município, revenda, logradouro e número. Os cinco campos são obrigatórios para que essa identidade alternativa seja considerada confiável. Nesse caso, mudanças nesses atributos podem representar uma nova identidade, pois não há uma chave cadastral mais forte disponível na fonte.
+
+Linhas com fallback incompleto são preservadas separadamente durante a consolidação para evitar fusão indevida de estabelecimentos e são bloqueadas pela qualidade antes da modelagem.
 
 Essa decisão evita inflar contagens de estabelecimentos no PostgreSQL e no Power BI por simples alterações cadastrais.
 

@@ -31,7 +31,9 @@ A suíte verifica, entre outros pontos:
 - identidade geográfica mínima por nível antes da modelagem;
 - identidade e deduplicação de postos;
 - suporte ao CNPJ alfanumérico sem remoção de letras;
-- bloqueio de CNPJ inválido e fallback de posto incompleto;
+- preservação de zeros à esquerda na leitura de CNPJ;
+- bloqueio de CNPJ com formato estrutural incompatível e fallback de posto incompleto;
+- exigência dos cinco componentes do fallback de identidade;
 - preservação de linhas com fallback incompleto sem deduplicação indevida;
 - exclusão de fallback incompleto da auditoria de sobreposição;
 - precedência entre publicações sobrepostas;

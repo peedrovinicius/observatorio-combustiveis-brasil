@@ -127,7 +127,7 @@ def build_station_quality_report(
             working
         )
     )
-    report["cnpj_invalido"] = int(
+    report["cnpj_formato_invalido"] = int(
         identity_issues[
             "invalid_cnpj"
         ].sum()
@@ -137,6 +137,20 @@ def build_station_quality_report(
     ] = int(
         identity_issues[
             "fallback_incomplete"
+        ].sum()
+    )
+    report[
+        "fallback_sem_uf"
+    ] = int(
+        identity_issues[
+            "fallback_missing_uf"
+        ].sum()
+    )
+    report[
+        "fallback_sem_municipio"
+    ] = int(
+        identity_issues[
+            "fallback_missing_municipio"
         ].sum()
     )
     report[
@@ -255,7 +269,7 @@ def build_station_quality_report(
             "duplicidades_chave_negocio"
         ],
         report[
-            "cnpj_invalido"
+            "cnpj_formato_invalido"
         ],
         report[
             "fallback_identidade_incompleta"

@@ -33,9 +33,15 @@ etanol_gasolina_ultimas_4_semanas/dados.csv
 
 Essa referência evita perder a origem quando ZIPs diferentes contêm CSVs com o mesmo nome e permite aplicar a precedência de forma determinística.
 
-Se o CNPJ estiver disponível e possuir estrutura válida, ele identifica o posto. O projeto aceita tanto o formato numérico tradicional quanto o CNPJ alfanumérico de 14 posições, preservando letras na identidade técnica.
+Se o CNPJ estiver disponível e possuir formato estrutural compatível, ele identifica o posto. O projeto aceita tanto o formato numérico tradicional quanto o CNPJ alfanumérico de 14 posições, preservando letras na identidade técnica.
 
-Quando o CNPJ estiver ausente, é usado um identificador de fallback composto por UF, município, revenda, logradouro e número. Para que esse fallback seja considerado confiável, revenda, logradouro e número precisam estar preenchidos. Linhas com fallback incompleto não são deduplicadas entre si e são bloqueadas pela validação de qualidade antes da modelagem.
+A normalização aceita letras e números nas 12 primeiras posições e exige dois dígitos numéricos nas posições finais. Essa checagem valida o formato esperado pelo projeto, não recalcula os dígitos verificadores.
+
+Os CSVs da camada por posto são lidos inicialmente como texto. Isso preserva zeros à esquerda em CNPJ, CEP e outros identificadores antes das conversões específicas.
+
+Quando o CNPJ estiver ausente, é usado um identificador de fallback composto por UF, município, revenda, logradouro e número. Os cinco componentes precisam estar preenchidos para que o fallback seja considerado confiável. Linhas com fallback incompleto não são deduplicadas entre si e são bloqueadas pela validação de qualidade antes da modelagem.
+
+A especificação do CNPJ alfanumérico é mantida pela Receita Federal em https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/cnpj-alfanumerico/cnpj-alfa.
 
 ## Grão
 
@@ -80,12 +86,14 @@ Os agregados nacionais, regionais e estaduais oficiais continuam sendo preservad
 
 A auditoria de ingestão registra separadamente:
 
-- CNPJs com estrutura inválida;
+- CNPJs com formato estrutural incompatível;
 - fallbacks incompletos;
+- fallbacks sem UF;
+- fallbacks sem município;
 - fallbacks sem revenda;
 - fallbacks sem logradouro;
 - fallbacks sem número.
 
 Registros com fallback incompleto permanecem separados na consolidação e não participam da contagem de sobreposições, pois não existe identidade suficiente para concluir que duas linhas representam o mesmo estabelecimento.
 
-A validação de qualidade posterior trata CNPJ inválido e fallback incompleto como problemas bloqueantes antes da modelagem.
+A validação de qualidade posterior trata CNPJ com formato estrutural incompatível e fallback incompleto como problemas bloqueantes antes da modelagem.

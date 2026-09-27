@@ -189,6 +189,18 @@ def station_identity_issue_masks(
     needs_fallback = (
         normalized_cnpj.isna()
     )
+    has_uf = (
+        _nonblank_station_field(
+            frame,
+            "uf",
+        )
+    )
+    has_municipio = (
+        _nonblank_station_field(
+            frame,
+            "municipio",
+        )
+    )
     has_revenda = (
         _nonblank_station_field(
             frame,
@@ -216,10 +228,20 @@ def station_identity_issue_masks(
         "fallback_incomplete": (
             needs_fallback
             & ~(
-                has_revenda
+                has_uf
+                & has_municipio
+                & has_revenda
                 & has_logradouro
                 & has_numero
             )
+        ),
+        "fallback_missing_uf": (
+            needs_fallback
+            & ~has_uf
+        ),
+        "fallback_missing_municipio": (
+            needs_fallback
+            & ~has_municipio
         ),
         "fallback_missing_revenda": (
             needs_fallback
@@ -693,7 +715,7 @@ def consolidate_station_data_with_audit(
         )
     )
     identity_audit = {
-        "cnpjs_invalidos": int(
+        "cnpjs_com_formato_invalido": int(
             identity_issues[
                 "invalid_cnpj"
             ].sum()
@@ -701,6 +723,16 @@ def consolidate_station_data_with_audit(
         "fallbacks_incompletos": int(
             identity_issues[
                 "fallback_incomplete"
+            ].sum()
+        ),
+        "fallbacks_sem_uf": int(
+            identity_issues[
+                "fallback_missing_uf"
+            ].sum()
+        ),
+        "fallbacks_sem_municipio": int(
+            identity_issues[
+                "fallback_missing_municipio"
             ].sum()
         ),
         "fallbacks_sem_revenda": int(
@@ -783,7 +815,7 @@ def consolidate_station_data_with_audit(
     )
     identity_issue_total = (
         identity_audit[
-            "cnpjs_invalidos"
+            "cnpjs_com_formato_invalido"
         ]
         + identity_audit[
             "fallbacks_incompletos"

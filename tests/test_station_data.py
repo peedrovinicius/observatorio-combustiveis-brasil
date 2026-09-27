@@ -960,3 +960,59 @@ def test_prepare_station_file_preserves_leading_zero_cnpj(
         ).iloc[0]
         == "cnpj:00000000000100"
     )
+
+
+
+def test_deduplication_keeps_fallback_without_uf_separate() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_coleta": pd.to_datetime(
+                [
+                    "2026-09-20",
+                    "2026-09-20",
+                ]
+            ),
+            "cnpj_revenda": [
+                pd.NA,
+                pd.NA,
+            ],
+            "uf": [
+                pd.NA,
+                pd.NA,
+            ],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO A",
+            ],
+            "logradouro": [
+                "RUA A",
+                "RUA A",
+            ],
+            "numero": [
+                "10",
+                "10",
+            ],
+            "produto": [
+                "GASOLINA",
+                "GASOLINA",
+            ],
+            "unidade_medida": [
+                "R$ / litro",
+                "R$ / litro",
+            ],
+            "preco_revenda": [
+                6.10,
+                6.20,
+            ],
+        }
+    )
+
+    result = deduplicate_station_rows(
+        frame
+    )
+
+    assert len(result) == 2

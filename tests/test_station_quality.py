@@ -172,7 +172,7 @@ def test_station_quality_accepts_alphanumeric_cnpj() -> None:
         frame
     )
 
-    assert report["cnpj_invalido"] == 0
+    assert report["cnpj_formato_invalido"] == 0
     assert (
         report[
             "postos_distintos_cnpj"
@@ -198,7 +198,7 @@ def test_station_quality_blocks_invalid_cnpj_even_with_complete_fallback() -> No
         frame
     )
 
-    assert report["cnpj_invalido"] == 1
+    assert report["cnpj_formato_invalido"] == 1
     assert (
         report[
             "fallback_identidade_incompleta"
@@ -262,7 +262,7 @@ def test_station_quality_accepts_complete_fallback_without_cnpj() -> None:
     )
 
     assert report["cnpj_ausente"] == 1
-    assert report["cnpj_invalido"] == 0
+    assert report["cnpj_formato_invalido"] == 0
     assert (
         report[
             "fallback_identidade_incompleta"
@@ -270,3 +270,47 @@ def test_station_quality_accepts_complete_fallback_without_cnpj() -> None:
         == 0
     )
     assert report["status"] == "passed"
+
+
+
+def test_station_quality_reports_missing_fallback_geography() -> None:
+    frame = _valid_frame().iloc[[0]].copy()
+    frame["cnpj_revenda"] = [
+        pd.NA
+    ]
+    frame["uf"] = [
+        pd.NA
+    ]
+    frame["municipio"] = [
+        pd.NA
+    ]
+    frame["logradouro"] = [
+        "RUA A"
+    ]
+    frame["numero"] = [
+        "10"
+    ]
+
+    report = build_station_quality_report(
+        frame
+    )
+
+    assert (
+        report[
+            "fallback_identidade_incompleta"
+        ]
+        == 1
+    )
+    assert (
+        report[
+            "fallback_sem_uf"
+        ]
+        == 1
+    )
+    assert (
+        report[
+            "fallback_sem_municipio"
+        ]
+        == 1
+    )
+    assert report["status"] == "failed"
