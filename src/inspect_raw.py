@@ -5,6 +5,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from .atomic_outputs import (
+    replace_text_file,
+)
 from .config import RAW_DIR
 
 
@@ -86,9 +89,13 @@ def main() -> None:
 
     report = {path.name: inspect(path) for path in sorted(files)}
     output = RAW_DIR / "inspection.json"
-    output.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2),
-        encoding="utf-8",
+    replace_text_file(
+        output,
+        json.dumps(
+            report,
+            ensure_ascii=False,
+            indent=2,
+        ),
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     print(f"\nRelatório salvo em: {output}")
