@@ -7,6 +7,7 @@ import src.atomic_outputs as atomic_outputs
 from src.atomic_outputs import (
     replace_csv_batch,
     replace_staged_files,
+    replace_text_file,
 )
 
 
@@ -521,6 +522,63 @@ def test_replace_staged_files_rejects_empty_input_before_replacement(
                     destination,
                 )
             ]
+        )
+
+    assert (
+        destination.read_text(
+            encoding="utf-8"
+        )
+        == "antigo"
+    )
+
+
+def test_replace_text_file_replaces_existing_atomically(
+    tmp_path: Path,
+) -> None:
+    destination = (
+        tmp_path
+        / "reports"
+        / "quality.json"
+    )
+    destination.parent.mkdir()
+    destination.write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+
+    output = replace_text_file(
+        destination,
+        '{"status":"passed"}',
+    )
+
+    assert output == destination
+    assert (
+        destination.read_text(
+            encoding="utf-8"
+        )
+        == '{"status":"passed"}'
+    )
+
+
+def test_replace_text_file_rejects_empty_content(
+    tmp_path: Path,
+) -> None:
+    destination = (
+        tmp_path
+        / "quality.json"
+    )
+    destination.write_text(
+        "antigo",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="saída vazio",
+    ):
+        replace_text_file(
+            destination,
+            "",
         )
 
     assert (
