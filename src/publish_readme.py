@@ -167,11 +167,10 @@ def update_readme_results(
 
 
 def main() -> None:
-    update_readme_results()
-    print(
-        "README atualizado localmente "
-        "com os gráficos do snapshot. "
-        "Revise o diff antes de versionar."
+    raise SystemExit(
+        "A publicação isolada do README foi desativada. "
+        "Use python -m src.snapshot para atualizar o "
+        "bundle público completo."
     )
 
 
