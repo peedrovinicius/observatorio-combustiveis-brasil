@@ -94,6 +94,8 @@ Gerar snapshot:
 python -m src.snapshot
 ```
 
+Não use `python -m src.site` nem `python -m src.publish_readme` para publicação isolada. Esses pontos de entrada são bloqueados para preservar a regra de publicação tudo ou nada.
+
 Subir PostgreSQL:
 
 ```powershell
