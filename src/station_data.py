@@ -17,6 +17,9 @@ from .config import (
     RAW_OPEN_DATA_DIR,
     REPORTS_DIR,
 )
+from .provenance import (
+    verify_open_data_provenance,
+)
 
 STATION_OUTPUT = PROCESSED_DIR / "precos_postos_2026.csv"
 STATION_MODEL_DIR = PROCESSED_DIR / "model_postos"
@@ -1104,6 +1107,10 @@ def build_station_star_schema(
 
 
 def main() -> None:
+    verify_open_data_provenance(
+        RAW_OPEN_DATA_DIR
+    )
+
     frame, audit = (
         consolidate_station_data_with_audit()
     )
