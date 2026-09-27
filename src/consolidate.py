@@ -384,6 +384,19 @@ def build_analytics_table_with_audit(
         == "ignored"
         for item in file_audits
     )
+    processed_without_2026 = sum(
+        (
+            item["status"]
+            == "processed"
+            and int(
+                item[
+                    "linhas_elegiveis_2026"
+                ]
+            )
+            == 0
+        )
+        for item in file_audits
+    )
 
     audit = {
         "arquivos_encontrados": int(
@@ -395,6 +408,9 @@ def build_analytics_table_with_audit(
         ),
         "arquivos_ignorados_por_schema": int(
             ignored_files
+        ),
+        "arquivos_processados_sem_linhas_2026": int(
+            processed_without_2026
         ),
         "linhas_lidas_total": int(
             sum(
@@ -453,6 +469,9 @@ def build_analytics_table_with_audit(
             "passed"
             if (
                 invalid_dates == 0
+                and ignored_files == 0
+                and processed_without_2026
+                == 0
                 and conflicting_duplicate_rows
                 == 0
             )
