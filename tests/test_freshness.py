@@ -86,7 +86,7 @@ def test_freshness_rejects_missing_path(
 
     with pytest.raises(
         FileNotFoundError,
-        match="arquivos ausentes",
+        match="Arquivos ausentes",
     ):
         validate_artifact_freshness(
             [
@@ -111,7 +111,7 @@ def test_freshness_rejects_empty_file(
 
     with pytest.raises(
         ValueError,
-        match="arquivos vazios",
+        match="Arquivos vazios",
     ):
         validate_artifact_freshness(
             [source],
