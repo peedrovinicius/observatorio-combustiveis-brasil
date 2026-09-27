@@ -173,6 +173,8 @@ Os módulos `src.build_model` e `src.analytics` recalculam a qualidade da série
 
 Se houver inconsistência bloqueante, a execução manual encerra antes de escrever novas saídas.
 
+Uma base vazia com schema correto também é reprovada. A ausência de linhas não é tratada como uma validação bem-sucedida.
+
 
 ## Publicação transacional de CSVs derivados
 
