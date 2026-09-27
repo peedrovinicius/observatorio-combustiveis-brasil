@@ -11,6 +11,7 @@ from src.config import (
 from src.provenance import (
     verified_history_files,
     verify_history_provenance,
+    verify_history_transform_provenance,
     verify_open_data_provenance,
 )
 
@@ -651,4 +652,193 @@ def test_open_data_provenance_rejects_missing_family(
     ):
         verify_open_data_provenance(
             tmp_path
+        )
+
+
+
+def _write_history_transform_manifest(
+    raw_root: Path,
+    processed_root: Path,
+) -> None:
+    raw_root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    processed_root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    _write_history_manifest(
+        raw_root
+    )
+
+    records = []
+    for scope in (
+        "brasil",
+        "regioes",
+        "estados",
+        "municipios_2026",
+    ):
+        content = (
+            "data_inicial,produto,preco_medio_revenda\n"
+            "2026-01-04,GASOLINA,6.0\n"
+        ).encode(
+            "utf-8"
+        )
+        filename = (
+            f"historico_semanal_{scope}"
+            "__dados__dados.csv"
+        )
+        (
+            processed_root
+            / filename
+        ).write_bytes(
+            content
+        )
+        records.append(
+            {
+                "scope": scope,
+                "filename": filename,
+                "source_file": (
+                    f"historico_semanal_{scope}"
+                    "__dados.xlsx"
+                ),
+                "source_sheet": "Dados",
+                "rows": 1,
+                "columns": 3,
+                "bytes": len(
+                    content
+                ),
+                "sha256": _sha256(
+                    content
+                ),
+            }
+        )
+
+    source_manifest = (
+        raw_root
+        / "history_manifest.json"
+    )
+    (
+        processed_root
+        / "history_transform_manifest.json"
+    ).write_text(
+        json.dumps(
+            {
+                "manifest_version": 1,
+                "source_manifest": (
+                    "history_manifest.json"
+                ),
+                "source_manifest_sha256": _sha256(
+                    source_manifest.read_bytes()
+                ),
+                "files": records,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_history_transform_provenance_accepts_exact_snapshot(
+    tmp_path: Path,
+) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    _write_history_transform_manifest(
+        raw,
+        processed,
+    )
+
+    files = (
+        verify_history_transform_provenance(
+            processed,
+            raw,
+        )
+    )
+
+    assert len(files) == 4
+
+
+def test_history_transform_provenance_rejects_modified_csv(
+    tmp_path: Path,
+) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    _write_history_transform_manifest(
+        raw,
+        processed,
+    )
+    (
+        processed
+        / "historico_semanal_brasil__dados__dados.csv"
+    ).write_text(
+        "alterado",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="divergente do manifesto",
+    ):
+        verify_history_transform_provenance(
+            processed,
+            raw,
+        )
+
+
+def test_history_transform_provenance_rejects_changed_raw_manifest(
+    tmp_path: Path,
+) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    _write_history_transform_manifest(
+        raw,
+        processed,
+    )
+    raw_manifest = (
+        raw
+        / "history_manifest.json"
+    )
+    raw_manifest.write_text(
+        raw_manifest.read_text(
+            encoding="utf-8",
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Manifesto raw atual diverge",
+    ):
+        verify_history_transform_provenance(
+            processed,
+            raw,
+        )
+
+
+def test_history_transform_provenance_rejects_extra_history_csv(
+    tmp_path: Path,
+) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    _write_history_transform_manifest(
+        raw,
+        processed,
+    )
+    (
+        processed
+        / "historico_semanal_brasil__extra.csv"
+    ).write_text(
+        "x",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="não correspondem exatamente",
+    ):
+        verify_history_transform_provenance(
+            processed,
+            raw,
         )
