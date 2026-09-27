@@ -8,6 +8,7 @@ Série Agregada Única =
 HASONEVALUE ( dim_produto[produto] )
     && HASONEVALUE ( fato_precos_semanais[unidade_medida] )
     && HASONEVALUE ( dim_localidade[nivel_geografico] )
+    && HASONEVALUE ( dim_localidade[localidade_id] )
 
 Preço Médio Publicado =
 IF (
