@@ -48,6 +48,27 @@ def test_history_discovery_uses_post_2013_section() -> None:
     )
 
 
+
+def test_history_discovery_rejects_duplicate_scope() -> None:
+    html = """
+    <h2>Série histórica semanal</h2>
+    <a href="#2013">A partir de 2013</a>
+    <a href="br-a.xlsx">Brasil</a>
+    <a href="br-b.xlsx">Brasil</a>
+    <a href="regions.xlsx">Regiões</a>
+    <a href="states.xlsx">Estados</a>
+    <a href="cities.xlsx">Municípios (2026)</a>
+    """
+
+    with pytest.raises(
+        RuntimeError,
+        match="escopo histórico brasil",
+    ):
+        _discover_weekly_history_links(
+            html
+        )
+
+
 def test_decimal_parser_handles_brazilian_and_dot_decimal() -> None:
     parsed = parse_decimal_series(
         pd.Series(
