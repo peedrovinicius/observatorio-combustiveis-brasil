@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from src.config import PROJECT_ROOT
 
 STATION_QUERIES = (
