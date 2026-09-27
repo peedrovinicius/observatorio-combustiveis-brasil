@@ -845,3 +845,63 @@ def test_open_data_batch_rejects_invalid_previous_manifest(
         )
         == "preservar"
     )
+
+
+
+def test_open_data_batch_records_extracted_hashes(
+    tmp_path: Path,
+) -> None:
+    stem = (
+        "etanol_gasolina_setembro_2026"
+    )
+    content = _zip_with_file(
+        "dados.csv",
+        (
+            b"produto;preco\n"
+            b"ETANOL;4,50\n"
+        ),
+    )
+
+    records = _replace_open_data_batch(
+        tmp_path,
+        [
+            {
+                "stem": stem,
+                "content": content,
+                "kind": "zip",
+                "record": {
+                    "dataset": stem,
+                    "detected_format": "zip",
+                    "bytes": len(
+                        content
+                    ),
+                    "sha256": "teste",
+                },
+            }
+        ],
+        {
+            "manifest_version": 1,
+            "source": "ANP",
+        },
+    )
+
+    extracted = records[0][
+        "extracted_files"
+    ]
+    assert len(extracted) == 1
+    assert (
+        extracted[0]["path"]
+        == (
+            "etanol_gasolina_setembro_2026/"
+            "dados.csv"
+        )
+    )
+    assert (
+        extracted[0]["bytes"]
+        > 0
+    )
+    assert len(
+        extracted[0][
+            "sha256"
+        ]
+    ) == 64
