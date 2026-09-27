@@ -15,6 +15,7 @@ from .config import (
 )
 
 MANIFEST_VERSION = 1
+TRANSFORM_MANIFEST_VERSION = 1
 
 HISTORY_SCOPES = {
     "brasil",
@@ -162,6 +163,14 @@ def _sha256_file(
                 chunk
             )
     return digest.hexdigest()
+
+
+def sha256_file(
+    path: Path,
+) -> str:
+    return _sha256_file(
+        path
+    )
 
 
 def _safe_relative_path(
@@ -820,4 +829,294 @@ def verified_history_files(
         for item in manifest[
             "files"
         ]
+    )
+
+
+
+def verify_history_transform_provenance(
+    processed_root: Path,
+    raw_root: Path,
+) -> list[Path]:
+    raw_manifest = (
+        raw_root
+        / "history_manifest.json"
+    )
+    verify_history_provenance(
+        raw_root
+    )
+
+    manifest_path = (
+        processed_root
+        / "history_transform_manifest.json"
+    )
+    if not manifest_path.exists():
+        raise FileNotFoundError(
+            "Manifesto da transformação histórica "
+            f"ausente: {manifest_path}"
+        )
+
+    try:
+        manifest = json.loads(
+            manifest_path.read_text(
+                encoding="utf-8",
+            )
+        )
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "Manifesto da transformação histórica "
+            "não é JSON válido."
+        ) from exc
+
+    if not isinstance(
+        manifest,
+        dict,
+    ):
+        raise ValueError(
+            "Manifesto da transformação histórica "
+            "deve ser um objeto JSON."
+        )
+    if (
+        manifest.get(
+            "manifest_version"
+        )
+        != TRANSFORM_MANIFEST_VERSION
+    ):
+        raise ValueError(
+            "Versão do manifesto da transformação "
+            "histórica não suportada."
+        )
+
+    source_digest = str(
+        manifest.get(
+            "source_manifest_sha256",
+            "",
+        )
+    ).strip().casefold()
+    if not SHA256_PATTERN.fullmatch(
+        source_digest
+    ):
+        raise ValueError(
+            "SHA-256 do manifesto raw é inválido "
+            "no manifesto de transformação."
+        )
+    if (
+        source_digest
+        != _sha256_file(
+            raw_manifest
+        )
+    ):
+        raise ValueError(
+            "Manifesto raw atual diverge daquele "
+            "usado na transformação histórica."
+        )
+
+    raw_data = json.loads(
+        raw_manifest.read_text(
+            encoding="utf-8",
+        )
+    )
+    raw_by_file = {
+        str(
+            item["filename"]
+        ): item
+        for item in raw_data[
+            "files"
+        ]
+    }
+
+    files = manifest.get(
+        "files"
+    )
+    if (
+        not isinstance(
+            files,
+            list,
+        )
+        or not files
+    ):
+        raise ValueError(
+            "Manifesto da transformação histórica "
+            "não possui lista de arquivos válida."
+        )
+
+    filenames: set[str] = set()
+    scopes: set[str] = set()
+    verified: list[Path] = []
+
+    for item in files:
+        if not isinstance(
+            item,
+            dict,
+        ):
+            raise ValueError(
+                "Registro inválido no manifesto "
+                "da transformação histórica."
+            )
+
+        filename = str(
+            item.get(
+                "filename",
+                "",
+            )
+        ).strip()
+        source_file = str(
+            item.get(
+                "source_file",
+                "",
+            )
+        ).strip()
+        source_sheet = str(
+            item.get(
+                "source_sheet",
+                "",
+            )
+        ).strip()
+        scope = str(
+            item.get(
+                "scope",
+                "",
+            )
+        ).strip()
+
+        if (
+            not filename
+            or filename in filenames
+        ):
+            raise ValueError(
+                "Arquivo processado ausente ou duplicado "
+                "no manifesto de transformação."
+            )
+        if (
+            Path(
+                filename
+            ).name
+            != filename
+            or not filename.casefold().endswith(
+                ".csv"
+            )
+        ):
+            raise ValueError(
+                "Nome de CSV processado inválido "
+                "no manifesto de transformação."
+            )
+        if (
+            scope
+            not in HISTORY_SCOPES
+            or not filename.startswith(
+                f"historico_semanal_{scope}__"
+            )
+        ):
+            raise ValueError(
+                "Escopo do CSV processado é inválido "
+                "ou incompatível com o nome."
+            )
+        if not source_sheet:
+            raise ValueError(
+                "Aba de origem ausente no manifesto "
+                "de transformação."
+            )
+
+        raw_record = raw_by_file.get(
+            source_file
+        )
+        if raw_record is None:
+            raise ValueError(
+                "Arquivo raw de origem não existe "
+                "no manifesto histórico atual."
+            )
+        if (
+            raw_record.get(
+                "scope"
+            )
+            != scope
+        ):
+            raise ValueError(
+                "Escopo do CSV processado diverge "
+                "do arquivo raw de origem."
+            )
+
+        path, relative = (
+            _verify_file_record(
+                processed_root,
+                filename,
+                item.get(
+                    "bytes"
+                ),
+                item.get(
+                    "sha256"
+                ),
+            )
+        )
+        if (
+            relative
+            != filename
+        ):
+            raise ValueError(
+                "CSV processado deve estar na raiz "
+                "de data/processed."
+            )
+
+        rows = item.get(
+            "rows"
+        )
+        columns = item.get(
+            "columns"
+        )
+        if (
+            not isinstance(
+                rows,
+                int,
+            )
+            or rows < 0
+            or not isinstance(
+                columns,
+                int,
+            )
+            or columns <= 0
+        ):
+            raise ValueError(
+                "Dimensões inválidas no manifesto "
+                f"de transformação: {filename}."
+            )
+
+        filenames.add(
+            filename
+        )
+        scopes.add(
+            scope
+        )
+        verified.append(
+            path
+        )
+
+    if scopes != HISTORY_SCOPES:
+        missing = sorted(
+            HISTORY_SCOPES
+            - scopes
+        )
+        extra = sorted(
+            scopes
+            - HISTORY_SCOPES
+        )
+        raise ValueError(
+            "Cobertura do manifesto de transformação "
+            f"inválida. Ausentes={missing}; extras={extra}."
+        )
+
+    actual = {
+        path.name
+        for path in processed_root.glob(
+            "historico_semanal_*__*.csv"
+        )
+        if path.is_file()
+    }
+    if actual != filenames:
+        raise ValueError(
+            "CSVs históricos processados não "
+            "correspondem exatamente ao manifesto "
+            "de transformação."
+        )
+
+    return sorted(
+        verified
     )
