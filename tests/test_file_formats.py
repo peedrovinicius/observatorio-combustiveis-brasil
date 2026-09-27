@@ -102,3 +102,21 @@ def test_rejects_invalid_zip_payload() -> None:
             "https://exemplo/dados.zip",
             "application/zip",
         )
+
+
+
+def test_rejects_bom_prefixed_html_with_csv_delimiter() -> None:
+    content = (
+        b"\xef\xbb\xbf"
+        b"<!doctype html><body>erro;temporario</body>"
+    )
+
+    with pytest.raises(
+        UnsupportedDownloadError,
+        match="HTML",
+    ):
+        detect_download_kind(
+            content,
+            "https://exemplo/dados.csv",
+            "text/csv",
+        )
