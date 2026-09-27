@@ -146,25 +146,45 @@ WITH comparaveis AS (
         unidade_medida,
         MAX(preco_medio_revenda)
             FILTER (
-                WHERE produto ILIKE '%ETANOL%'
-                  AND produto ILIKE '%HIDRAT%'
+                WHERE (
+                    BTRIM(produto) ILIKE 'ETANOL'
+                    OR (
+                        produto ILIKE '%ETANOL%'
+                        AND produto ILIKE '%HIDRAT%'
+                    )
+                )
             ) AS etanol,
         COUNT(*)
             FILTER (
-                WHERE produto ILIKE '%ETANOL%'
-                  AND produto ILIKE '%HIDRAT%'
+                WHERE (
+                    BTRIM(produto) ILIKE 'ETANOL'
+                    OR (
+                        produto ILIKE '%ETANOL%'
+                        AND produto ILIKE '%HIDRAT%'
+                    )
+                )
             ) AS etanol_observacoes,
         MAX(preco_medio_revenda)
             FILTER (
-                WHERE produto ILIKE '%GASOLINA%'
-                  AND produto ILIKE '%COMUM%'
-                  AND produto NOT ILIKE '%ADITIV%'
+                WHERE (
+                    BTRIM(produto) ILIKE 'GASOLINA'
+                    OR (
+                        produto ILIKE '%GASOLINA%'
+                        AND produto ILIKE '%COMUM%'
+                        AND produto NOT ILIKE '%ADITIV%'
+                    )
+                )
             ) AS gasolina,
         COUNT(*)
             FILTER (
-                WHERE produto ILIKE '%GASOLINA%'
-                  AND produto ILIKE '%COMUM%'
-                  AND produto NOT ILIKE '%ADITIV%'
+                WHERE (
+                    BTRIM(produto) ILIKE 'GASOLINA'
+                    OR (
+                        produto ILIKE '%GASOLINA%'
+                        AND produto ILIKE '%COMUM%'
+                        AND produto NOT ILIKE '%ADITIV%'
+                    )
+                )
             ) AS gasolina_observacoes
     FROM vw_precos_semanais
     WHERE nivel_geografico = 'municipio'
