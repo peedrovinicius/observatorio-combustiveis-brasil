@@ -114,3 +114,8 @@ Os gráficos por posto validam explicitamente o contrato mínimo dos CSVs analí
 ## Contrato único de imagens públicas
 
 A lista dos cinco PNGs públicos fica centralizada em `src/publication_contract.py`. Reporting, snapshot, site e publicação do README consomem o mesmo contrato, evitando divergência de nomes ou quantidade de arquivos entre as etapas.
+
+
+## Entrada única de publicação pública
+
+A publicação direta por `python -m src.site` e `python -m src.publish_readme` é bloqueada para evitar estados parciais. O único comando de publicação pública é `python -m src.snapshot`, que monta e substitui site, relatório, imagens e README como um único bundle.
