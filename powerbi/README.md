@@ -85,8 +85,8 @@ Cards:
 
 - preço da última semana;
 - variação semanal;
-- preço mínimo;
-- preço máximo;
+- menor preço médio no período;
+- maior preço médio no período;
 - postos pesquisados na última semana.
 
 Visuais:
@@ -167,6 +167,8 @@ As medidas de preço exigem uma única série no contexto do visual. No modelo a
 Nos cards de uma localidade, `Última Data Disponível` e `Preço Semana Anterior` preservam o filtro da localidade atual. Para comparações entre localidades, `Última Data Comparável do Nível` remove apenas a localidade e encontra a data comum mais recente para o produto, unidade e nível geográfico selecionados. Não use a data comparável como data do card de uma única UF ou município.
 
 Para cards de cobertura agregada, use `Postos Pesquisados Última Semana` quando a intenção for mostrar a cobertura da observação corrente. A medida simples `Postos Pesquisados` continua disponível para tabelas ou contextos em que a soma faça sentido.
+
+As medidas `Preço Mínimo Publicado` e `Preço Máximo Publicado` representam os extremos de dispersão publicados pela ANP dentro das observações do contexto. Para os cards de menor e maior preço médio ao longo do período, use `Menor Preço Médio no Período` e `Maior Preço Médio no Período`.
 
 ## Regra importante
 

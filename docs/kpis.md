@@ -34,7 +34,9 @@ Não representa inflação. É apenas a variação do preço médio observado no
 
 Menor e maior valor de `preco_medio_revenda` observado na série semanal do recorte analisado.
 
-Para análises de dispersão dentro de uma semana devem ser utilizados os campos de preço mínimo e máximo publicados pela ANP, quando disponíveis.
+No Power BI, esses indicadores correspondem às medidas `Menor Preço Médio no Período` e `Maior Preço Médio no Período`.
+
+Para análises de dispersão dentro de uma semana devem ser utilizados os campos de preço mínimo e máximo publicados pela ANP, quando disponíveis. As medidas `Preço Mínimo Publicado` e `Preço Máximo Publicado` ficam reservadas para esse significado.
 
 ### Média das semanas no mês
 

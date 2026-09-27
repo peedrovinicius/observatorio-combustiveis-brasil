@@ -135,3 +135,24 @@ def test_previous_week_preserves_current_locality() -> None:
         not in measure
     )
     assert "TREATAS (" not in measure
+
+
+def test_aggregate_period_extremes_use_mean_price_series() -> None:
+    dax = _dax()
+
+    assert (
+        "Menor Preço Médio no Período ="
+        in dax
+    )
+    assert (
+        "MIN ( fato_precos_semanais[preco_medio_revenda] )"
+        in dax
+    )
+    assert (
+        "Maior Preço Médio no Período ="
+        in dax
+    )
+    assert (
+        "MAX ( fato_precos_semanais[preco_medio_revenda] )"
+        in dax
+    )

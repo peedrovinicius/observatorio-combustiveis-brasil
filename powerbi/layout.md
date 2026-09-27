@@ -35,8 +35,8 @@ Cinco cartões:
 
 1. preço atual;
 2. variação semanal;
-3. preço mínimo;
-4. preço máximo;
+3. menor preço médio no período;
+4. maior preço médio no período;
 5. postos pesquisados.
 
 ### Corpo
@@ -84,6 +84,8 @@ Visuais:
 Regra:
 
 A média mensal derivada deve estar explicitamente identificada como cálculo do projeto.
+
+Os extremos publicados de `preco_minimo_revenda` e `preco_maximo_revenda` representam dispersão dentro de uma observação e não devem ser usados como substitutos do menor e maior preço médio ao longo do período.
 
 ## Página 4: Mercado por Posto
 

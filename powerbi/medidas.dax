@@ -28,6 +28,18 @@ IF (
     MAX ( fato_precos_semanais[preco_maximo_revenda] )
 )
 
+Menor Preço Médio no Período =
+IF (
+    [Série Agregada Única],
+    MIN ( fato_precos_semanais[preco_medio_revenda] )
+)
+
+Maior Preço Médio no Período =
+IF (
+    [Série Agregada Única],
+    MAX ( fato_precos_semanais[preco_medio_revenda] )
+)
+
 Amplitude de Preço Publicado =
 [Preço Máximo Publicado] - [Preço Mínimo Publicado]
 
