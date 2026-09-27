@@ -16,6 +16,9 @@ from .config import (
     PROJECT_ROOT,
     REPORTS_DIR,
 )
+from .publication_contract import (
+    PUBLIC_IMAGE_FILES,
+)
 
 ANALYTICS_DIR = (
     PROCESSED_DIR
@@ -31,13 +34,7 @@ SNAPSHOT_DIR = (
     / "snapshot"
 )
 
-SITE_IMAGES = [
-    "tendencia_brasil_2026.png",
-    "ranking_ufs_gasolina.png",
-    "etanol_gasolina_municipios.png",
-    "dispersao_municipios_postos.png",
-    "mediana_bandeiras_postos.png",
-]
+SITE_IMAGES = PUBLIC_IMAGE_FILES
 
 REPOSITORY_URL = (
     "https://github.com/peedrovinicius/"
