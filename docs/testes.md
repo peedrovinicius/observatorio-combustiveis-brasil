@@ -50,6 +50,7 @@ A suíte verifica, entre outros pontos:
 - KPIs agregados;
 - semântica produto + unidade de medida nos analytics agregados;
 - relação etanol/gasolina somente entre observações da mesma unidade;
+- bloqueio de grupos ambíguos na relação etanol/gasolina;
 - barreira de qualidade antes dos analytics agregados;
 - análises por estabelecimento;
 - analytics por posto preservam séries independentes por combinação de produto e unidade de medida;
