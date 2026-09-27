@@ -490,6 +490,15 @@ def _validate_aggregate_csv_values(
                             "deve ser inteiro",
                         )
 
+                if (
+                    start is not None
+                    and start.year != 2026
+                ):
+                    add_error(
+                        "data_inicial",
+                        "deve pertencer a 2026",
+                    )
+
                 if start is not None:
                     expected = {
                         "ano": start.year,
@@ -803,6 +812,16 @@ def _validate_station_csv_values(
                             "deve ser inteiro",
                         )
 
+                if (
+                    parsed_date is not None
+                    and parsed_date.year
+                    != 2026
+                ):
+                    add_error(
+                        "data_coleta",
+                        "deve pertencer a 2026",
+                    )
+
                 if parsed_date is not None:
                     expected = {
                         "ano": (
@@ -982,6 +1001,218 @@ def _read_csv_records(
     ) as handle:
         return list(
             csv.DictReader(handle)
+        )
+
+
+def _validate_aggregate_relations() -> None:
+    paths = {
+        table: path
+        for table, path in LOAD_PLAN
+        if table in {
+            "dim_data",
+            "dim_produto",
+            "dim_localidade",
+            "fato_precos_semanais",
+        }
+    }
+    required_tables = {
+        "dim_data",
+        "dim_produto",
+        "dim_localidade",
+        "fato_precos_semanais",
+    }
+    if set(paths) != required_tables:
+        return
+
+    errors: list[str] = []
+    dimensions = {
+        table: _read_csv_records(
+            paths[table]
+        )
+        for table in (
+            "dim_data",
+            "dim_produto",
+            "dim_localidade",
+        )
+    }
+
+    def unique_index(
+        table: str,
+        column: str,
+    ) -> set[str]:
+        values: set[str] = set()
+        for row_number, row in enumerate(
+            dimensions[table],
+            start=2,
+        ):
+            value = row[column].strip()
+            if value in values:
+                errors.append(
+                    f"{table}: linha "
+                    f"{row_number}, "
+                    f"{column}: valor duplicado"
+                )
+            values.add(value)
+        return values
+
+    date_ids = unique_index(
+        "dim_data",
+        "data_id",
+    )
+    product_ids = unique_index(
+        "dim_produto",
+        "produto_id",
+    )
+    locality_ids = unique_index(
+        "dim_localidade",
+        "localidade_id",
+    )
+
+    natural_keys = (
+        (
+            "dim_data",
+            (
+                "data_inicial",
+                "data_final",
+            ),
+        ),
+        (
+            "dim_produto",
+            ("produto",),
+        ),
+        (
+            "dim_localidade",
+            (
+                "nivel_geografico",
+                "regiao",
+                "uf",
+                "estado",
+                "municipio",
+            ),
+        ),
+    )
+    for table, columns in natural_keys:
+        seen: set[
+            tuple[str, ...]
+        ] = set()
+        for row_number, row in enumerate(
+            dimensions[table],
+            start=2,
+        ):
+            key = tuple(
+                row.get(
+                    column,
+                    "",
+                ).strip()
+                for column in columns
+            )
+            if key in seen:
+                errors.append(
+                    f"{table}: linha "
+                    f"{row_number}: "
+                    "chave natural duplicada"
+                )
+            seen.add(key)
+
+    fact_ids: set[str] = set()
+    fact_grain: set[
+        tuple[str, str, str, str]
+    ] = set()
+    with paths[
+        "fato_precos_semanais"
+    ].open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        reader = csv.DictReader(
+            handle
+        )
+        for row_number, row in enumerate(
+            reader,
+            start=2,
+        ):
+            fact_id = row[
+                "preco_fato_id"
+            ].strip()
+            if fact_id in fact_ids:
+                errors.append(
+                    "fato_precos_semanais: "
+                    f"linha {row_number}, "
+                    "preco_fato_id: "
+                    "valor duplicado"
+                )
+            fact_ids.add(fact_id)
+
+            references = (
+                (
+                    "data_id",
+                    date_ids,
+                ),
+                (
+                    "produto_id",
+                    product_ids,
+                ),
+                (
+                    "localidade_id",
+                    locality_ids,
+                ),
+            )
+            for column, valid_ids in (
+                references
+            ):
+                value = row[
+                    column
+                ].strip()
+                if value not in valid_ids:
+                    errors.append(
+                        "fato_precos_semanais: "
+                        f"linha {row_number}, "
+                        f"{column}: referência "
+                        "inexistente"
+                    )
+
+            grain = (
+                row[
+                    "data_id"
+                ].strip(),
+                row[
+                    "produto_id"
+                ].strip(),
+                row[
+                    "localidade_id"
+                ].strip(),
+                (
+                    row.get(
+                        "unidade_medida",
+                        "",
+                    )
+                    or ""
+                ).strip(),
+            )
+            if grain in fact_grain:
+                errors.append(
+                    "fato_precos_semanais: "
+                    f"linha {row_number}: "
+                    "grão duplicado"
+                )
+            fact_grain.add(grain)
+
+            if len(errors) >= (
+                MAX_VALUE_ERRORS
+            ):
+                break
+
+    if errors:
+        raise ValueError(
+            "Integridade referencial dos "
+            "CSVs agregados inválida:\n"
+            + "\n".join(
+                f"- {item}"
+                for item in errors[
+                    :MAX_VALUE_ERRORS
+                ]
+            )
         )
 
 
@@ -1201,6 +1432,7 @@ def validate_input_files() -> None:
         )
 
     validate_csv_contracts()
+    _validate_aggregate_relations()
     _validate_station_relations()
 
 
