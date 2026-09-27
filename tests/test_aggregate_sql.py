@@ -140,3 +140,13 @@ def test_ratio_sql_rejects_ambiguous_fuel_classes() -> None:
     assert "AS gasolina_observacoes" in sql
     assert "etanol_observacoes = 1" in sql
     assert "gasolina_observacoes = 1" in sql
+
+
+def test_ratio_sql_requires_hydrated_ethanol_and_common_gasoline() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+
+    assert "produto ILIKE '%HIDRAT%'" in sql
+    assert "produto ILIKE '%COMUM%'" in sql
+    assert "produto NOT ILIKE '%ADITIV%'" in sql
