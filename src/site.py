@@ -92,14 +92,17 @@ def _common_gasoline(
         in products.dropna().unique()
     ]
     for value in values:
-        upper = value.upper()
+        upper = value.strip().upper()
         if (
-            "GASOLINA"
-            in upper
-            and "COMUM"
-            in upper
-            and "ADITIV"
-            not in upper
+            upper == "GASOLINA"
+            or (
+                "GASOLINA"
+                in upper
+                and "COMUM"
+                in upper
+                and "ADITIV"
+                not in upper
+            )
         ):
             return value
     return None
