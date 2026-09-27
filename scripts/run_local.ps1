@@ -11,6 +11,25 @@ function Write-Step {
     Write-Host "==> $Message"
 }
 
+function Invoke-NativeChecked {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FilePath,
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments,
+        [Parameter(Mandatory = $true)]
+        [string]$Description
+    )
+
+    & $FilePath @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw (
+            "$Description falhou com código de saída " +
+            "$LASTEXITCODE."
+        )
+    }
+}
+
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
@@ -18,29 +37,29 @@ $python = Join-Path $root ".venv\Scripts\python.exe"
 
 if (-not (Test-Path $python)) {
     Write-Step "Criando ambiente virtual"
-    python -m venv .venv
+    Invoke-NativeChecked -FilePath "python" -Arguments @("-m", "venv", ".venv") -Description "Criação do ambiente virtual"
 }
 
 Write-Step "Instalando dependências"
-& $python -m pip install -r requirements.txt
+Invoke-NativeChecked -FilePath $python -Arguments @("-m", "pip", "install", "-r", "requirements.txt") -Description "Instalação das dependências"
 
 Write-Step "Executando testes"
-& $python -m pytest
+Invoke-NativeChecked -FilePath $python -Arguments @("-m", "pytest") -Description "Execução dos testes"
 
 Write-Step "Executando pipeline completo"
-& $python -m src.pipeline
+Invoke-NativeChecked -FilePath $python -Arguments @("-m", "src.pipeline") -Description "Execução do pipeline"
 
 if ($WithPostgres) {
     Write-Step "Iniciando PostgreSQL"
-    docker compose up -d postgres
+    Invoke-NativeChecked -FilePath "docker" -Arguments @("compose", "up", "-d", "postgres") -Description "Inicialização do PostgreSQL"
 
     Write-Step "Carregando PostgreSQL"
-    & $python -m src.load_postgres
+    Invoke-NativeChecked -FilePath $python -Arguments @("-m", "src.load_postgres") -Description "Carga do PostgreSQL"
 }
 
 if ($Snapshot) {
     Write-Step "Gerando snapshot versionável"
-    & $python -m src.snapshot
+    Invoke-NativeChecked -FilePath $python -Arguments @("-m", "src.snapshot") -Description "Geração do snapshot"
 }
 
 Write-Step "Concluído"
