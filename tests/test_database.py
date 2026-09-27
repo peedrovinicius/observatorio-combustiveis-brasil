@@ -241,6 +241,10 @@ def test_finalize_model_constraints_protects_dimension_keys() -> None:
         in sql
     )
     assert (
+        "ux_dim_posto_chave"
+        in sql
+    )
+    assert (
         "ux_dim_localidade_natural"
         in sql
     )
@@ -439,3 +443,17 @@ def test_sql_splitter_rejects_unclosed_delimiters(
         _split_sql_statements(
             script
         )
+
+
+def test_station_schema_defers_station_key_unique_index_until_after_cleanup() -> None:
+    from src.config import PROJECT_ROOT
+
+    schema = (
+        PROJECT_ROOT
+        / "sql"
+        / "station_schema.sql"
+    ).read_text(
+        encoding="utf-8",
+    )
+
+    assert "ux_dim_posto_chave" not in schema

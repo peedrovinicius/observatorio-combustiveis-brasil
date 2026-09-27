@@ -65,7 +65,7 @@ Depois disso, a carga:
 6. confere a quantidade de registros nas duas fatos;
 7. confirma a transação somente após a validação.
 
-A evolução de `dim_posto` é compatível com uma base local criada por versões anteriores do projeto. A coluna `posto_chave` é adicionada quando ausente e passa a ser obrigatória depois da limpeza da carga anterior, antes da importação dos novos dados.
+A evolução de `dim_posto` é compatível com uma base local criada por versões anteriores do projeto. A coluna `posto_chave` é adicionada quando ausente. Depois da limpeza da carga anterior, ela passa a ser obrigatória e recebe o índice único antes da importação dos novos dados. Assim, duplicidades legadas não bloqueiam a própria migração.
 
 ## Integridade da dimensão de postos
 

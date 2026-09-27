@@ -63,8 +63,5 @@ CREATE INDEX IF NOT EXISTS idx_postos_posto
 ALTER TABLE dim_posto
     ADD COLUMN IF NOT EXISTS posto_chave CHAR(64);
 
-CREATE UNIQUE INDEX IF NOT EXISTS ux_dim_posto_chave
-    ON dim_posto(posto_chave);
-
 CREATE INDEX IF NOT EXISTS idx_dim_posto_geo
     ON dim_posto(uf, municipio, bandeira);

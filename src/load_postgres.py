@@ -542,6 +542,11 @@ def _finalize_model_constraints(
     )
     connection.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS "
+        "ux_dim_posto_chave "
+        "ON dim_posto(posto_chave)"
+    )
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS "
         "ux_dim_localidade_natural "
         "ON dim_localidade ("
         "nivel_geografico, "

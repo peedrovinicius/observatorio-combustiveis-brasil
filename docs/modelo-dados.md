@@ -132,6 +132,8 @@ Como `produto_posto_id` já representa produto e unidade de medida, esse conjunt
 
 As restrições do banco são defesa em profundidade. A deduplicação e a validação continuam ocorrendo antes da modelagem.
 
+A unicidade de `posto_chave` é finalizada somente depois da limpeza transacional da carga anterior. Essa ordem permite atualizar bancos locais legados mesmo quando dados antigos não obedeciam à restrição atual.
+
 
 ## Unicidade das dimensões naturais
 
