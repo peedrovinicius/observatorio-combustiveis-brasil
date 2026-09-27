@@ -150,3 +150,12 @@ def test_ratio_sql_requires_hydrated_ethanol_and_common_gasoline() -> None:
     assert "produto ILIKE '%HIDRAT%'" in sql
     assert "produto ILIKE '%COMUM%'" in sql
     assert "produto NOT ILIKE '%ADITIV%'" in sql
+
+
+def test_ratio_sql_accepts_plain_fuel_aliases() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+
+    assert "BTRIM(produto) ILIKE 'ETANOL'" in sql
+    assert "BTRIM(produto) ILIKE 'GASOLINA'" in sql
