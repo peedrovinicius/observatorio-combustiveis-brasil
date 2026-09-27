@@ -96,6 +96,8 @@ def _common_gasoline(
         if (
             "GASOLINA"
             in upper
+            and "COMUM"
+            in upper
             and "ADITIV"
             not in upper
         ):
