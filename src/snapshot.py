@@ -15,6 +15,9 @@ from .publication_contract import (
 from .publish_readme import (
     update_readme_results,
 )
+from .quality_gate import (
+    load_passed_quality_report,
+)
 from .site import build_site
 
 GENERATED_DIR = (
@@ -311,6 +314,16 @@ def main() -> None:
     readme_path = (
         PROJECT_ROOT
         / "README.md"
+    )
+    load_passed_quality_report(
+        REPORTS_DIR
+        / "quality_2026.json",
+        "série agregada",
+    )
+    load_passed_quality_report(
+        REPORTS_DIR
+        / "quality_postos_2026.json",
+        "dados por posto",
     )
 
     with tempfile.TemporaryDirectory(
