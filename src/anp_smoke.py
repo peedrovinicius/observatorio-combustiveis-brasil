@@ -118,9 +118,9 @@ def _probe_resource(
         )
         zip_prefix = sample.startswith(
             (
-                b"PK\\x03\\x04",
-                b"PK\\x05\\x06",
-                b"PK\\x07\\x08",
+                b"PK\x03\x04",
+                b"PK\x05\x06",
+                b"PK\x07\x08",
             )
         )
         try:
