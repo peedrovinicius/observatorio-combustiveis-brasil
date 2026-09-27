@@ -6,8 +6,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .config import (
+    PROCESSED_DIR,
     PROJECT_ROOT,
     REPORTS_DIR,
+)
+from .freshness import (
+    validate_artifact_freshness,
 )
 from .publication_contract import (
     PUBLIC_IMAGE_FILES,
@@ -59,70 +63,15 @@ def _validate_report_bundle_freshness(
     inputs: list[Path],
     artifacts: list[Path],
 ) -> None:
-    missing = [
-        path
-        for path in [
-            *inputs,
-            *artifacts,
-        ]
-        if not path.exists()
-    ]
-    if missing:
-        formatted = "\n".join(
-            f"- {path}"
-            for path in missing
-        )
-        raise FileNotFoundError(
-            "Não foi possível validar o frescor "
-            "do bundle visual. Arquivos ausentes:\n"
-            f"{formatted}"
-        )
-
-    empty = [
-        path
-        for path in [
-            *inputs,
-            *artifacts,
-        ]
-        if (
-            path.is_file()
-            and path.stat().st_size <= 0
-        )
-    ]
-    if empty:
-        formatted = "\n".join(
-            f"- {path}"
-            for path in empty
-        )
-        raise ValueError(
-            "Não foi possível validar o frescor "
-            "do bundle visual. Arquivos vazios:\n"
-            f"{formatted}"
-        )
-
-    latest_input = max(
-        path.stat().st_mtime_ns
-        for path in inputs
-    )
-    stale = [
-        path
-        for path in artifacts
-        if (
-            path.stat().st_mtime_ns
-            < latest_input
-        )
-    ]
-    if stale:
-        formatted = "\n".join(
-            f"- {path}"
-            for path in stale
-        )
-        raise ValueError(
-            "Bundle visual desatualizado. "
+    validate_artifact_freshness(
+        inputs,
+        artifacts,
+        "Bundle visual",
+        (
             "Reexecute python -m src.reporting "
-            "antes do snapshot.\n"
-            f"Artefatos antigos:\n{formatted}"
-        )
+            "antes do snapshot."
+        ),
+    )
 
 
 def publish_snapshot(
@@ -403,6 +352,10 @@ def main() -> None:
     )
 
     report_inputs = [
+        PROCESSED_DIR
+        / "precos_semanais_2026.csv",
+        PROCESSED_DIR
+        / "precos_postos_2026.csv",
         ANALYTICS_DIR
         / "kpis_brasil_2026.csv",
         ANALYTICS_DIR
