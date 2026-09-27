@@ -191,11 +191,10 @@ def read_excel_sheet(path: Path, sheet_name: str) -> pd.DataFrame:
     ):
         frame[
             "postos_pesquisados"
-        ] = pd.to_numeric(
+        ] = parse_decimal_series(
             frame[
                 "postos_pesquisados"
-            ],
-            errors="coerce",
+            ]
         )
 
     frame["fonte_arquivo"] = path.name
