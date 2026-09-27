@@ -1,4 +1,10 @@
-from src.download_anp import _discover_latest_links, _sha256
+import pytest
+
+from src.download_anp import (
+    _discover_latest_links,
+    _sha256,
+    main,
+)
 
 
 def test_discovers_first_matching_links() -> None:
@@ -20,3 +26,12 @@ def test_discovers_first_matching_links() -> None:
 def test_sha256_is_deterministic() -> None:
     assert _sha256(b"anp") == _sha256(b"anp")
     assert _sha256(b"anp") != _sha256(b"ANP")
+
+
+
+def test_legacy_downloader_is_blocked() -> None:
+    with pytest.raises(
+        SystemExit,
+        match="downloader legado",
+    ):
+        main()
