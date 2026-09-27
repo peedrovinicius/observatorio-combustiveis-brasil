@@ -124,3 +124,8 @@ A publicação direta por `python -m src.site` e `python -m src.publish_readme` 
 ## Frescor do bundle visual
 
 O snapshot também verifica o frescor do bundle visual antes de publicar. Os cinco PNGs e `reports/insights_2026.md` precisam ser tão recentes quanto os CSVs analíticos e relatórios de qualidade usados como entrada. Se analytics ou qualidade forem regenerados depois dos gráficos, `python -m src.snapshot` é bloqueado até que `python -m src.reporting` seja executado novamente.
+
+
+## Frescor antes do reporting
+
+O reporting também verifica que os analytics não são mais antigos que a base processada e o relatório de qualidade correspondente. O próprio relatório de qualidade precisa ser tão recente quanto a base que ele valida. Isso impede gerar um gráfico novo a partir de uma tabela analítica antiga depois de um reprocessamento parcial.
