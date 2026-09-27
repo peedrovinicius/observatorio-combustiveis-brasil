@@ -1385,6 +1385,34 @@ def _read_json(
     )
 
 
+def _load_passed_quality_report(
+    path: Path,
+    label: str,
+) -> dict[str, object]:
+    report = _read_json(
+        path
+    )
+    if report is None:
+        raise FileNotFoundError(
+            f"Relatório de qualidade ausente: "
+            f"{label} ({path})."
+        )
+
+    status = str(
+        report.get(
+            "status",
+            "",
+        )
+    ).strip().casefold()
+    if status != "passed":
+        raise ValueError(
+            f"Relatório de qualidade não aprovado: "
+            f"{label} (status={status or 'n/d'})."
+        )
+
+    return report
+
+
 def _remove_path(
     path: Path,
 ) -> None:
@@ -1596,6 +1624,14 @@ def main() -> None:
         STATION_ANALYTICS_DIR
         / "bandeiras_ultima_coleta.csv"
     )
+    aggregate_quality_path = (
+        REPORTS_DIR
+        / "quality_2026.json"
+    )
+    station_quality_path = (
+        REPORTS_DIR
+        / "quality_postos_2026.json"
+    )
 
     required = [
         kpis_path,
@@ -1604,6 +1640,8 @@ def main() -> None:
         ratio_path,
         station_distribution_path,
         station_brands_path,
+        aggregate_quality_path,
+        station_quality_path,
     ]
     missing = [
         path
@@ -1616,6 +1654,19 @@ def main() -> None:
             "Execute python -m src.pipeline "
             "antes de gerar o relatório visual."
         )
+
+    aggregate_quality = (
+        _load_passed_quality_report(
+            aggregate_quality_path,
+            "série agregada",
+        )
+    )
+    station_quality = (
+        _load_passed_quality_report(
+            station_quality_path,
+            "dados por posto",
+        )
+    )
 
     kpis = pd.read_csv(
         kpis_path
@@ -1644,14 +1695,8 @@ def main() -> None:
         build_insights_markdown(
             kpis,
             ranking,
-            _read_json(
-                REPORTS_DIR
-                / "quality_2026.json"
-            ),
-            _read_json(
-                REPORTS_DIR
-                / "quality_postos_2026.json"
-            ),
+            aggregate_quality,
+            station_quality,
         )
     )
     output = (
