@@ -661,6 +661,22 @@ def _replace_open_data_batch(
             root
         )
     )
+    missing_previous = sorted(
+        previous_stems
+        - set(
+            stems
+        )
+    )
+    if missing_previous:
+        raise ValueError(
+            "A cobertura de dados abertos regrediu "
+            "em relação ao manifesto anterior. "
+            "Datasets ausentes: "
+            + ", ".join(
+                missing_previous
+            )
+        )
+
     managed_stems = sorted(
         set(
             stems
