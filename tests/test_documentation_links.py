@@ -6,7 +6,7 @@ from src.config import PROJECT_ROOT
 
 
 MARKDOWN_LINK = re.compile(
-    r"!?[[^]]*](([^)]+))"
+    r"!?\[[^\]]*\]\(([^)]+)\)"
 )
 HTML_SRC = re.compile(
     r"""src=["']([^"']+)["']"""
@@ -109,3 +109,17 @@ def test_relative_documentation_links_exist() -> None:
             violations
         )
     )
+
+
+def test_markdown_link_pattern_extracts_targets() -> None:
+    content = (
+        "[Docs](docs/site.md) "
+        "![Imagem](assets/architecture.svg)"
+    )
+
+    assert MARKDOWN_LINK.findall(
+        content
+    ) == [
+        "docs/site.md",
+        "assets/architecture.svg",
+    ]
