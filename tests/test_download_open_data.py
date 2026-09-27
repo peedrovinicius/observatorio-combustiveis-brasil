@@ -440,11 +440,18 @@ def test_install_failure_restores_previous_dataset(
     original_move = (
         downloader.shutil.move
     )
+    failed = False
 
     def failing_move(
         source: str,
         destination: str,
     ):
+        nonlocal failed
+        if failed:
+            raise AssertionError(
+                "rollback não deve reutilizar shutil.move"
+            )
+
         source_path = Path(
             source
         )
@@ -460,6 +467,7 @@ def test_install_failure_restores_previous_dataset(
             and destination_path
             == tmp_path / stem
         ):
+            failed = True
             raise OSError(
                 "falha simulada"
             )
