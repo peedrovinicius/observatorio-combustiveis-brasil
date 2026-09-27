@@ -3,6 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from .config import PROJECT_ROOT
+from .publication_contract import (
+    PUBLIC_IMAGE_FILES,
+)
 
 README_PATH = (
     PROJECT_ROOT
@@ -18,13 +21,7 @@ SNAPSHOT_DIR = (
     / "assets"
     / "snapshot"
 )
-README_IMAGES = [
-    "tendencia_brasil_2026.png",
-    "ranking_ufs_gasolina.png",
-    "etanol_gasolina_municipios.png",
-    "dispersao_municipios_postos.png",
-    "mediana_bandeiras_postos.png",
-]
+README_IMAGES = PUBLIC_IMAGE_FILES
 START_MARKER = (
     "<!-- RESULTS:START -->"
 )
