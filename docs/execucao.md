@@ -46,6 +46,8 @@ README.md
 
 O README recebe localmente a seção de resultados reais. O script não executa comandos Git de escrita.
 
+A atualização isolada do README também valida a existência e o conteúdo dos cinco PNGs do snapshot e do relatório de resultados. Assim, o bloco visual não é publicado com links quebrados ou arquivos vazios.
+
 ## Executar com PostgreSQL
 
 ```powershell

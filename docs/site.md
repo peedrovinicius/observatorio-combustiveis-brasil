@@ -80,3 +80,8 @@ Essa regra mantém o HTML consistente com os gráficos e com a definição metod
 A cobertura de postos usa a identidade completa do projeto: CNPJ normalizado quando disponível e fallback confiável por UF, município, revenda, logradouro e número quando o CNPJ está ausente. O indicador público `Postos distintos` não se limita, portanto, aos estabelecimentos com CNPJ preenchido.
 
 Municípios são contados pela combinação UF + município, evitando fundir localidades homônimas de estados diferentes.
+
+
+## Contrato visual do README
+
+A mesma lista de cinco imagens é compartilhada entre a geração do snapshot e a publicação do bloco visual do README. A atualização do README exige que o relatório de resultados e todos os PNGs existam e tenham conteúdo, evitando referências para um snapshot incompleto.

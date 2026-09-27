@@ -13,6 +13,18 @@ RESULTS_DOC = (
     / "docs"
     / "resultados-2026.md"
 )
+SNAPSHOT_DIR = (
+    PROJECT_ROOT
+    / "assets"
+    / "snapshot"
+)
+README_IMAGES = [
+    "tendencia_brasil_2026.png",
+    "ranking_ufs_gasolina.png",
+    "etanol_gasolina_municipios.png",
+    "dispersao_municipios_postos.png",
+    "mediana_bandeiras_postos.png",
+]
 START_MARKER = (
     "<!-- RESULTS:START -->"
 )
@@ -50,12 +62,49 @@ Os resultados abaixo são gerados pelo pipeline a partir das fontes públicas of
 def update_readme_results(
     readme_path: Path = README_PATH,
     results_doc: Path = RESULTS_DOC,
+    snapshot_dir: Path = SNAPSHOT_DIR,
 ) -> None:
-    if not results_doc.exists():
+    required = [
+        results_doc,
+        *[
+            snapshot_dir
+            / filename
+            for filename
+            in README_IMAGES
+        ],
+    ]
+    missing = [
+        path
+        for path in required
+        if not path.exists()
+    ]
+    if missing:
+        formatted = "\n".join(
+            f"- {path}"
+            for path in missing
+        )
         raise FileNotFoundError(
-            "O relatório docs/resultados-2026.md "
-            "ainda não existe. "
-            "Gere o snapshot antes de atualizar o README."
+            "O snapshot público está incompleto. "
+            "Gere o snapshot antes de atualizar o README.\n"
+            f"Ausentes:\n{formatted}"
+        )
+
+    empty = [
+        path
+        for path in required
+        if (
+            path.is_file()
+            and path.stat().st_size <= 0
+        )
+    ]
+    if empty:
+        formatted = "\n".join(
+            f"- {path}"
+            for path in empty
+        )
+        raise ValueError(
+            "O snapshot público contém arquivos vazios.\n"
+            f"Vazios:\n{formatted}"
         )
 
     content = (

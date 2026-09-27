@@ -10,6 +10,7 @@ from .config import (
     REPORTS_DIR,
 )
 from .publish_readme import (
+    README_IMAGES,
     update_readme_results,
 )
 from .site import build_site
@@ -40,13 +41,7 @@ ANALYTICS_DIR = (
     / "analytics"
 )
 
-SNAPSHOT_IMAGES = [
-    "tendencia_brasil_2026.png",
-    "ranking_ufs_gasolina.png",
-    "etanol_gasolina_municipios.png",
-    "dispersao_municipios_postos.png",
-    "mediana_bandeiras_postos.png",
-]
+SNAPSHOT_IMAGES = README_IMAGES
 
 
 def publish_snapshot(
@@ -368,6 +363,7 @@ def main() -> None:
         update_readme_results(
             staged_readme,
             staged_results,
+            staged_snapshot,
         )
 
         _replace_snapshot_bundle(
