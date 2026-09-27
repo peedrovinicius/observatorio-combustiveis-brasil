@@ -44,6 +44,16 @@ def test_star_schema_builds_dimensions_and_fact() -> None:
             ],
             "preco_medio_revenda": [6.0, 4.5, 6.1],
             "unidade_medida": ["R$/L", "R$/L", "R$/L"],
+            "fonte_arquivo": [
+                "historico.xlsx",
+                "historico.xlsx",
+                "historico.xlsx",
+            ],
+            "fonte_planilha": [
+                "Dados",
+                "Dados",
+                "Dados",
+            ],
         }
     )
 
@@ -112,6 +122,12 @@ def test_validated_star_schema_accepts_clean_aggregate_data() -> None:
             "preco_medio_revenda": [
                 6.0,
             ],
+            "fonte_arquivo": [
+                "historico.xlsx",
+            ],
+            "fonte_planilha": [
+                "Dados",
+            ],
         }
     )
 
@@ -153,6 +169,12 @@ def test_validated_star_schema_blocks_municipality_without_state_context() -> No
             "preco_medio_revenda": [
                 6.0,
             ],
+            "fonte_arquivo": [
+                "historico.xlsx",
+            ],
+            "fonte_planilha": [
+                "Dados",
+            ],
         }
     )
 
@@ -185,6 +207,12 @@ def test_aggregate_model_headers_match_postgres_contract() -> None:
             ],
             "preco_medio_revenda": [
                 6.0,
+            ],
+            "fonte_arquivo": [
+                "historico.xlsx",
+            ],
+            "fonte_planilha": [
+                "Dados",
             ],
         }
     )
@@ -226,6 +254,12 @@ def test_model_normalizes_geographic_level_and_uf_case() -> None:
             "preco_medio_revenda": [
                 6.0,
             ],
+            "fonte_arquivo": [
+                "historico.xlsx",
+            ],
+            "fonte_planilha": [
+                "Dados",
+            ],
         }
     )
 
@@ -260,6 +294,12 @@ def test_validated_star_schema_blocks_impossible_aggregate_statistics() -> None:
             ],
             "preco_medio_revenda": [
                 6.0,
+            ],
+            "fonte_arquivo": [
+                "historico.xlsx",
+            ],
+            "fonte_planilha": [
+                "Dados",
             ],
             "preco_minimo_revenda": [
                 6.1,
@@ -303,6 +343,12 @@ def test_validated_star_schema_checks_single_published_price_bound() -> None:
             "preco_medio_revenda": [
                 6.0,
             ],
+            "fonte_arquivo": [
+                "historico.xlsx",
+            ],
+            "fonte_planilha": [
+                "Dados",
+            ],
             "preco_minimo_revenda": [
                 6.1,
             ],
@@ -312,6 +358,36 @@ def test_validated_star_schema_checks_single_published_price_bound() -> None:
     with pytest.raises(
         ValueError,
         match="falhou na validação",
+    ):
+        build_validated_star_schema(
+            frame
+        )
+
+
+def test_validated_star_schema_requires_aggregate_provenance() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "data_final": [
+                "2026-01-10",
+            ],
+            "nivel_geografico": [
+                "brasil",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="fonte_arquivo",
     ):
         build_validated_star_schema(
             frame
