@@ -34,8 +34,6 @@ A suíte verifica, entre outros pontos:
 - bloqueio de CNPJ inválido e fallback de posto incompleto;
 - preservação de linhas com fallback incompleto sem deduplicação indevida;
 - exclusão de fallback incompleto da auditoria de sobreposição;
-- preservação de zeros à esquerda em CNPJ durante a ingestão;
-- preservação de linhas com CNPJ inválido sem deduplicação nem sobreposição indevida;
 - precedência entre publicações sobrepostas;
 - auditoria de exclusões agregadas e por posto;
 - publicação transacional das bases consolidadas junto das respectivas auditorias;
