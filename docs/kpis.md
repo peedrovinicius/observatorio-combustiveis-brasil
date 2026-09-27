@@ -119,6 +119,8 @@ Quantidade de estabelecimentos distintos no recorte, usando CNPJ quando disponí
 
 O resumo anual identifica municípios pela combinação de UF e nome, evitando fundir municípios homônimos de estados diferentes.
 
+A consulta SQL de referência do resumo anual replica essa mesma identidade geográfica e expõe os mesmos nomes principais de métricas do export Python.
+
 O resumo anual por produto registra:
 
 - período inicial e final;

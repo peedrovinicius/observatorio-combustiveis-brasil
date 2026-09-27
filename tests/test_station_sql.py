@@ -75,3 +75,37 @@ def test_station_sql_uses_series_cte_name() -> None:
 
     assert "ultima_coleta_serie" in sql
     assert "ultima_coleta_produto" not in sql
+
+
+def test_station_sql_exposes_annual_coverage_contract() -> None:
+    sql = _sql()
+
+    assert "-- Resumo anual por produto e unidade de medida." in sql
+    expected = (
+        "periodo_inicial",
+        "periodo_final",
+        "observacoes",
+        "postos_distintos",
+        "municipios",
+        "ufs",
+        "preco_medio_observado",
+        "mediana_observada",
+        "preco_minimo_observado",
+        "preco_maximo_observado",
+    )
+    for column in expected:
+        assert column in sql
+
+    assert (
+        "DISTINCT (\n            p.uf,\n            p.municipio\n        )"
+        in sql
+    )
+
+
+def test_station_sql_brand_order_matches_python_export() -> None:
+    sql = _sql()
+
+    assert (
+        "amostra_suficiente DESC,\n    preco_medio_observado"
+        in sql
+    )

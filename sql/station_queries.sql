@@ -2,6 +2,53 @@
 -- Consultas de referência para a camada por estabelecimento.
 -- A última coleta é calculada por produto e unidade de medida.
 
+-- Resumo anual por produto e unidade de medida.
+SELECT
+    pr.produto,
+    pr.unidade_medida,
+    MIN(d.data_coleta) AS periodo_inicial,
+    MAX(d.data_coleta) AS periodo_final,
+    COUNT(*) AS observacoes,
+    COUNT(
+        DISTINCT p.posto_id
+    ) AS postos_distintos,
+    COUNT(
+        DISTINCT (
+            p.uf,
+            p.municipio
+        )
+    ) AS municipios,
+    COUNT(
+        DISTINCT p.uf
+    ) AS ufs,
+    AVG(
+        f.preco_revenda
+    ) AS preco_medio_observado,
+    PERCENTILE_CONT(0.5)
+        WITHIN GROUP (
+            ORDER BY f.preco_revenda
+        ) AS mediana_observada,
+    MIN(
+        f.preco_revenda
+    ) AS preco_minimo_observado,
+    MAX(
+        f.preco_revenda
+    ) AS preco_maximo_observado
+FROM fato_precos_postos f
+JOIN dim_data_coleta d
+    ON d.data_coleta_id = f.data_coleta_id
+JOIN dim_produto_posto pr
+    ON pr.produto_posto_id = f.produto_posto_id
+JOIN dim_posto p
+    ON p.posto_id = f.posto_id
+GROUP BY
+    pr.produto,
+    pr.unidade_medida
+ORDER BY
+    pr.produto,
+    pr.unidade_medida;
+
+
 -- Base auxiliar com a última data disponível por produto e unidade de medida.
 WITH ultima_coleta_serie AS (
     SELECT
@@ -15,10 +62,10 @@ WITH ultima_coleta_serie AS (
 )
 SELECT
     d.data_coleta,
-    p.uf,
-    p.municipio,
     pr.produto,
     pr.unidade_medida,
+    p.uf,
+    p.municipio,
     COUNT(*) AS observacoes,
     COUNT(DISTINCT p.posto_id) AS postos_distintos,
     AVG(f.preco_revenda) AS preco_medio_observado,
@@ -80,7 +127,8 @@ GROUP BY
 ORDER BY
     pr.produto,
     pr.unidade_medida,
-    preco_medio_observado DESC;
+    p.uf,
+    p.municipio;
 
 
 -- Comparação entre bandeiras na última coleta por produto e unidade de medida.
@@ -96,6 +144,8 @@ WITH ultima_coleta_serie AS (
 )
 SELECT
     d.data_coleta,
+    pr.produto,
+    pr.unidade_medida,
     COALESCE(
         NULLIF(
             BTRIM(
@@ -105,8 +155,6 @@ SELECT
         ),
         'NÃO INFORMADA'
     ) AS bandeira,
-    pr.produto,
-    pr.unidade_medida,
     COUNT(*) AS observacoes,
     COUNT(
         DISTINCT p.posto_id
@@ -159,6 +207,7 @@ GROUP BY
 ORDER BY
     pr.produto,
     pr.unidade_medida,
+    amostra_suficiente DESC,
     preco_medio_observado;
 
 
