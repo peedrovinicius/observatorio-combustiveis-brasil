@@ -26,8 +26,8 @@ ROOT_FILES = [
 ]
 
 FORBIDDEN_DASHES = {
-    "—",
-    "–",
+    chr(0x2014),
+    chr(0x2013),
 }
 
 
