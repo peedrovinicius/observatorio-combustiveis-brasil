@@ -155,9 +155,18 @@ def _kpi_cards(
 ) -> str:
     cards: list[str] = []
 
+    sort_columns = [
+        "produto",
+        *(
+            ["unidade_medida"]
+            if "unidade_medida"
+            in kpis.columns
+            else []
+        ),
+    ]
     for _, row in (
         kpis.sort_values(
-            "produto",
+            sort_columns,
             kind="stable",
         )
         .iterrows()
