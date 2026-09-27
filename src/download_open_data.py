@@ -19,6 +19,9 @@ from .config import (
     ANP_OPEN_DATA_PAGE,
     RAW_OPEN_DATA_DIR,
 )
+from .http_integrity import (
+    validate_download_payload,
+)
 from .file_formats import (
     UnsupportedDownloadError,
     detect_download_kind,
@@ -963,6 +966,11 @@ def _download_resource(
         allow_redirects=True,
     )
     response.raise_for_status()
+    validate_download_payload(
+        response.content,
+        response.headers,
+        response.url,
+    )
 
     try:
         detect_download_kind(
@@ -1040,6 +1048,15 @@ def _download_resource(
             allow_redirects=True,
         )
         if not file_response.ok:
+            continue
+
+        try:
+            validate_download_payload(
+                file_response.content,
+                file_response.headers,
+                file_response.url,
+            )
+        except RuntimeError:
             continue
 
         try:
