@@ -429,6 +429,7 @@ def _read_csv(path: Path) -> pd.DataFrame:
             frame = pd.read_csv(
                 path,
                 low_memory=False,
+                dtype="string",
                 **options,
             )
             if frame.shape[1] >= 10:

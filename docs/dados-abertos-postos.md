@@ -42,7 +42,7 @@ Quando o CNPJ estiver ausente, é usado um identificador de fallback composto po
 A tabela fato por posto representa:
 
 ```text
-data da coleta × posto × produto
+data da coleta × posto × produto × unidade de medida
 ```
 
 O preço observado é uma medida da fato.
@@ -89,3 +89,5 @@ A auditoria de ingestão registra separadamente:
 Registros com fallback incompleto permanecem separados na consolidação e não participam da contagem de sobreposições, pois não existe identidade suficiente para concluir que duas linhas representam o mesmo estabelecimento.
 
 A validação de qualidade posterior trata CNPJ inválido e fallback incompleto como problemas bloqueantes antes da modelagem.
+
+Os CSVs da camada por posto são lidos inicialmente como texto. Isso preserva zeros à esquerda em identificadores como CNPJ e CEP antes das conversões específicas de data e preço.

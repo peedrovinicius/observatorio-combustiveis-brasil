@@ -911,3 +911,52 @@ def test_consolidation_does_not_merge_incomplete_station_fallbacks(
         == 0
     )
     assert audit["status"] == "review"
+
+
+
+def test_prepare_station_file_preserves_leading_zero_cnpj(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "cnpj_sem_pontuacao.csv"
+    )
+    _write_sample(
+        path,
+        [[
+            "NE",
+            "CE",
+            "FORTALEZA",
+            "POSTO TESTE",
+            "00000000000100",
+            "RUA A",
+            "1",
+            "",
+            "CENTRO",
+            "06000-000",
+            "GASOLINA",
+            "20/09/2026",
+            "6,10",
+            "",
+            "R$ / litro",
+            "BRANCA",
+        ]],
+    )
+
+    prepared = prepare_station_file(
+        path
+    )
+
+    assert (
+        prepared.loc[
+            0,
+            "cnpj_revenda",
+        ]
+        == "00000000000100"
+    )
+    assert (
+        station_identity(
+            prepared
+        ).iloc[0]
+        == "cnpj:00000000000100"
+    )
