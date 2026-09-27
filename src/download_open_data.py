@@ -728,11 +728,9 @@ def _replace_open_data_batch(
             finalized_record[
                 "extracted_csvs"
             ] = [
-                str(
-                    path.relative_to(
-                        stage_root
-                    )
-                )
+                path.relative_to(
+                    stage_root
+                ).as_posix()
                 for path in extracted
             ]
             finalized_record[
