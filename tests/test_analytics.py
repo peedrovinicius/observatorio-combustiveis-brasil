@@ -94,6 +94,16 @@ def _sample() -> pd.DataFrame:
                 4.50,
                 6.25,
             ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
+                "R$/L",
+                "R$/L",
+                "R$/L",
+                "R$/L",
+                "R$/L",
+                "R$/L",
+            ],
             "postos_pesquisados": [
                 100,
                 100,
@@ -440,3 +450,134 @@ def test_ratio_uses_latest_common_week_and_excludes_additive_gasoline() -> None:
         )
         == 70.97
     )
+
+
+def test_aggregate_analytics_isolate_product_units() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-02-01",
+                "2026-02-08",
+                "2026-02-01",
+            ],
+            "data_final": [
+                "2026-02-07",
+                "2026-02-14",
+                "2026-02-07",
+            ],
+            "nivel_geografico": [
+                "brasil",
+                "brasil",
+                "brasil",
+            ],
+            "produto": [
+                "PRODUTO TESTE",
+                "PRODUTO TESTE",
+                "PRODUTO TESTE",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
+                "R$/M3",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+                6.2,
+                4.5,
+            ],
+        }
+    )
+
+    result = build_brazil_kpis(
+        frame
+    )
+
+    assert len(result) == 2
+    latest = {
+        row.unidade_medida: (
+            row.ultima_semana_inicio,
+            row.preco_atual,
+        )
+        for row in result.itertuples()
+    }
+    assert latest["R$/L"] == (
+        pd.Timestamp("2026-02-08"),
+        6.2,
+    )
+    assert latest["R$/M3"] == (
+        pd.Timestamp("2026-02-01"),
+        4.5,
+    )
+
+
+def test_ratio_does_not_mix_different_units() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-02-08",
+                "2026-02-08",
+                "2026-02-08",
+                "2026-02-08",
+            ],
+            "data_final": [
+                "2026-02-14",
+                "2026-02-14",
+                "2026-02-14",
+                "2026-02-14",
+            ],
+            "nivel_geografico": [
+                "municipio",
+                "municipio",
+                "municipio",
+                "municipio",
+            ],
+            "uf": [
+                "CE",
+                "CE",
+                "CE",
+                "CE",
+            ],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "produto": [
+                "ETANOL HIDRATADO",
+                "GASOLINA COMUM",
+                "ETANOL HIDRATADO",
+                "GASOLINA COMUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/M3",
+                "R$/M3",
+                "R$/M3",
+            ],
+            "preco_medio_revenda": [
+                4.5,
+                6200.0,
+                4500.0,
+                6200.0,
+            ],
+        }
+    )
+
+    result = build_ethanol_gasoline_ratio(
+        frame
+    )
+
+    assert len(result) == 1
+    assert (
+        result.iloc[0][
+            "unidade_medida"
+        ]
+        == "R$/M3"
+    )
+    assert round(
+        result.iloc[0][
+            "relacao_etanol_gasolina_pct"
+        ],
+        2,
+    ) == 72.58
