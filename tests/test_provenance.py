@@ -187,6 +187,19 @@ def _write_open_manifest(
         extracted
     )
 
+    diesel = (
+        b"produto;preco\nDIESEL S10;6,20\n"
+    )
+    diesel_name = (
+        "diesel_gnv_setembro_2026.csv"
+    )
+    (
+        root
+        / diesel_name
+    ).write_bytes(
+        diesel
+    )
+
     raw_zip = (
         b"PK\x03\x04raw-simulado"
     )
@@ -233,6 +246,32 @@ def _write_open_manifest(
                         ),
                         "sha256": _sha256(
                             direct
+                        ),
+                        "extracted_csvs": [],
+                        "extracted_files": [],
+                    },
+                    {
+                        "dataset": (
+                            "diesel_gnv_setembro_2026"
+                        ),
+                        "url": (
+                            "https://www.gov.br/anp/"
+                            "diesel.csv"
+                        ),
+                        "final_url": (
+                            "https://www.gov.br/anp/"
+                            "diesel.csv"
+                        ),
+                        "collected_at_utc": (
+                            "2026-09-27T20:00:00+00:00"
+                        ),
+                        "filename": diesel_name,
+                        "detected_format": "csv",
+                        "bytes": len(
+                            diesel
+                        ),
+                        "sha256": _sha256(
+                            diesel
                         ),
                         "extracted_csvs": [],
                         "extracted_files": [],
@@ -305,7 +344,7 @@ def test_open_data_provenance_accepts_raw_and_extracted_files(
         manifest[
             "files"
         ]
-    ) == 2
+    ) == 3
 
 
 def test_open_data_provenance_rejects_modified_extracted_csv(
@@ -447,7 +486,7 @@ def test_open_data_provenance_accepts_windows_legacy_separator(
             encoding="utf-8",
         )
     )
-    manifest["files"][1][
+    manifest["files"][2][
         "extracted_csvs"
     ] = [
         (
@@ -564,5 +603,52 @@ def test_history_provenance_rejects_record_timestamp_mismatch(
         match="Timestamp do arquivo histórico",
     ):
         verify_history_provenance(
+            tmp_path
+        )
+
+
+
+def test_open_data_provenance_rejects_missing_family(
+    tmp_path: Path,
+) -> None:
+    _write_open_manifest(
+        tmp_path
+    )
+    manifest_path = (
+        tmp_path
+        / "manifest.json"
+    )
+    manifest = json.loads(
+        manifest_path.read_text(
+            encoding="utf-8",
+        )
+    )
+    manifest["files"] = [
+        item
+        for item in manifest[
+            "files"
+        ]
+        if not str(
+            item["dataset"]
+        ).startswith(
+            "diesel_gnv_"
+        )
+    ]
+    (
+        tmp_path
+        / "diesel_gnv_setembro_2026.csv"
+    ).unlink()
+    manifest_path.write_text(
+        json.dumps(
+            manifest
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Famílias ausentes",
+    ):
+        verify_open_data_provenance(
             tmp_path
         )
