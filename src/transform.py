@@ -9,6 +9,9 @@ from pathlib import Path
 import pandas as pd
 
 from .config import PROCESSED_DIR, RAW_DIR
+from .provenance import (
+    verify_history_provenance,
+)
 
 HEADER_HINTS = {
     "DATA INICIAL",
@@ -499,6 +502,10 @@ def transform_workbooks(
     )
 
 def main() -> None:
+    verify_history_provenance(
+        RAW_DIR
+    )
+
     excel_files = sorted(
         path
         for path in RAW_DIR.iterdir()
