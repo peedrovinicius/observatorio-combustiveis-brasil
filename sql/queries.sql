@@ -148,11 +148,20 @@ WITH comparaveis AS (
             FILTER (
                 WHERE produto ILIKE 'ETANOL%'
             ) AS etanol,
+        COUNT(*)
+            FILTER (
+                WHERE produto ILIKE 'ETANOL%'
+            ) AS etanol_observacoes,
         MAX(preco_medio_revenda)
             FILTER (
                 WHERE produto ILIKE 'GASOLINA%'
                   AND produto NOT ILIKE '%ADITIV%'
-            ) AS gasolina
+            ) AS gasolina,
+        COUNT(*)
+            FILTER (
+                WHERE produto ILIKE 'GASOLINA%'
+                  AND produto NOT ILIKE '%ADITIV%'
+            ) AS gasolina_observacoes
     FROM vw_precos_semanais
     WHERE nivel_geografico = 'municipio'
     GROUP BY
@@ -168,10 +177,14 @@ validos AS (
         municipio,
         unidade_medida,
         etanol,
-        gasolina
+        etanol_observacoes,
+        gasolina,
+        gasolina_observacoes
     FROM comparaveis
     WHERE etanol IS NOT NULL
       AND gasolina IS NOT NULL
+      AND etanol_observacoes = 1
+      AND gasolina_observacoes = 1
 ),
 ultima_comparavel AS (
     SELECT
