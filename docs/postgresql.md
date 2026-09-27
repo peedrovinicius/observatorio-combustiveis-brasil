@@ -54,7 +54,13 @@ Antes de abrir a conexão, a carga valida:
 - colunas obrigatórias de cada tabela;
 - compatibilidade entre os arquivos gerados e o schema PostgreSQL;
 - presença da `posto_chave` determinística na dimensão de estabelecimentos;
-- presença de UF, município e proveniência nos registros por posto.
+- presença de UF, município e proveniência nos registros por posto;
+- limites de texto compatíveis com `VARCHAR` e `CHAR`;
+- formato da chave SHA-256 de estabelecimento;
+- coerência entre `data_coleta`, ano, mês e semana ISO;
+- precisão dos preços antes do `NUMERIC(12, 4)`, sem arredondamento silencioso.
+
+As verificações de valor acontecem antes de abrir a conexão com o PostgreSQL. Assim, um CSV incompatível falha com a tabela, a linha e a coluna responsáveis pelo problema, sem iniciar a limpeza da carga anterior.
 
 Depois disso, a carga:
 

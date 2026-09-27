@@ -532,3 +532,108 @@ def test_station_schema_requires_station_geography_and_provenance() -> None:
     assert "uf CHAR(2) NOT NULL" in schema
     assert "municipio VARCHAR(160) NOT NULL" in schema
     assert "fonte_arquivo VARCHAR(255) NOT NULL" in schema
+
+
+def test_station_csv_contract_rejects_invalid_station_key(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "dim_posto.csv"
+    path.write_text(
+        "posto_id,posto_chave,uf,municipio\n"
+        "1,hash-invalido,CE,FORTALEZA\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [("dim_posto", path)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="SHA-256",
+    ):
+        validate_csv_contracts()
+
+
+def test_station_csv_contract_rejects_text_overflow(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "dim_posto.csv"
+    municipio = "A" * 161
+    path.write_text(
+        "posto_id,posto_chave,uf,municipio\n"
+        f"1,{'a' * 64},CE,{municipio}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [("dim_posto", path)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="160 caracteres",
+    ):
+        validate_csv_contracts()
+
+
+def test_station_csv_contract_rejects_inconsistent_date_dimension(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "dim_data_coleta.csv"
+    path.write_text(
+        "data_coleta_id,data_coleta,ano,mes,semana_iso\n"
+        "1,2026-09-20,2026,8,38\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [("dim_data_coleta", path)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="incompatível com data_coleta",
+    ):
+        validate_csv_contracts()
+
+
+def test_station_csv_contract_rejects_rounding_and_blank_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "fato_precos_postos.csv"
+    path.write_text(
+        "preco_posto_id,data_coleta_id,produto_posto_id,"
+        "posto_id,preco_revenda,fonte_arquivo\n"
+        "1,1,1,1,6.12345,\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [("fato_precos_postos", path)],
+    )
+
+    with pytest.raises(
+        ValueError,
+    ) as exc_info:
+        validate_csv_contracts()
+
+    message = str(exc_info.value)
+    assert "fonte_arquivo" in message
+    assert "arredondamento" in message
