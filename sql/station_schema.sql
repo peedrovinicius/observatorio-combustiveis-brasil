@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS dim_posto (
     revenda VARCHAR(255),
     bandeira VARCHAR(180),
     regiao VARCHAR(10),
-    uf CHAR(2),
-    municipio VARCHAR(160),
+    uf CHAR(2) NOT NULL,
+    municipio VARCHAR(160) NOT NULL,
     logradouro VARCHAR(255),
     numero VARCHAR(40),
     complemento VARCHAR(255),
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS fato_precos_postos (
     preco_revenda NUMERIC(12, 4) NOT NULL
         CHECK (preco_revenda > 0),
     preco_compra NUMERIC(12, 4),
-    fonte_arquivo VARCHAR(255),
+    fonte_arquivo VARCHAR(255) NOT NULL,
     UNIQUE (
         data_coleta_id,
         produto_posto_id,

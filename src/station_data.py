@@ -868,6 +868,19 @@ def build_station_star_schema(
             )
         )
 
+    provenance = (
+        frame["fonte_arquivo"]
+        .astype("string")
+        .str.strip()
+        .replace("", pd.NA)
+    )
+    if provenance.isna().any():
+        raise ValueError(
+            "A coluna fonte_arquivo deve estar "
+            "preenchida em todas as observações "
+            "do modelo por posto."
+        )
+
     working = frame.copy()
 
     dim_data = pd.DataFrame(

@@ -541,6 +541,21 @@ def _finalize_model_constraints(
         "SET NOT NULL"
     )
     connection.execute(
+        "ALTER TABLE dim_posto "
+        "ALTER COLUMN uf "
+        "SET NOT NULL"
+    )
+    connection.execute(
+        "ALTER TABLE dim_posto "
+        "ALTER COLUMN municipio "
+        "SET NOT NULL"
+    )
+    connection.execute(
+        "ALTER TABLE fato_precos_postos "
+        "ALTER COLUMN fonte_arquivo "
+        "SET NOT NULL"
+    )
+    connection.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS "
         "ux_dim_posto_chave "
         "ON dim_posto(posto_chave)"

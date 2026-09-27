@@ -243,6 +243,24 @@ def test_finalize_model_constraints_protects_dimension_keys() -> None:
         in sql
     )
     assert (
+        "ALTER TABLE dim_posto "
+        "ALTER COLUMN uf "
+        "SET NOT NULL"
+        in sql
+    )
+    assert (
+        "ALTER TABLE dim_posto "
+        "ALTER COLUMN municipio "
+        "SET NOT NULL"
+        in sql
+    )
+    assert (
+        "ALTER TABLE fato_precos_postos "
+        "ALTER COLUMN fonte_arquivo "
+        "SET NOT NULL"
+        in sql
+    )
+    assert (
         "ux_dim_posto_chave"
         in sql
     )
@@ -498,3 +516,19 @@ def test_station_sql_schema_columns_match_loader_contract() -> None:
             )
         )
         assert declared == TABLE_COLUMNS[table]
+
+
+def test_station_schema_requires_station_geography_and_provenance() -> None:
+    from src.config import PROJECT_ROOT
+
+    schema = (
+        PROJECT_ROOT
+        / "sql"
+        / "station_schema.sql"
+    ).read_text(
+        encoding="utf-8",
+    )
+
+    assert "uf CHAR(2) NOT NULL" in schema
+    assert "municipio VARCHAR(160) NOT NULL" in schema
+    assert "fonte_arquivo VARCHAR(255) NOT NULL" in schema

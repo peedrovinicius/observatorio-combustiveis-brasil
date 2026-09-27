@@ -150,3 +150,19 @@ def test_station_model_headers_match_postgres_contract() -> None:
             REQUIRED_TABLE_COLUMNS[table]
             <= columns
         )
+
+
+def test_validated_station_model_rejects_blank_source_provenance() -> None:
+    frame = _valid_station_frame()
+    frame.loc[
+        0,
+        "fonte_arquivo",
+    ] = " "
+
+    with pytest.raises(
+        ValueError,
+        match="fonte_arquivo",
+    ):
+        build_validated_station_model(
+            frame
+        )

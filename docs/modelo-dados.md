@@ -109,6 +109,8 @@ Essa separação impede que um conjunto com problemas estruturais seja materiali
 
 A modelagem exige também `fonte_arquivo` para cada observação. Esse campo preserva a rastreabilidade até o arquivo bruto e faz parte do contrato da `fato_precos_postos`. Se ele estiver ausente, a modelagem falha com erro explícito de contrato antes de construir os CSVs.
 
+Valores vazios de `fonte_arquivo` também são rejeitados. No banco, `uf`, `municipio` e `fonte_arquivo` são `NOT NULL`, mantendo o mesmo contrato entre ingestão, modelagem e persistência.
+
 
 ## Unicidade do grão nas tabelas fato
 
