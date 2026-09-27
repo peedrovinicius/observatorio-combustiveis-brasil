@@ -239,12 +239,6 @@ def build_insights_markdown(
                     product,
                 )
             )
-            subset = subset.sort_values(
-                "preco_medio_revenda",
-                ascending=False,
-                kind="stable",
-            )
-
             lines.extend(
                 [
                     "## Ranking por UF",
@@ -254,56 +248,78 @@ def build_insights_markdown(
                         f"**{series_label}**"
                     ),
                     "",
-                    (
-                        "### 5 maiores "
-                        "preços médios"
-                    ),
-                    "",
                 ]
             )
 
-            for _, row in (
-                subset.head(5)
-                .iterrows()
-            ):
-                label = (
-                    _location_label(
-                        row
-                    )
+            if subset.empty:
+                lines.extend(
+                    [
+                        (
+                            "Ranking não exibido: "
+                            "o recorte contém múltiplas "
+                            "unidades de medida."
+                        ),
+                        "",
+                    ]
                 )
-                lines.append(
-                    f"- {label}: "
-                    f"{_format_currency(row['preco_medio_revenda'])}"
-                )
-
-            lines.extend(
-                [
-                    "",
-                    (
-                        "### 5 menores "
-                        "preços médios"
-                    ),
-                    "",
-                ]
-            )
-            for _, row in (
-                subset.tail(5)
-                .sort_values(
+            else:
+                subset = subset.sort_values(
                     "preco_medio_revenda",
+                    ascending=False,
                     kind="stable",
                 )
-                .iterrows()
-            ):
-                label = (
-                    _location_label(
-                        row
+                lines.extend(
+                    [
+                        (
+                            "### 5 maiores "
+                            "preços médios"
+                        ),
+                        "",
+                    ]
+                )
+
+                for _, row in (
+                    subset.head(5)
+                    .iterrows()
+                ):
+                    label = (
+                        _location_label(
+                            row
+                        )
                     )
+                    lines.append(
+                        f"- {label}: "
+                        f"{_format_currency(row['preco_medio_revenda'])}"
+                    )
+
+                lines.extend(
+                    [
+                        "",
+                        (
+                            "### 5 menores "
+                            "preços médios"
+                        ),
+                        "",
+                    ]
                 )
-                lines.append(
-                    f"- {label}: "
-                    f"{_format_currency(row['preco_medio_revenda'])}"
-                )
-            lines.append("")
+                for _, row in (
+                    subset.tail(5)
+                    .sort_values(
+                        "preco_medio_revenda",
+                        kind="stable",
+                    )
+                    .iterrows()
+                ):
+                    label = (
+                        _location_label(
+                            row
+                        )
+                    )
+                    lines.append(
+                        f"- {label}: "
+                        f"{_format_currency(row['preco_medio_revenda'])}"
+                    )
+                lines.append("")
 
     lines.extend(
         [
