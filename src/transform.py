@@ -9,6 +9,9 @@ from pathlib import Path
 import pandas as pd
 
 from .config import PROCESSED_DIR, RAW_DIR
+from .numeric_parsing import (
+    parse_decimal_series,
+)
 from .provenance import (
     verified_history_files,
 )
@@ -83,87 +86,6 @@ def normalize_column(value: object) -> str:
     text = normalize_text(value).lower()
     text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
     return COLUMN_ALIASES.get(text, text)
-
-
-def parse_decimal_series(series: pd.Series) -> pd.Series:
-    def parse(value: object) -> float | None:
-        if pd.isna(value):
-            return None
-        if isinstance(
-            value,
-            (
-                int,
-                float,
-            ),
-        ):
-            return float(
-                value
-            )
-
-        text = (
-            str(
-                value
-            )
-            .strip()
-            .replace(
-                "R$",
-                "",
-            )
-            .replace(
-                "\u00a0",
-                "",
-            )
-            .replace(
-                " ",
-                "",
-            )
-        )
-        if not text:
-            return None
-
-        if (
-            "," in text
-            and "." in text
-        ):
-            if (
-                text.rfind(
-                    ","
-                )
-                > text.rfind(
-                    "."
-                )
-            ):
-                text = (
-                    text.replace(
-                        ".",
-                        "",
-                    )
-                    .replace(
-                        ",",
-                        ".",
-                    )
-                )
-            else:
-                text = text.replace(
-                    ",",
-                    "",
-                )
-        elif "," in text:
-            text = text.replace(
-                ",",
-                ".",
-            )
-
-        try:
-            return float(
-                text
-            )
-        except ValueError:
-            return None
-
-    return series.map(
-        parse
-    )
 
 
 def detect_header_row(path: Path, sheet_name: str, max_rows: int = 30) -> int:
