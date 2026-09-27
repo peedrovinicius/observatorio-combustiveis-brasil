@@ -23,7 +23,6 @@ SELECT
     postos_pesquisados
 FROM vw_ultimo_periodo
 WHERE nivel_geografico = 'estado'
-  AND produto ILIKE 'GASOLINA%'
 ORDER BY
     produto,
     unidade_medida,
@@ -51,7 +50,6 @@ WITH municipios_ordenados AS (
         ) AS ordem
     FROM vw_ultimo_periodo
     WHERE nivel_geografico = 'municipio'
-      AND produto ILIKE 'GASOLINA%'
 )
 SELECT
     data_inicial,

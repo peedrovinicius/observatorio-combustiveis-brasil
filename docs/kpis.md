@@ -44,6 +44,8 @@ Média aritmética das observações semanais oficiais contidas no mês, calcula
 
 Os rankings utilizam o preço médio publicado na semana mais recente disponível para cada combinação de produto e unidade de medida. A data não é escolhida globalmente entre todos os combustíveis ou unidades.
 
+Os exports Python e as consultas SQL de referência preservam todos os produtos. Recortes específicos, como gasolina comum no relatório visual, são aplicados somente na camada de apresentação e não alteram o dataset de ranking.
+
 Assim, uma série continua aparecendo no ranking mesmo quando outra possui uma publicação mais recente.
 
 São produzidas duas posições:

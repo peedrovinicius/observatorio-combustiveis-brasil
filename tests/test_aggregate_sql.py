@@ -159,3 +159,18 @@ def test_ratio_sql_accepts_plain_fuel_aliases() -> None:
 
     assert "BTRIM(produto) ILIKE 'ETANOL'" in sql
     assert "BTRIM(produto) ILIKE 'GASOLINA'" in sql
+
+
+def test_ranking_queries_do_not_pre_filter_product() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+    ranking_section = sql.split(
+        "-- 2. Preço médio por UF",
+        1,
+    )[1].split(
+        "-- 4. Média mensal",
+        1,
+    )[0]
+
+    assert "ILIKE 'GASOLINA%'" not in ranking_section
