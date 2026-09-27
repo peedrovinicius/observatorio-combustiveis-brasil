@@ -1466,6 +1466,19 @@ def _validate_station_relations() -> None:
         )
 
 
+def _display_path(
+    path: Path,
+) -> str:
+    try:
+        return str(
+            path.relative_to(
+                PROJECT_ROOT
+            )
+        )
+    except ValueError:
+        return str(path)
+
+
 def validate_input_files() -> None:
     missing = [
         path
@@ -1474,7 +1487,7 @@ def validate_input_files() -> None:
     ]
     if missing:
         formatted = "\n".join(
-            f"- {path.relative_to(PROJECT_ROOT)}"
+            f"- {_display_path(path)}"
             for path in missing
         )
         raise FileNotFoundError(
