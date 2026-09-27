@@ -993,3 +993,42 @@ def test_station_csv_contract_rejects_date_outside_2026(
         match="deve pertencer a 2026",
     ):
         validate_csv_contracts()
+
+
+def test_aggregate_sql_schema_columns_match_loader_contract() -> None:
+    from src.config import PROJECT_ROOT
+
+    schema = (
+        PROJECT_ROOT
+        / "sql"
+        / "schema.sql"
+    ).read_text(
+        encoding="utf-8",
+    )
+    aggregate_tables = (
+        "dim_data",
+        "dim_produto",
+        "dim_localidade",
+        "fato_precos_semanais",
+    )
+    column_pattern = re.compile(
+        r"^\s*([a-z_][a-z0-9_]*)\s+"
+        r"(?:BIGINT|DATE|SMALLINT|VARCHAR|CHAR|NUMERIC|"
+        r"INTEGER|TEXT|BOOLEAN)\b",
+        re.MULTILINE,
+    )
+
+    for table in aggregate_tables:
+        block = re.search(
+            rf"CREATE TABLE IF NOT EXISTS {table}\s*"
+            r"\((.*?)\n\);",
+            schema,
+            re.DOTALL,
+        )
+        assert block is not None
+        declared = set(
+            column_pattern.findall(
+                block.group(1)
+            )
+        )
+        assert declared == TABLE_COLUMNS[table]

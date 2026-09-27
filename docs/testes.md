@@ -55,6 +55,7 @@ A suíte verifica, entre outros pontos:
 - integridade referencial dos CSVs agregados antes da conexão com PostgreSQL;
 - bloqueio pré-carga de dimensões temporais fora de 2026;
 - alinhamento automático entre cabeçalhos gerados pelo modelo por posto, contrato da carga e colunas declaradas no SQL;
+- alinhamento automático entre o modelo agregado, contrato da carga e `sql/schema.sql`;
 - limites de texto, hash SHA-256, coerência temporal e precisão decimal antes do COPY;
 - integridade referencial dos CSVs por posto antes da conexão com PostgreSQL;
 - unicidade do grão das duas tabelas fato no PostgreSQL;
