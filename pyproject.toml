@@ -2,3 +2,6 @@
 minversion = "8.0"
 testpaths = ["tests"]
 addopts = "-ra --strict-config --strict-markers"
+markers = [
+    "postgres: requer uma instância PostgreSQL real",
+]
