@@ -49,7 +49,11 @@ O downloader identifica CSV, ZIP e XLSX pelo conteúdo real do arquivo. Isso cob
 
 Quando uma publicação já existe localmente, a nova versão é preparada em staging antes de qualquer alteração no dataset anterior. Para ZIP, todos os CSVs internos são extraídos e validados no staging. Nomes de CSV que colidiriam em sistemas sem diferenciação entre maiúsculas e minúsculas também são rejeitados.
 
-Somente depois de toda a preparação ter sucesso, os artefatos antigos do mesmo dataset lógico são movidos para backup temporário e a nova versão é instalada. Se a instalação falhar, o processo remove qualquer artefato novo já instalado e restaura o backup anterior.
+Somente depois de toda a preparação ter sucesso, a coleção completa descoberta para 2026 é publicada como um único lote lógico junto de `data/raw/open_data/manifest.json`. Nenhum dataset é substituído localmente enquanto ainda existem downloads pendentes.
+
+Os artefatos anteriores de todos os datasets envolvidos e o manifesto são movidos para backup temporário. Se qualquer instalação falhar, o processo remove os artefatos novos já instalados e restaura integralmente o snapshot anterior.
+
+A descoberta exige cobertura do primeiro semestre de combustíveis automotivos e presença das famílias diesel/GNV e etanol/gasolina. Identidades lógicas duplicadas ou a reutilização da mesma URL para datasets distintos são bloqueadas.
 
 A substituição cobre mudanças entre CSV e ZIP, incluindo diretórios de extração. Arquivos de outros datasets são preservados.
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 import zipfile
 from pathlib import Path
 
@@ -8,8 +9,10 @@ import pytest
 
 from src.download_open_data import (
     _clear_dataset_artifacts,
+    _discover_2026_links,
     _extract_csvs,
     _replace_dataset_artifacts,
+    _replace_open_data_batch,
 )
 from src.file_formats import (
     UnsupportedDownloadError,
@@ -496,3 +499,229 @@ def test_install_failure_restores_previous_dataset(
         old_extract
         / "dados_novos.csv"
     ).exists()
+
+
+
+def test_discovery_rejects_missing_2026_family() -> None:
+    html = """
+    <h3>Combustíveis automotivos</h3>
+    <a href="s1.csv">1º semestre de 2026</a>
+    <h3>Óleo Diesel (S-500 e S-10) + GNV</h3>
+    <a href="diesel.csv">Setembro 2026</a>
+    """
+
+    with pytest.raises(
+        RuntimeError,
+        match="Famílias ausentes",
+    ):
+        _discover_2026_links(
+            html
+        )
+
+
+def test_discovery_rejects_duplicate_logical_dataset() -> None:
+    html = """
+    <h3>Combustíveis automotivos</h3>
+    <a href="s1.csv">1º semestre de 2026</a>
+    <h3>Óleo Diesel (S-500 e S-10) + GNV</h3>
+    <a href="diesel-a.csv">Setembro 2026</a>
+    <a href="diesel-b.csv">Setembro 2026</a>
+    <h3>Etanol hidratado + gasolina C</h3>
+    <a href="etanol.csv">Setembro 2026</a>
+    """
+
+    with pytest.raises(
+        RuntimeError,
+        match="dataset lógico",
+    ):
+        _discover_2026_links(
+            html
+        )
+
+
+def _batch_item(
+    stem: str,
+    value: str,
+) -> dict[str, object]:
+    content = (
+        "produto;preco\n"
+        f"{value};6,00\n"
+    ).encode(
+        "utf-8"
+    )
+    return {
+        "stem": stem,
+        "content": content,
+        "kind": "csv",
+        "record": {
+            "dataset": stem,
+            "url": (
+                "https://example.test/"
+                + stem
+            ),
+            "sha256": "teste",
+        },
+    }
+
+
+def test_open_data_batch_replaces_datasets_and_manifest_together(
+    tmp_path: Path,
+) -> None:
+    old_a = tmp_path / "a.csv"
+    old_b = tmp_path / "b.csv"
+    manifest = tmp_path / "manifest.json"
+    old_a.write_text(
+        "antigo-a",
+        encoding="utf-8",
+    )
+    old_b.write_text(
+        "antigo-b",
+        encoding="utf-8",
+    )
+    manifest.write_text(
+        '{"versao":"antiga"}',
+        encoding="utf-8",
+    )
+
+    records = _replace_open_data_batch(
+        tmp_path,
+        [
+            _batch_item(
+                "a",
+                "NOVO A",
+            ),
+            _batch_item(
+                "b",
+                "NOVO B",
+            ),
+        ],
+        {
+            "source": "ANP",
+            "collected_at_utc": (
+                "2026-09-27T20:00:00+00:00"
+            ),
+        },
+    )
+
+    assert len(records) == 2
+    assert "NOVO A" in (
+        tmp_path
+        / "a.csv"
+    ).read_text(
+        encoding="utf-8",
+    )
+    assert "NOVO B" in (
+        tmp_path
+        / "b.csv"
+    ).read_text(
+        encoding="utf-8",
+    )
+    saved_manifest = json.loads(
+        manifest.read_text(
+            encoding="utf-8",
+        )
+    )
+    assert len(
+        saved_manifest[
+            "files"
+        ]
+    ) == 2
+
+
+def test_open_data_batch_install_failure_restores_all(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import src.download_open_data as downloader
+
+    old_a = tmp_path / "a.csv"
+    old_b = tmp_path / "b.csv"
+    manifest = tmp_path / "manifest.json"
+    old_a.write_text(
+        "antigo-a",
+        encoding="utf-8",
+    )
+    old_b.write_text(
+        "antigo-b",
+        encoding="utf-8",
+    )
+    manifest.write_text(
+        '{"versao":"antiga"}',
+        encoding="utf-8",
+    )
+
+    original_move = (
+        downloader.shutil.move
+    )
+
+    def failing_move(
+        source: str,
+        destination: str,
+    ):
+        source_path = Path(
+            source
+        )
+        destination_path = Path(
+            destination
+        )
+        if (
+            source_path.name
+            == "b.csv"
+            and destination_path
+            == tmp_path / "b.csv"
+            and "stage"
+            in source_path.parts
+        ):
+            raise OSError(
+                "falha simulada"
+            )
+        return original_move(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        downloader.shutil,
+        "move",
+        failing_move,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="falha simulada",
+    ):
+        _replace_open_data_batch(
+            tmp_path,
+            [
+                _batch_item(
+                    "a",
+                    "NOVO A",
+                ),
+                _batch_item(
+                    "b",
+                    "NOVO B",
+                ),
+            ],
+            {
+                "source": "ANP",
+            },
+        )
+
+    assert (
+        old_a.read_text(
+            encoding="utf-8",
+        )
+        == "antigo-a"
+    )
+    assert (
+        old_b.read_text(
+            encoding="utf-8",
+        )
+        == "antigo-b"
+    )
+    assert (
+        manifest.read_text(
+            encoding="utf-8",
+        )
+        == '{"versao":"antiga"}'
+    )

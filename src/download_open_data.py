@@ -71,7 +71,8 @@ def _discover_2026_links(
     discovered: list[
         dict[str, str]
     ] = []
-    seen: set[str] = set()
+    seen_urls: set[str] = set()
+    seen_datasets: set[str] = set()
 
     for element in soup.find_all(
         ["h3", "a"]
@@ -164,7 +165,18 @@ def _discover_2026_links(
                     "etanol_gasolina_ultimas_4_semanas"
                 )
 
-        if include and url not in seen:
+        if include:
+            if dataset in seen_datasets:
+                raise RuntimeError(
+                    "A página da ANP publicou mais de um "
+                    f"link para o dataset lógico {dataset}."
+                )
+            if url in seen_urls:
+                raise RuntimeError(
+                    "A página da ANP reutilizou a mesma URL "
+                    "para datasets lógicos diferentes."
+                )
+
             discovered.append(
                 {
                     "dataset": dataset,
@@ -172,12 +184,59 @@ def _discover_2026_links(
                     "url": url,
                 }
             )
-            seen.add(url)
+            seen_datasets.add(
+                dataset
+            )
+            seen_urls.add(
+                url
+            )
 
     if not discovered:
         raise RuntimeError(
             "Nenhum arquivo aberto de preços de 2026 "
             "foi localizado na ANP."
+        )
+
+    names = {
+        item["dataset"]
+        for item in discovered
+    }
+    missing_families: list[str] = []
+    if (
+        "automotivos_2026_s1"
+        not in names
+    ):
+        missing_families.append(
+            "combustíveis automotivos do 1º semestre"
+        )
+    if not any(
+        name.startswith(
+            "diesel_gnv_"
+        )
+        for name in names
+    ):
+        missing_families.append(
+            "diesel/GNV"
+        )
+    if not any(
+        name.startswith(
+            "etanol_gasolina_"
+        )
+        for name in names
+    ):
+        missing_families.append(
+            "etanol/gasolina"
+        )
+
+    if missing_families:
+        raise RuntimeError(
+            "Cobertura de dados abertos de 2026 "
+            "incompleta na página da ANP. "
+            "Famílias ausentes: "
+            + ", ".join(
+                missing_families
+            )
+            + "."
         )
 
     return discovered
@@ -475,6 +534,249 @@ def _replace_dataset_artifacts(
             raise
 
 
+def _replace_open_data_batch(
+    root: Path,
+    datasets: list[
+        dict[str, object]
+    ],
+    manifest_base: dict[
+        str,
+        object,
+    ],
+) -> list[dict[str, object]]:
+    if not datasets:
+        raise ValueError(
+            "Lote de dados abertos vazio."
+        )
+    if "files" in manifest_base:
+        raise ValueError(
+            "A base do manifesto não deve "
+            "conter a chave files."
+        )
+
+    stems = [
+        str(item["stem"])
+        for item in datasets
+    ]
+    normalized_stems = [
+        stem.casefold()
+        for stem in stems
+    ]
+    if len(normalized_stems) != len(
+        set(normalized_stems)
+    ):
+        raise ValueError(
+            "Lote de dados abertos contém "
+            "datasets lógicos duplicados."
+        )
+
+    root.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with tempfile.TemporaryDirectory(
+        prefix=".open_data_batch_",
+        dir=root,
+    ) as temporary:
+        transaction_root = Path(
+            temporary
+        )
+        stage_root = (
+            transaction_root
+            / "stage"
+        )
+        stage_root.mkdir()
+
+        manifest_records: list[
+            dict[str, object]
+        ] = []
+
+        for item in datasets:
+            stem = str(
+                item["stem"]
+            )
+            content = item["content"]
+            kind = str(
+                item["kind"]
+            )
+            record = item["record"]
+
+            if not isinstance(
+                content,
+                bytes,
+            ):
+                raise TypeError(
+                    "Conteúdo do dataset deve "
+                    "ser bytes."
+                )
+            if not isinstance(
+                record,
+                dict,
+            ):
+                raise TypeError(
+                    "Registro de proveniência "
+                    "deve ser um objeto."
+                )
+
+            raw_path, extracted = (
+                _replace_dataset_artifacts(
+                    stage_root,
+                    stem,
+                    content,
+                    kind,
+                )
+            )
+
+            finalized_record = dict(
+                record
+            )
+            finalized_record[
+                "filename"
+            ] = raw_path.name
+            finalized_record[
+                "extracted_csvs"
+            ] = [
+                str(
+                    path.relative_to(
+                        stage_root
+                    )
+                )
+                for path in extracted
+            ]
+            manifest_records.append(
+                finalized_record
+            )
+
+        manifest = {
+            **manifest_base,
+            "files": manifest_records,
+        }
+        staged_manifest = (
+            stage_root
+            / "manifest.json"
+        )
+        staged_manifest.write_text(
+            json.dumps(
+                manifest,
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+        backup_root = (
+            transaction_root
+            / "backup"
+        )
+        backup_root.mkdir()
+
+        existing_paths: list[
+            Path
+        ] = []
+        for stem in stems:
+            existing_paths.extend(
+                path
+                for path in (
+                    _dataset_artifact_candidates(
+                        root,
+                        stem,
+                    )
+                )
+                if path.exists()
+            )
+
+        manifest_path = (
+            root
+            / "manifest.json"
+        )
+        if manifest_path.exists():
+            existing_paths.append(
+                manifest_path
+            )
+
+        backed_up: list[
+            tuple[
+                Path,
+                Path,
+            ]
+        ] = []
+        installed: list[
+            Path
+        ] = []
+
+        try:
+            for existing in (
+                existing_paths
+            ):
+                backup = (
+                    backup_root
+                    / existing.name
+                )
+                if backup.exists():
+                    raise ValueError(
+                        "Colisão de nomes no backup "
+                        "do lote de dados abertos."
+                    )
+                shutil.move(
+                    str(existing),
+                    str(backup),
+                )
+                backed_up.append(
+                    (
+                        existing,
+                        backup,
+                    )
+                )
+
+            for stem in stems:
+                for staged in (
+                    _dataset_artifact_candidates(
+                        stage_root,
+                        stem,
+                    )
+                ):
+                    if not staged.exists():
+                        continue
+                    destination = (
+                        root
+                        / staged.name
+                    )
+                    shutil.move(
+                        str(staged),
+                        str(destination),
+                    )
+                    installed.append(
+                        destination
+                    )
+
+            shutil.move(
+                str(staged_manifest),
+                str(manifest_path),
+            )
+            installed.append(
+                manifest_path
+            )
+        except Exception:
+            for path in reversed(
+                installed
+            ):
+                _remove_path(
+                    path
+                )
+
+            for original, backup in reversed(
+                backed_up
+            ):
+                if backup.exists():
+                    backup.rename(
+                        original
+                    )
+            raise
+
+        return manifest_records
+
+
 def _download_resource(
     session: requests.Session,
     url: str,
@@ -611,7 +913,7 @@ def main() -> None:
             timezone.utc
         ).isoformat()
     )
-    records: list[
+    prepared_datasets: list[
         dict[str, object]
     ] = []
 
@@ -645,56 +947,41 @@ def main() -> None:
             ),
         )
 
-        raw_path, extracted_paths = (
-            _replace_dataset_artifacts(
-                RAW_OPEN_DATA_DIR,
-                stem,
-                response.content,
-                kind,
-            )
-        )
-        extracted = [
-            str(
-                path.relative_to(
-                    RAW_OPEN_DATA_DIR
-                )
-            )
-            for path
-            in extracted_paths
-        ]
-
-        records.append(
+        prepared_datasets.append(
             {
-                **item,
-                "final_url": response.url,
-                "filename": raw_path.name,
-                "detected_format": kind,
-                "bytes": len(
+                "stem": stem,
+                "content": (
                     response.content
                 ),
-                "sha256": _sha256(
-                    response.content
-                ),
-                "content_type": (
-                    response.headers.get(
-                        "Content-Type",
-                        "",
-                    )
-                ),
-                "extracted_csvs": (
-                    extracted
-                ),
-                "collected_at_utc": (
-                    collected_at
-                ),
+                "kind": kind,
+                "record": {
+                    **item,
+                    "final_url": (
+                        response.url
+                    ),
+                    "detected_format": (
+                        kind
+                    ),
+                    "bytes": len(
+                        response.content
+                    ),
+                    "sha256": _sha256(
+                        response.content
+                    ),
+                    "content_type": (
+                        response.headers.get(
+                            "Content-Type",
+                            "",
+                        )
+                    ),
+                    "collected_at_utc": (
+                        collected_at
+                    ),
+                },
             }
         )
-        print(
-            "Salvo: "
-            f"{raw_path.relative_to(RAW_OPEN_DATA_DIR.parent.parent.parent)}"
-        )
 
-    manifest = {
+    manifest_base = {
         "source": (
             "Agência Nacional do Petróleo, "
             "Gás Natural e Biocombustíveis - ANP"
@@ -705,18 +992,36 @@ def main() -> None:
         "collected_at_utc": (
             collected_at
         ),
-        "files": records,
     }
-    (
+    records = (
+        _replace_open_data_batch(
+            RAW_OPEN_DATA_DIR,
+            prepared_datasets,
+            manifest_base,
+        )
+    )
+
+    for record in records:
+        raw_path = (
+            RAW_OPEN_DATA_DIR
+            / str(
+                record[
+                    "filename"
+                ]
+            )
+        )
+        print(
+            "Salvo: "
+            f"{raw_path.relative_to(RAW_OPEN_DATA_DIR.parent.parent.parent)}"
+        )
+
+    manifest_path = (
         RAW_OPEN_DATA_DIR
         / "manifest.json"
-    ).write_text(
-        json.dumps(
-            manifest,
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
+    )
+    print(
+        "Manifesto: "
+        f"{manifest_path.relative_to(RAW_OPEN_DATA_DIR.parent.parent.parent)}"
     )
 
 

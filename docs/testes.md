@@ -28,7 +28,8 @@ A suíte verifica, entre outros pontos:
 
 - descoberta das fontes oficiais;
 - reconhecimento de CSV, ZIP e XLSX pelo conteúdo;
-- substituição transacional de datasets por posto com staging e restauração;
+- substituição transacional do lote completo de datasets por posto e manifesto;
+- bloqueio de descoberta parcial ou duplicada dos dados abertos de 2026;
 - substituição transacional do lote histórico e do manifesto com rollback integral;
 - normalização de schema;
 - substituição transacional do lote de CSVs processados;

@@ -133,3 +133,12 @@ python -m src.pipeline
 ```
 
 Resultados analíticos não devem ser digitados manualmente. Métricas e visuais devem ser derivados das camadas processadas pelo pipeline.
+
+
+## 10. Atomicidade da aquisição por posto
+
+Os dados abertos por posto são baixados e validados integralmente antes de qualquer substituição em `data/raw/open_data/`.
+
+A publicação local trata todos os datasets descobertos na execução e o respectivo `manifest.json` como um único bundle. Uma falha de download, validação ou instalação preserva integralmente o snapshot anterior.
+
+A descoberta também valida a cobertura mínima das famílias de 2026 e rejeita identidades lógicas duplicadas, evitando aceitar silenciosamente uma página oficial parcialmente alterada.
