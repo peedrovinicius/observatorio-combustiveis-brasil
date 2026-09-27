@@ -59,6 +59,7 @@ def _select_common_gasoline(
         upper = value.upper()
         if (
             "GASOLINA" in upper
+            and "COMUM" in upper
             and "ADITIV"
             not in upper
         ):
