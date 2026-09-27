@@ -16,6 +16,9 @@ from .config import (
 from .publication_contract import (
     PUBLIC_IMAGE_FILES,
 )
+from .quality_gate import (
+    load_passed_quality_report,
+)
 
 ANALYTICS_DIR = PROCESSED_DIR / "analytics"
 STATION_ANALYTICS_DIR = (
@@ -1385,34 +1388,6 @@ def _read_json(
     )
 
 
-def _load_passed_quality_report(
-    path: Path,
-    label: str,
-) -> dict[str, object]:
-    report = _read_json(
-        path
-    )
-    if report is None:
-        raise FileNotFoundError(
-            f"Relatório de qualidade ausente: "
-            f"{label} ({path})."
-        )
-
-    status = str(
-        report.get(
-            "status",
-            "",
-        )
-    ).strip().casefold()
-    if status != "passed":
-        raise ValueError(
-            f"Relatório de qualidade não aprovado: "
-            f"{label} (status={status or 'n/d'})."
-        )
-
-    return report
-
-
 def _remove_path(
     path: Path,
 ) -> None:
@@ -1656,13 +1631,13 @@ def main() -> None:
         )
 
     aggregate_quality = (
-        _load_passed_quality_report(
+        load_passed_quality_report(
             aggregate_quality_path,
             "série agregada",
         )
     )
     station_quality = (
-        _load_passed_quality_report(
+        load_passed_quality_report(
             station_quality_path,
             "dados por posto",
         )
