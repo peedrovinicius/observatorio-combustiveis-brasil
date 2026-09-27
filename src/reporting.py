@@ -13,6 +13,9 @@ from .config import (
     PROJECT_ROOT,
     REPORTS_DIR,
 )
+from .publication_contract import (
+    PUBLIC_IMAGE_FILES,
+)
 
 ANALYTICS_DIR = PROCESSED_DIR / "analytics"
 STATION_ANALYTICS_DIR = (
@@ -1413,13 +1416,9 @@ def _publish_report_bundle(
             "staging não encontrado."
         )
 
-    required_images = {
-        "tendencia_brasil_2026.png",
-        "ranking_ufs_gasolina.png",
-        "etanol_gasolina_municipios.png",
-        "dispersao_municipios_postos.png",
-        "mediana_bandeiras_postos.png",
-    }
+    required_images = set(
+        PUBLIC_IMAGE_FILES
+    )
     staged_image_paths = [
         path
         for path in staged_assets.iterdir()
