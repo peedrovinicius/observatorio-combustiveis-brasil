@@ -738,3 +738,28 @@ def test_station_relations_reject_duplicate_fact_grain(
         match="grão duplicado",
     ):
         validate_input_files()
+
+
+def test_station_csv_contract_rejects_external_text_whitespace(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    path = tmp_path / "dim_posto.csv"
+    path.write_text(
+        "posto_id,posto_chave,uf,municipio\n"
+        f"1,{'a' * 64},CE, FORTALEZA\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        [("dim_posto", path)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="espaços externos",
+    ):
+        validate_csv_contracts()
