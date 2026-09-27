@@ -162,7 +162,7 @@ O projeto não define automaticamente uma regra fixa de vantagem econômica. O d
 
 As medidas estão em [`medidas.dax`](medidas.dax).
 
-As medidas de preço exigem uma única série no contexto do visual. No modelo agregado, isso significa um único produto e uma única unidade de medida. No modelo por posto, a série é identificada por `produto_posto_id`, que já representa produto + unidade. Se o contexto misturar unidades, as medidas retornam vazio em vez de produzir uma média entre grandezas incompatíveis.
+As medidas de preço exigem uma única série no contexto do visual. No modelo agregado, isso significa um único produto, uma única unidade de medida, um único nível geográfico e uma única localidade. Essa proteção impede calcular silenciosamente média das médias oficiais de várias localidades. No modelo por posto, a série é identificada por `produto_posto_id`, que já representa produto + unidade. Se o contexto misturar séries incompatíveis, as medidas retornam vazio.
 
 Para cards de cobertura agregada, use `Postos Pesquisados Última Semana` quando a intenção for mostrar a cobertura da observação corrente. A medida simples `Postos Pesquisados` continua disponível para tabelas ou contextos em que a soma faça sentido.
 
