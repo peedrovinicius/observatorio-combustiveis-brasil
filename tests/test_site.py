@@ -254,3 +254,64 @@ def test_ranking_rows_handles_empty_ranking_schema() -> None:
         product
         == "Gasolina comum indisponível"
     )
+
+
+def test_ranking_rows_rejects_mixed_units() -> None:
+    from src.site import _ranking_rows
+
+    ranking = pd.DataFrame(
+        {
+            "produto": [
+                "GASOLINA COMUM",
+                "GASOLINA COMUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/M3",
+            ],
+            "uf": [
+                "CE",
+                "SP",
+            ],
+            "preco_medio_revenda": [
+                6.30,
+                6300.0,
+            ],
+            "postos_pesquisados": [
+                20,
+                20,
+            ],
+        }
+    )
+
+    rows, label = _ranking_rows(
+        ranking
+    )
+
+    assert rows == ""
+    assert label == (
+        "Gasolina comum "
+        "com múltiplas unidades"
+    )
+
+
+def test_kpi_cards_expose_unit_when_available() -> None:
+    from src.site import _kpi_cards
+
+    cards = _kpi_cards(
+        pd.DataFrame(
+            {
+                "produto": [
+                    "GASOLINA COMUM"
+                ],
+                "unidade_medida": [
+                    "R$/L"
+                ],
+                "preco_atual": [
+                    6.25
+                ],
+            }
+        )
+    )
+
+    assert "GASOLINA COMUM · R$/L" in cards
