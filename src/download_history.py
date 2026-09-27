@@ -452,14 +452,27 @@ def _discover_weekly_history_links(
         key = expected.get(
             normalized
         )
-        if (
-            key
-            and key
-            not in discovered
-        ):
-            discovered[key] = urljoin(
+        if key:
+            candidate = urljoin(
                 ANP_HISTORICAL_PAGE,
                 element["href"],
+            )
+            if key in discovered:
+                raise RuntimeError(
+                    "A página da ANP publicou mais "
+                    "de um link para o escopo "
+                    f"histórico {key}."
+                )
+            if candidate in (
+                discovered.values()
+            ):
+                raise RuntimeError(
+                    "A página da ANP reutilizou "
+                    "a mesma URL para escopos "
+                    "históricos diferentes."
+                )
+            discovered[key] = (
+                candidate
             )
 
     missing = (
