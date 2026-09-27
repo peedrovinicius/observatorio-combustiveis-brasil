@@ -637,3 +637,104 @@ def test_station_csv_contract_rejects_rounding_and_blank_provenance(
     message = str(exc_info.value)
     assert "fonte_arquivo" in message
     assert "arredondamento" in message
+
+
+def _write_valid_station_contract_bundle(
+    tmp_path: Path,
+) -> list[tuple[str, Path]]:
+    data = tmp_path / "dim_data_coleta.csv"
+    product = tmp_path / "dim_produto_posto.csv"
+    station = tmp_path / "dim_posto.csv"
+    fact = tmp_path / "fato_precos_postos.csv"
+
+    data.write_text(
+        "data_coleta_id,data_coleta,ano,mes,semana_iso\n"
+        "1,2026-09-20,2026,9,38\n",
+        encoding="utf-8",
+    )
+    product.write_text(
+        "produto_posto_id,produto,unidade_medida\n"
+        "1,GASOLINA,R$ / litro\n",
+        encoding="utf-8",
+    )
+    station.write_text(
+        "posto_id,posto_chave,uf,municipio\n"
+        f"1,{'a' * 64},CE,FORTALEZA\n",
+        encoding="utf-8",
+    )
+    fact.write_text(
+        "preco_posto_id,data_coleta_id,produto_posto_id,"
+        "posto_id,preco_revenda,fonte_arquivo\n"
+        "1,1,1,1,6.1234,postos.csv\n",
+        encoding="utf-8",
+    )
+
+    return [
+        ("dim_data_coleta", data),
+        ("dim_produto_posto", product),
+        ("dim_posto", station),
+        ("fato_precos_postos", fact),
+    ]
+
+
+def test_station_relations_reject_missing_foreign_key(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    plan = _write_valid_station_contract_bundle(
+        tmp_path
+    )
+    fact = dict(plan)[
+        "fato_precos_postos"
+    ]
+    fact.write_text(
+        "preco_posto_id,data_coleta_id,produto_posto_id,"
+        "posto_id,preco_revenda,fonte_arquivo\n"
+        "1,1,99,1,6.1234,postos.csv\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        plan,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="referência inexistente",
+    ):
+        validate_input_files()
+
+
+def test_station_relations_reject_duplicate_fact_grain(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import src.load_postgres as loader
+
+    plan = _write_valid_station_contract_bundle(
+        tmp_path
+    )
+    fact = dict(plan)[
+        "fato_precos_postos"
+    ]
+    fact.write_text(
+        "preco_posto_id,data_coleta_id,produto_posto_id,"
+        "posto_id,preco_revenda,fonte_arquivo\n"
+        "1,1,1,1,6.1234,postos.csv\n"
+        "2,1,1,1,6.1200,postos.csv\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        loader,
+        "LOAD_PLAN",
+        plan,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="grão duplicado",
+    ):
+        validate_input_files()

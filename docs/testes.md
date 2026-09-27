@@ -53,6 +53,7 @@ A suíte verifica, entre outros pontos:
 - contrato dos CSVs com PostgreSQL;
 - alinhamento automático entre cabeçalhos gerados pelo modelo por posto, contrato da carga e colunas declaradas no SQL;
 - limites de texto, hash SHA-256, coerência temporal e precisão decimal antes do COPY;
+- integridade referencial dos CSVs por posto antes da conexão com PostgreSQL;
 - unicidade do grão das duas tabelas fato no PostgreSQL;
 - unicidade natural de localidade e produto por posto no PostgreSQL;
 - separação segura de comandos SQL com strings, comentários e blocos PostgreSQL;

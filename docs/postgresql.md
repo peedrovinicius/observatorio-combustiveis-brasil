@@ -58,7 +58,10 @@ Antes de abrir a conexão, a carga valida:
 - limites de texto compatíveis com `VARCHAR` e `CHAR`;
 - formato da chave SHA-256 de estabelecimento;
 - coerência entre `data_coleta`, ano, mês e semana ISO;
-- precisão dos preços antes do `NUMERIC(12, 4)`, sem arredondamento silencioso.
+- precisão dos preços antes do `NUMERIC(12, 4)`, sem arredondamento silencioso;
+- unicidade dos IDs e das chaves naturais nas dimensões por posto;
+- existência das chaves estrangeiras usadas pela fato;
+- unicidade do grão `data_coleta_id + produto_posto_id + posto_id` antes do `COPY`.
 
 As verificações de valor acontecem antes de abrir a conexão com o PostgreSQL. Assim, um CSV incompatível falha com a tabela, a linha e a coluna responsáveis pelo problema, sem iniciar a limpeza da carga anterior.
 
