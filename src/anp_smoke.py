@@ -113,21 +113,34 @@ def _probe_resource(
                 "",
             )
         )
-        try:
-            kind = detect_download_kind(
-                sample,
-                response.url,
-                content_type,
+        allowed = set(
+            allowed_kinds
+        )
+        zip_prefix = sample.startswith(
+            (
+                b"PK\\x03\\x04",
+                b"PK\\x05\\x06",
+                b"PK\\x07\\x08",
             )
+        )
+        try:
+            if (
+                zip_prefix
+                and "zip" in allowed
+            ):
+                kind = "zip"
+            else:
+                kind = detect_download_kind(
+                    sample,
+                    response.url,
+                    content_type,
+                )
         except UnsupportedDownloadError as exc:
             raise RuntimeError(
                 "Recurso oficial não parece "
                 f"um arquivo de dados válido: {url}"
             ) from exc
 
-        allowed = set(
-            allowed_kinds
-        )
         if kind not in allowed:
             raise RuntimeError(
                 "Formato inesperado no recurso "
