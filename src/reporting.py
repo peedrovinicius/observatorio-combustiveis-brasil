@@ -66,6 +66,50 @@ def _select_common_gasoline(
     return None
 
 
+def _single_unit_subset(
+    frame: pd.DataFrame,
+    product: str,
+) -> tuple[pd.DataFrame, str]:
+    subset = frame.loc[
+        frame["produto"].eq(product)
+    ].copy()
+
+    if (
+        subset.empty
+        or "unidade_medida"
+        not in subset.columns
+    ):
+        return subset, product
+
+    unit_key = (
+        subset["unidade_medida"]
+        .astype("string")
+        .fillna("")
+        .str.strip()
+    )
+    units = sorted(
+        set(
+            unit_key.tolist()
+        )
+    )
+    if len(units) > 1:
+        return (
+            subset.iloc[0:0].copy(),
+            f"{product} (múltiplas unidades)",
+        )
+
+    unit = units[0] if units else ""
+    subset = subset.loc[
+        unit_key.eq(unit)
+    ].copy()
+    label = (
+        f"{product} · {unit}"
+        if unit
+        else product
+    )
+    return subset, label
+
+
 def _location_label(
     row: pd.Series,
 ) -> str:
@@ -116,9 +160,18 @@ def build_insights_markdown(
             "Nenhum KPI nacional disponível."
         )
     else:
+        sort_columns = [
+            "produto",
+            *(
+                ["unidade_medida"]
+                if "unidade_medida"
+                in kpis.columns
+                else []
+            ),
+        ]
         ordered = (
             kpis.sort_values(
-                "produto",
+                sort_columns,
                 kind="stable",
             )
         )
@@ -126,9 +179,22 @@ def build_insights_markdown(
             product = str(
                 row["produto"]
             )
+            unit = row.get(
+                "unidade_medida"
+            )
+            unit_text = (
+                str(unit).strip()
+                if pd.notna(unit)
+                else ""
+            )
+            series_label = (
+                f"{product} · {unit_text}"
+                if unit_text
+                else product
+            )
             lines.extend(
                 [
-                    f"### {product}",
+                    f"### {series_label}",
                     "",
                     (
                         "- Preço na última semana: "
@@ -167,13 +233,11 @@ def build_insights_markdown(
             )
         )
         if product:
-            subset = (
-                ranking_ufs.loc[
-                    ranking_ufs[
-                        "produto"
-                    ].eq(product)
-                ]
-                .copy()
+            subset, series_label = (
+                _single_unit_subset(
+                    ranking_ufs,
+                    product,
+                )
             )
             subset = subset.sort_values(
                 "preco_medio_revenda",
@@ -186,8 +250,8 @@ def build_insights_markdown(
                     "## Ranking por UF",
                     "",
                     (
-                        "Produto selecionado: "
-                        f"**{product}**"
+                        "Série selecionada: "
+                        f"**{series_label}**"
                     ),
                     "",
                     (
@@ -355,11 +419,39 @@ def plot_monthly_trend(
     fig, ax = plt.subplots(
         figsize=(11, 6)
     )
-    for product, group in (
+    group_columns = [
+        "produto",
+        *(
+            ["unidade_medida"]
+            if "unidade_medida"
+            in frame.columns
+            else []
+        ),
+    ]
+    for key, group in (
         frame.groupby(
-            "produto"
+            group_columns,
+            dropna=False,
         )
     ):
+        if isinstance(
+            key,
+            tuple,
+        ):
+            product = str(key[0])
+            unit = (
+                ""
+                if pd.isna(key[1])
+                else str(key[1]).strip()
+            )
+        else:
+            product = str(key)
+            unit = ""
+        label = (
+            f"{product} · {unit}"
+            if unit
+            else product
+        )
         group = group.sort_values(
             "periodo"
         )
@@ -369,7 +461,7 @@ def plot_monthly_trend(
                 "media_das_semanas"
             ],
             marker="o",
-            label=product,
+            label=label,
         )
 
     ax.set_title(
@@ -429,14 +521,23 @@ def plot_state_ranking(
         )
         return
 
-    frame = (
-        ranking.loc[
-            ranking[
-                "produto"
-            ].eq(product)
-        ]
-        .copy()
+    frame, series_label = (
+        _single_unit_subset(
+            ranking,
+            product,
+        )
     )
+    if frame.empty:
+        _save_empty_chart(
+            output,
+            "Ranking de preços por UF",
+            (
+                "Gasolina comum possui "
+                "múltiplas unidades neste recorte."
+            ),
+        )
+        return
+
     frame = (
         frame.sort_values(
             "preco_medio_revenda",
@@ -467,7 +568,7 @@ def plot_state_ranking(
         ],
     )
     ax.set_title(
-        f"10 maiores preços médios por UF - {product}"
+        f"10 maiores preços médios por UF - {series_label}"
     )
     ax.set_xlabel(
         "Preço médio de revenda"
@@ -511,6 +612,27 @@ def plot_ethanol_gasoline(
             "preco_etanol",
         ]
     ).copy()
+    if (
+        "unidade_medida"
+        in frame.columns
+    ):
+        units = (
+            frame["unidade_medida"]
+            .astype("string")
+            .fillna("")
+            .str.strip()
+            .unique()
+        )
+        if len(units) > 1:
+            _save_empty_chart(
+                output,
+                "Etanol x gasolina comum",
+                (
+                    "Há múltiplas unidades "
+                    "de medida neste recorte."
+                ),
+            )
+            return
     if frame.empty:
         _save_empty_chart(
             output,
@@ -616,12 +738,15 @@ def plot_station_municipality_dispersion(
         )
         return
 
+    product_frame, series_label = (
+        _single_unit_subset(
+            distribution,
+            product,
+        )
+    )
     frame = (
-        distribution.loc[
-            distribution[
-                "produto"
-            ].eq(product)
-            & distribution[
+        product_frame.loc[
+            product_frame[
                 "postos_distintos"
             ].ge(3)
         ]
@@ -633,7 +758,7 @@ def plot_station_municipality_dispersion(
             output,
             (
                 "Dispersão municipal "
-                f"por posto - {product}"
+                f"por posto - {series_label}"
             ),
             (
                 "Amostra insuficiente: "
@@ -684,7 +809,7 @@ def plot_station_municipality_dispersion(
     )
     ax.set_title(
         "Dispersão municipal "
-        f"por posto - {product}"
+        f"por posto - {series_label}"
     )
     ax.set_xlabel(
         "Intervalo interquartil "
@@ -752,12 +877,18 @@ def plot_station_brand_median(
         )
     )
 
+    product_frame, series_label = (
+        _single_unit_subset(
+            brands,
+            product,
+        )
+    )
+    sufficient = sufficient.loc[
+        product_frame.index
+    ]
     frame = (
-        brands.loc[
-            brands[
-                "produto"
-            ].eq(product)
-            & sufficient
+        product_frame.loc[
+            sufficient
         ]
         .copy()
     )
@@ -767,7 +898,7 @@ def plot_station_brand_median(
             output,
             (
                 "Mediana observada "
-                f"por bandeira - {product}"
+                f"por bandeira - {series_label}"
             ),
             (
                 "Amostra insuficiente "
@@ -806,7 +937,7 @@ def plot_station_brand_median(
     )
     ax.set_title(
         "Mediana observada "
-        f"por bandeira - {product}"
+        f"por bandeira - {series_label}"
     )
     ax.set_xlabel(
         "Mediana do preço observado"
