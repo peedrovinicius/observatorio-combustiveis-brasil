@@ -131,3 +131,30 @@ saídas analíticas
 ```
 
 As fixtures não entram em `data/`, não são publicadas e não são usadas nos resultados do projeto. O objetivo é validar a integração entre componentes sem depender da rede ou da disponibilidade momentânea do portal da ANP.
+
+
+## Qualidade do código e cobertura
+
+O CI executa `ruff check .` antes da suíte de testes. O Ruff bloqueia erros de importação, imports mortos e erros sintáticos cobertos pelas regras configuradas no `pyproject.toml`.
+
+A cobertura é medida com branch coverage sobre `src/`. A baseline observada ao ativar o controle foi de 77%, e o projeto exige no mínimo 75% para impedir regressões sem transformar pequenas oscilações em falha artificial.
+
+## PostgreSQL real no CI
+
+Além dos testes de contrato SQL, o CI sobe um serviço PostgreSQL 16 real e executa `tests/integration/test_postgres_live.py`.
+
+O teste cria um bundle sintético dos dois modelos, executa o loader completo, aplica schemas, constraints, `COPY` e views, e confirma registros nas duas tabelas fato e na view agregada.
+
+## Smoke das fontes oficiais da ANP
+
+O workflow `.github/workflows/anp-smoke.yml` pode ser disparado manualmente e também roda semanalmente.
+
+Ele valida ao vivo:
+
+- a página histórica e os quatro escopos esperados;
+- a página de dados abertos por posto;
+- a presença das famílias mínimas de 2026;
+- acesso HTTP aos recursos descobertos;
+- assinatura de ZIP/XLSX e conteúdo CSV sem baixar integralmente cada arquivo.
+
+Esse workflow é separado do CI normal para que uma indisponibilidade externa da ANP não bloqueie todo commit local.

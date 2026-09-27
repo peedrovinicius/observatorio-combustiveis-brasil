@@ -27,6 +27,7 @@ A fonte principal é a Agência Nacional do Petróleo, Gás Natural e Biocombust
 
 - ingestão reproduzível de dados oficiais da ANP;
 - rastreabilidade com origem, horário, tamanho e SHA-256;
+- manifestos de transformação para as camadas agregada e por posto;
 - tratamento e validação com Python e pandas;
 - série agregada para Brasil, regiões, estados e municípios;
 - segunda camada no grão por posto, produto, unidade de medida e data de coleta;
@@ -38,7 +39,9 @@ A fonte principal é a Agência Nacional do Petróleo, Gás Natural e Biocombust
 - relatório web estático em `docs/`;
 - medidas DAX, tema e especificação visual para Power BI;
 - auditoria explícita de linhas excluídas e sobreposições entre fontes;
-- testes unitários e integração offline do fluxo analítico.
+- testes unitários e integração offline do fluxo analítico;
+- Ruff, cobertura mínima e integração PostgreSQL real no CI;
+- smoke test agendado contra as fontes oficiais da ANP.
 
 ## Arquitetura de dados
 

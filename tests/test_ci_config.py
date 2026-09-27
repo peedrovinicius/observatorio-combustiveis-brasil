@@ -49,3 +49,32 @@ def test_ci_runs_matplotlib_headless() -> None:
     workflow = _workflow()
 
     assert "MPLBACKEND: Agg" in workflow
+
+
+
+def test_ci_runs_lint_coverage_and_postgres() -> None:
+    workflow = _workflow()
+
+    assert "python -m ruff check ." in workflow
+    assert "--cov=src" in workflow
+    assert "postgres:16-alpine" in workflow
+    assert (
+        "tests/integration/test_postgres_live.py"
+        in workflow
+    )
+
+
+def test_anp_smoke_workflow_is_scheduled_and_manual() -> None:
+    workflow = (
+        PROJECT_ROOT
+        / ".github"
+        / "workflows"
+        / "anp-smoke.yml"
+    ).read_text(
+        encoding="utf-8",
+    )
+
+    assert "workflow_dispatch:" in workflow
+    assert "schedule:" in workflow
+    assert "python -m src.anp_smoke" in workflow
+    assert "contents: read" in workflow

@@ -18,3 +18,10 @@ O manifesto processado registra o hash do manifesto raw que originou a transform
 Uma planilha sem tabela reconhecível impede a substituição do lote inteiro. Arquivos derivados, como `precos_semanais_2026.csv`, e arquivos de outras camadas não são removidos por essa rotina.
 
 Os CSVs históricos processados são derivados reconstruíveis e não devem ser editados manualmente.
+
+
+## Camada por posto
+
+A consolidação por posto publica `precos_postos_2026.csv` e `station_transform_manifest.json` no mesmo bundle transacional da auditoria `reports/station_ingestion_audit_2026.json`.
+
+O manifesto liga a base processada ao `data/raw/open_data/manifest.json` por SHA-256 e registra os hashes da base consolidada e da auditoria. Não edite esses artefatos manualmente; reexecute `python -m src.station_data` para reconstruí-los.

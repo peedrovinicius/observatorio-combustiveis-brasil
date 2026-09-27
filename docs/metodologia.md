@@ -166,3 +166,12 @@ Essa barreira impede que uma alteração local, corrupção de arquivo ou resíd
 
 
 A lista de XLSX usada pela inspeção e transformação vem do manifesto já validado. A presença de outros arquivos no diretório raw não amplia implicitamente o conjunto de entrada.
+
+
+## 12. Proveniência da consolidação por posto
+
+A camada por posto publica `data/processed/station_transform_manifest.json` junto de `precos_postos_2026.csv` e da auditoria de ingestão.
+
+O manifesto registra o SHA-256 do `data/raw/open_data/manifest.json` usado na consolidação e, para a base consolidada e a auditoria, nome, tamanho e SHA-256. A base registra ainda número de linhas e colunas.
+
+Qualidade, modelagem dimensional e analytics por posto verificam esse manifesto antes de ler `precos_postos_2026.csv`. Alteração manual do CSV, da auditoria ou do manifesto raw invalida a cadeia e bloqueia a etapa seguinte.

@@ -288,3 +288,28 @@ python -m src.consolidate
 ```
 
 A transformação publica os CSVs e o manifesto processado como um único bundle com rollback.
+
+
+## Verificação ao vivo das fontes ANP
+
+Para verificar a disponibilidade e a estrutura atual das fontes sem executar o pipeline completo:
+
+```powershell
+python -m src.anp_smoke
+```
+
+O comando consulta as páginas oficiais, valida a descoberta dos escopos e famílias esperados e lê apenas uma amostra dos recursos para confirmar o tipo de conteúdo.
+
+No GitHub, o mesmo controle está em `ANP Smoke`, com execução manual e agendada.
+
+## Proveniência da camada por posto
+
+Após `python -m src.station_data`, o bundle inclui:
+
+```text
+data/processed/precos_postos_2026.csv
+data/processed/station_transform_manifest.json
+reports/station_ingestion_audit_2026.json
+```
+
+Os três artefatos são publicados de forma transacional. As etapas de qualidade, modelo e analytics recusam a base se os hashes não corresponderem ao manifesto raw atual.

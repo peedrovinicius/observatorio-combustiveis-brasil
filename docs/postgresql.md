@@ -178,3 +178,19 @@ Isso permite evoluir os scripts com blocos `DO`, funções e textos contendo pon
 
 
 Se um arquivo terminar com string, identificador, comentário em bloco ou delimitador `$tag$` aberto, a carga falha antes de executar o trecho incompleto.
+
+
+## Validação PostgreSQL no CI
+
+O workflow principal possui um job dedicado com PostgreSQL 16 em serviço isolado.
+
+O teste de integração:
+
+1. gera CSVs sintéticos válidos para as duas estrelas;
+2. executa as mesmas validações pré-carga do loader;
+3. cria schemas e constraints em PostgreSQL real;
+4. carrega as oito tabelas por `COPY`;
+5. cria as views;
+6. consulta as duas fatos e `vw_precos_semanais`.
+
+Isso complementa os testes unitários do parser SQL e dos contratos CSV com uma prova real do caminho de carga.
