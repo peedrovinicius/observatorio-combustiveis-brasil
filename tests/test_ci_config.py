@@ -15,8 +15,10 @@ def _workflow() -> str:
 def test_ci_uses_current_official_actions() -> None:
     workflow = _workflow()
 
-    assert "actions/checkout@v7" in workflow
-    assert "actions/setup-python@v7" in workflow
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in workflow
+    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in workflow
+    assert "# v7.0.1" in workflow
+    assert "# v7.0.0" in workflow
     assert "actions/checkout@v4" not in workflow
     assert "actions/setup-python@v5" not in workflow
 
