@@ -614,7 +614,7 @@ def test_ratio_rejects_ambiguous_fuel_class() -> None:
             "produto": [
                 "ETANOL HIDRATADO",
                 "GASOLINA COMUM",
-                "GASOLINA PREMIUM",
+                "GASOLINA C COMUM",
             ],
             "unidade_medida": [
                 "R$/L",
@@ -634,3 +634,58 @@ def test_ratio_rejects_ambiguous_fuel_class() -> None:
     )
 
     assert result.empty
+
+
+def test_ratio_ignores_non_common_gasoline() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-02-08",
+                "2026-02-08",
+                "2026-02-08",
+            ],
+            "data_final": [
+                "2026-02-14",
+                "2026-02-14",
+                "2026-02-14",
+            ],
+            "nivel_geografico": [
+                "municipio",
+                "municipio",
+                "municipio",
+            ],
+            "uf": ["CE", "CE", "CE"],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "produto": [
+                "ETANOL HIDRATADO",
+                "GASOLINA COMUM",
+                "GASOLINA PREMIUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
+                "R$/L",
+            ],
+            "preco_medio_revenda": [
+                4.50,
+                6.20,
+                7.10,
+            ],
+        }
+    )
+
+    result = build_ethanol_gasoline_ratio(
+        frame
+    )
+
+    assert len(result) == 1
+    assert round(
+        result.iloc[0][
+            "preco_gasolina_comum"
+        ],
+        2,
+    ) == 6.20
