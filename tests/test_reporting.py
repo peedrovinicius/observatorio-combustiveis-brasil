@@ -100,7 +100,7 @@ def test_insights_use_data_values() -> None:
     assert "+1,50%" in text
     assert "CE: R$ 6,30" in text
     assert (
-        "Postos distintos por CNPJ: **100**"
+        "Postos distintos: **100**"
         in text
     )
 
@@ -110,9 +110,17 @@ def test_station_dispersion_chart_is_created(
 ) -> None:
     frame = pd.DataFrame(
         {
+            "data_coleta": [
+                "2026-09-20",
+                "2026-09-20",
+            ],
             "produto": [
                 "GASOLINA COMUM",
                 "GASOLINA COMUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
             ],
             "uf": [
                 "CE",
@@ -154,8 +162,14 @@ def test_station_brand_chart_handles_insufficient_sample(
 ) -> None:
     frame = pd.DataFrame(
         {
+            "data_coleta": [
+                "2026-09-20"
+            ],
             "produto": [
                 "GASOLINA COMUM"
+            ],
+            "unidade_medida": [
+                "R$/L"
             ],
             "bandeira": ["A"],
             "postos_distintos": [1],
