@@ -10,7 +10,7 @@ from .atomic_outputs import (
 )
 from .config import RAW_DIR
 from .provenance import (
-    verify_history_provenance,
+    verified_history_files,
 )
 
 
@@ -77,19 +77,10 @@ def inspect(path: Path) -> dict[str, object]:
 
 
 def main() -> None:
-    manifest = (
-        verify_history_provenance(
+    files = (
+        verified_history_files(
             RAW_DIR
         )
-    )
-    files = sorted(
-        RAW_DIR
-        / str(
-            item["filename"]
-        )
-        for item in manifest[
-            "files"
-        ]
     )
 
     report = {path.name: inspect(path) for path in sorted(files)}
