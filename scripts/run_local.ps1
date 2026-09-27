@@ -51,7 +51,7 @@ Invoke-NativeChecked -FilePath $python -Arguments @("-m", "src.pipeline") -Descr
 
 if ($WithPostgres) {
     Write-Step "Iniciando PostgreSQL"
-    Invoke-NativeChecked -FilePath "docker" -Arguments @("compose", "up", "-d", "postgres") -Description "Inicialização do PostgreSQL"
+    Invoke-NativeChecked -FilePath "docker" -Arguments @("compose", "up", "-d", "--wait", "--wait-timeout", "60", "postgres") -Description "Inicialização do PostgreSQL"
 
     Write-Step "Carregando PostgreSQL"
     Invoke-NativeChecked -FilePath $python -Arguments @("-m", "src.load_postgres") -Description "Carga do PostgreSQL"
