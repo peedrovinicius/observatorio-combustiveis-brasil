@@ -468,27 +468,33 @@ def _classify_fuel(
     )
 
     ethanol = (
-        normalized.str.contains(
-            "ETANOL",
-            na=False,
-        )
-        & normalized.str.contains(
-            "HIDRAT",
-            na=False,
+        normalized.eq("ETANOL")
+        | (
+            normalized.str.contains(
+                "ETANOL",
+                na=False,
+            )
+            & normalized.str.contains(
+                "HIDRAT",
+                na=False,
+            )
         )
     )
     gasoline = (
-        normalized.str.contains(
-            "GASOLINA",
-            na=False,
-        )
-        & normalized.str.contains(
-            "COMUM",
-            na=False,
-        )
-        & ~normalized.str.contains(
-            "ADITIV",
-            na=False,
+        normalized.eq("GASOLINA")
+        | (
+            normalized.str.contains(
+                "GASOLINA",
+                na=False,
+            )
+            & normalized.str.contains(
+                "COMUM",
+                na=False,
+            )
+            & ~normalized.str.contains(
+                "ADITIV",
+                na=False,
+            )
         )
     )
 
