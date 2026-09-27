@@ -743,7 +743,7 @@ def test_open_data_batch_install_failure_restores_all(
 
 
 
-def test_open_data_batch_removes_dataset_missing_from_new_manifest(
+def test_open_data_batch_rejects_coverage_regression(
     tmp_path: Path,
 ) -> None:
     current = (
@@ -762,59 +762,66 @@ def test_open_data_batch_removes_dataset_missing_from_new_manifest(
         "antigo-obsoleto",
         encoding="utf-8",
     )
+    old_manifest = {
+        "files": [
+            {
+                "dataset": "atual",
+                "filename": "atual.csv",
+            },
+            {
+                "dataset": "obsoleto",
+                "filename": "obsoleto.csv",
+            },
+        ]
+    }
     (
         tmp_path
         / "manifest.json"
     ).write_text(
         json.dumps(
-            {
-                "files": [
-                    {
-                        "dataset": "atual",
-                        "filename": "atual.csv",
-                    },
-                    {
-                        "dataset": "obsoleto",
-                        "filename": "obsoleto.csv",
-                    },
-                ]
-            }
+            old_manifest
         ),
         encoding="utf-8",
     )
 
-    _replace_open_data_batch(
-        tmp_path,
-        [
-            _batch_item(
-                "atual",
-                "NOVO",
-            )
-        ],
-        {
-            "manifest_version": 1,
-            "source": "ANP",
-        },
-    )
+    with pytest.raises(
+        ValueError,
+        match="cobertura de dados abertos regrediu",
+    ):
+        _replace_open_data_batch(
+            tmp_path,
+            [
+                _batch_item(
+                    "atual",
+                    "NOVO",
+                )
+            ],
+            {
+                "manifest_version": 1,
+                "source": "ANP",
+            },
+        )
 
-    assert current.exists()
-    assert "NOVO" in current.read_text(
-        encoding="utf-8",
+    assert (
+        current.read_text(
+            encoding="utf-8",
+        )
+        == "antigo-atual"
     )
-    assert not stale.exists()
-
-    manifest = json.loads(
+    assert (
+        stale.read_text(
+            encoding="utf-8",
+        )
+        == "antigo-obsoleto"
+    )
+    assert json.loads(
         (
             tmp_path
             / "manifest.json"
         ).read_text(
             encoding="utf-8",
         )
-    )
-    assert [
-        item["dataset"]
-        for item in manifest["files"]
-    ] == ["atual"]
+    ) == old_manifest
 
 
 def test_open_data_batch_rejects_invalid_previous_manifest(
