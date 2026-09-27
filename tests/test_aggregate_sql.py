@@ -42,7 +42,7 @@ def test_ratio_sql_uses_latest_comparable_week() -> None:
         in sql
     )
     assert (
-        "PARTITION BY uf, municipio"
+        "PARTITION BY uf, municipio, unidade_medida"
         in sql
     )
     assert (
@@ -61,10 +61,42 @@ def test_latest_ranking_queries_expose_product_and_date() -> None:
     )
 
     assert (
-        "-- 2. Preço médio por UF na última semana disponível de cada produto."
+        "-- 2. Preço médio por UF na última semana disponível de cada produto e unidade."
         in sql
     )
     assert (
-        "-- 3. Municípios com maiores preços na última semana de cada produto."
+        "-- 3. Municípios com maiores preços na última semana de cada produto e unidade."
+        in sql
+    )
+
+
+def test_monthly_query_partitions_by_product_unit() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+
+    assert (
+        "GROUP BY\n        ano,\n        mes,\n        produto,\n        unidade_medida"
+        in sql
+    )
+    assert (
+        sql.count(
+            "PARTITION BY produto, unidade_medida"
+        )
+        >= 2
+    )
+
+
+def test_ratio_sql_requires_same_unit() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+
+    assert (
+        "GROUP BY\n        data_inicial,\n        uf,\n        municipio,\n        unidade_medida"
+        in sql
+    )
+    assert (
+        "PARTITION BY uf, municipio, unidade_medida"
         in sql
     )
