@@ -10,7 +10,7 @@ import pandas as pd
 
 from .config import PROCESSED_DIR, RAW_DIR
 from .provenance import (
-    verify_history_provenance,
+    verified_history_files,
 )
 
 HEADER_HINTS = {
@@ -502,19 +502,10 @@ def transform_workbooks(
     )
 
 def main() -> None:
-    manifest = (
-        verify_history_provenance(
+    excel_files = (
+        verified_history_files(
             RAW_DIR
         )
-    )
-    excel_files = sorted(
-        RAW_DIR
-        / str(
-            item["filename"]
-        )
-        for item in manifest[
-            "files"
-        ]
     )
 
     outputs = transform_workbooks(
