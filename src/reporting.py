@@ -13,6 +13,9 @@ from .config import (
     PROJECT_ROOT,
     REPORTS_DIR,
 )
+from .freshness import (
+    validate_artifact_freshness,
+)
 from .publication_contract import (
     PUBLIC_IMAGE_FILES,
 )
@@ -1607,6 +1610,14 @@ def main() -> None:
         REPORTS_DIR
         / "quality_postos_2026.json"
     )
+    aggregate_source_path = (
+        PROCESSED_DIR
+        / "precos_semanais_2026.csv"
+    )
+    station_source_path = (
+        PROCESSED_DIR
+        / "precos_postos_2026.csv"
+    )
 
     required = [
         kpis_path,
@@ -1617,6 +1628,8 @@ def main() -> None:
         station_brands_path,
         aggregate_quality_path,
         station_quality_path,
+        aggregate_source_path,
+        station_source_path,
     ]
     missing = [
         path
@@ -1641,6 +1654,45 @@ def main() -> None:
             station_quality_path,
             "dados por posto",
         )
+    )
+
+    validate_artifact_freshness(
+        [aggregate_source_path],
+        [aggregate_quality_path],
+        "Qualidade agregada",
+        "Reexecute python -m src.quality.",
+    )
+    validate_artifact_freshness(
+        [station_source_path],
+        [station_quality_path],
+        "Qualidade por posto",
+        "Reexecute python -m src.station_quality.",
+    )
+    validate_artifact_freshness(
+        [
+            aggregate_source_path,
+            aggregate_quality_path,
+        ],
+        [
+            kpis_path,
+            monthly_path,
+            ranking_path,
+            ratio_path,
+        ],
+        "Analytics agregados",
+        "Reexecute python -m src.analytics.",
+    )
+    validate_artifact_freshness(
+        [
+            station_source_path,
+            station_quality_path,
+        ],
+        [
+            station_distribution_path,
+            station_brands_path,
+        ],
+        "Analytics por posto",
+        "Reexecute python -m src.station_analytics.",
     )
 
     kpis = pd.read_csv(
