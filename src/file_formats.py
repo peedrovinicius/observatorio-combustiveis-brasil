@@ -12,10 +12,26 @@ class UnsupportedDownloadError(ValueError):
 
 
 def _looks_like_html(content: bytes) -> bool:
-    sample = content[:4096].lstrip().lower()
+    sample = content[:4096]
+    if sample.startswith(
+        b"\xef\xbb\xbf"
+    ):
+        sample = sample[3:]
+
+    sample = sample.lstrip().lower()
     return (
-        sample.startswith(b"<!doctype html")
-        or sample.startswith(b"<html")
+        sample.startswith(
+            b"<!doctype html"
+        )
+        or sample.startswith(
+            b"<html"
+        )
+        or sample.startswith(
+            b"<head"
+        )
+        or sample.startswith(
+            b"<body"
+        )
         or b"<html" in sample[:512]
     )
 
