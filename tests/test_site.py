@@ -331,3 +331,19 @@ def test_common_gasoline_ignores_premium() -> None:
         )
         == "GASOLINA COMUM"
     )
+
+
+def test_common_gasoline_accepts_plain_alias() -> None:
+    products = pd.Series(
+        [
+            "GASOLINA",
+            "ETANOL",
+        ]
+    )
+
+    assert (
+        _common_gasoline(
+            products
+        )
+        == "GASOLINA"
+    )
