@@ -16,6 +16,7 @@ from .config import (
 
 MANIFEST_VERSION = 1
 TRANSFORM_MANIFEST_VERSION = 1
+STATION_TRANSFORM_MANIFEST_VERSION = 1
 
 HISTORY_SCOPES = {
     "brasil",
@@ -1120,3 +1121,256 @@ def verify_history_transform_provenance(
     return sorted(
         verified
     )
+
+
+
+def verify_station_transform_provenance(
+    processed_root: Path,
+    raw_root: Path,
+    reports_root: Path,
+) -> dict[str, object]:
+    raw_manifest = (
+        raw_root
+        / "manifest.json"
+    )
+    verify_open_data_provenance(
+        raw_root
+    )
+
+    manifest_path = (
+        processed_root
+        / "station_transform_manifest.json"
+    )
+    if not manifest_path.exists():
+        raise FileNotFoundError(
+            "Manifesto da transformação por posto "
+            f"ausente: {manifest_path}"
+        )
+
+    try:
+        manifest = json.loads(
+            manifest_path.read_text(
+                encoding="utf-8",
+            )
+        )
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "Manifesto da transformação por posto "
+            "não é JSON válido."
+        ) from exc
+
+    if not isinstance(
+        manifest,
+        dict,
+    ):
+        raise ValueError(
+            "Manifesto da transformação por posto "
+            "deve ser um objeto JSON."
+        )
+    if (
+        manifest.get(
+            "manifest_version"
+        )
+        != STATION_TRANSFORM_MANIFEST_VERSION
+    ):
+        raise ValueError(
+            "Versão do manifesto da transformação "
+            "por posto não suportada."
+        )
+
+    source_digest = str(
+        manifest.get(
+            "source_manifest_sha256",
+            "",
+        )
+    ).strip().casefold()
+    if not SHA256_PATTERN.fullmatch(
+        source_digest
+    ):
+        raise ValueError(
+            "SHA-256 do manifesto raw por posto "
+            "é inválido."
+        )
+    if (
+        source_digest
+        != _sha256_file(
+            raw_manifest
+        )
+    ):
+        raise ValueError(
+            "Manifesto raw por posto atual diverge "
+            "daquele usado na consolidação."
+        )
+
+    files = manifest.get(
+        "files"
+    )
+    if (
+        not isinstance(
+            files,
+            list,
+        )
+        or len(
+            files
+        )
+        != 2
+    ):
+        raise ValueError(
+            "Manifesto da transformação por posto "
+            "deve registrar exatamente base e auditoria."
+        )
+
+    records: dict[
+        str,
+        dict[str, object],
+    ] = {}
+    for item in files:
+        if not isinstance(
+            item,
+            dict,
+        ):
+            raise ValueError(
+                "Registro inválido no manifesto "
+                "da transformação por posto."
+            )
+        role = str(
+            item.get(
+                "role",
+                "",
+            )
+        ).strip()
+        if (
+            not role
+            or role in records
+        ):
+            raise ValueError(
+                "Papel ausente ou duplicado no "
+                "manifesto da transformação por posto."
+            )
+        records[
+            role
+        ] = item
+
+    expected_roles = {
+        "station_data",
+        "ingestion_audit",
+    }
+    if set(
+        records
+    ) != expected_roles:
+        raise ValueError(
+            "Manifesto da transformação por posto "
+            "não contém os artefatos esperados."
+        )
+
+    data_item = records[
+        "station_data"
+    ]
+    data_path, relative = (
+        _verify_file_record(
+            processed_root,
+            data_item.get(
+                "filename"
+            ),
+            data_item.get(
+                "bytes"
+            ),
+            data_item.get(
+                "sha256"
+            ),
+        )
+    )
+    if (
+        relative
+        != "precos_postos_2026.csv"
+    ):
+        raise ValueError(
+            "Arquivo de dados por posto inesperado "
+            "no manifesto de transformação."
+        )
+
+    rows = data_item.get(
+        "rows"
+    )
+    columns = data_item.get(
+        "columns"
+    )
+    if (
+        not isinstance(
+            rows,
+            int,
+        )
+        or rows < 0
+        or not isinstance(
+            columns,
+            int,
+        )
+        or columns <= 0
+    ):
+        raise ValueError(
+            "Dimensões inválidas para a base "
+            "por posto no manifesto."
+        )
+
+    audit_item = records[
+        "ingestion_audit"
+    ]
+    audit_path, audit_relative = (
+        _verify_file_record(
+            reports_root,
+            audit_item.get(
+                "filename"
+            ),
+            audit_item.get(
+                "bytes"
+            ),
+            audit_item.get(
+                "sha256"
+            ),
+        )
+    )
+    if (
+        audit_relative
+        != "station_ingestion_audit_2026.json"
+    ):
+        raise ValueError(
+            "Arquivo de auditoria por posto inesperado "
+            "no manifesto de transformação."
+        )
+
+    try:
+        audit = json.loads(
+            audit_path.read_text(
+                encoding="utf-8",
+            )
+        )
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "Auditoria de ingestão por posto "
+            "não é JSON válido."
+        ) from exc
+
+    if not isinstance(
+        audit,
+        dict,
+    ):
+        raise ValueError(
+            "Auditoria de ingestão por posto "
+            "deve ser um objeto JSON."
+        )
+    if (
+        audit.get(
+            "linhas_finais"
+        )
+        != rows
+    ):
+        raise ValueError(
+            "Quantidade de linhas da auditoria por posto "
+            "diverge do manifesto de transformação."
+        )
+
+    return {
+        "manifest": manifest,
+        "station_data": data_path,
+        "ingestion_audit": audit_path,
+    }
