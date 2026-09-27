@@ -44,6 +44,8 @@ Média aritmética das observações semanais oficiais contidas no mês, calcula
 
 É um **indicador derivado pelo projeto** e não substitui a série mensal oficial da ANP.
 
+No gráfico de tendência, unidades diferentes são apresentadas em painéis separados. Séries em R$/L e R$/m³, por exemplo, nunca compartilham o mesmo eixo de preço.
+
 ### Ranking por UF e município
 
 Os rankings utilizam o preço médio publicado na semana mais recente disponível para cada combinação de produto e unidade de medida. A data não é escolhida globalmente entre todos os combustíveis ou unidades.

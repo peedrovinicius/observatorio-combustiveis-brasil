@@ -99,3 +99,8 @@ Os gráficos por posto exibem a data da coleta da série selecionada. Se o arqui
 A dispersão municipal mostra até 12 municípios com maior intervalo interquartil entre os que possuem pelo menos 3 postos. A comparação por bandeira mostra até 10 grupos de maior cobertura entre os que atingem a regra de amostra mínima. Esses critérios aparecem no próprio gráfico e nas legendas do site.
 
 O gráfico de etanol e gasolina é diferente: cada município usa sua semana comparável mais recente, podendo haver datas distintas entre municípios. A comparação continua restrita à mesma unidade de medida.
+
+
+## Unidades na tendência mensal
+
+A tendência mensal separa as séries por unidade de medida dentro do mesmo PNG. Produtos medidos em R$/L, R$/m³ ou outra unidade não compartilham o mesmo eixo de preço. Isso evita comparar visualmente grandezas incompatíveis.

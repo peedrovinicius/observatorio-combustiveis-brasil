@@ -616,7 +616,7 @@ def build_site(
           alt="Tendência dos preços médios no Brasil em 2026"
         />
         <figcaption>
-          Indicador mensal derivado das observações semanais oficiais.
+          Indicador mensal derivado das observações semanais oficiais, com painéis separados por unidade de medida.
         </figcaption>
       </figure>
     </section>

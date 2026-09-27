@@ -912,3 +912,45 @@ def test_station_chart_titles_expose_selection_semantics() -> None:
     assert "coleta 20/09/2026" in dispersion
     assert "10 maiores coberturas" in brands
     assert "coleta 20/09/2026" in brands
+
+
+def test_monthly_unit_groups_never_mix_units() -> None:
+    from src.reporting import (
+        _monthly_unit_groups,
+    )
+
+    frame = pd.DataFrame(
+        {
+            "produto": [
+                "GASOLINA",
+                "ETANOL",
+                "GNV",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/L",
+                "R$/M3",
+            ],
+            "media_das_semanas": [
+                6.2,
+                4.5,
+                5.0,
+            ],
+        }
+    )
+
+    groups = _monthly_unit_groups(
+        frame
+    )
+
+    assert len(groups) == 2
+    for unit, group in groups:
+        assert (
+            group[
+                "unidade_medida"
+            ]
+            .astype("string")
+            .str.strip()
+            .eq(unit)
+            .all()
+        )

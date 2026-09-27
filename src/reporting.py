@@ -551,6 +551,56 @@ def build_insights_markdown(
     )
 
 
+def _monthly_unit_groups(
+    frame: pd.DataFrame,
+) -> list[
+    tuple[
+        str,
+        pd.DataFrame,
+    ]
+]:
+    if (
+        frame.empty
+        or "unidade_medida"
+        not in frame.columns
+    ):
+        return [
+            (
+                "",
+                frame.copy(),
+            )
+        ]
+
+    working = frame.copy()
+    unit_key = (
+        working["unidade_medida"]
+        .astype("string")
+        .fillna("")
+        .str.strip()
+    )
+    working[
+        "_unidade_visual"
+    ] = unit_key
+
+    return [
+        (
+            str(unit),
+            group.drop(
+                columns=[
+                    "_unidade_visual"
+                ]
+            ).copy(),
+        )
+        for unit, group in (
+            working.groupby(
+                "_unidade_visual",
+                sort=True,
+                dropna=False,
+            )
+        )
+    ]
+
+
 def plot_monthly_trend(
     monthly: pd.DataFrame,
     output: Path,
@@ -604,62 +654,69 @@ def plot_monthly_trend(
         )
         return
 
-    fig, ax = plt.subplots(
-        figsize=(11, 6)
+    unit_groups = (
+        _monthly_unit_groups(
+            frame
+        )
     )
-    group_columns = [
-        "produto",
-        *(
-            ["unidade_medida"]
-            if "unidade_medida"
-            in frame.columns
-            else []
+    figure_height = max(
+        6,
+        4 * len(unit_groups),
+    )
+    fig, axes = plt.subplots(
+        nrows=len(unit_groups),
+        ncols=1,
+        figsize=(
+            11,
+            figure_height,
         ),
-    ]
-    for key, group in (
-        frame.groupby(
-            group_columns,
-            dropna=False,
-        )
-    ):
-        if isinstance(
-            key,
-            tuple,
-        ):
-            product = str(key[0])
-            unit = (
-                ""
-                if pd.isna(key[1])
-                else str(key[1]).strip()
-            )
-        else:
-            product = str(key)
-            unit = ""
-        label = (
-            f"{product} · {unit}"
-            if unit
-            else product
-        )
-        group = group.sort_values(
-            "periodo"
-        )
-        ax.plot(
-            group["periodo"],
-            group[
-                "media_das_semanas"
-            ],
-            marker="o",
-            label=label,
-        )
+        squeeze=False,
+    )
 
-    ax.set_title(
+    for row_index, (
+        unit,
+        unit_frame,
+    ) in enumerate(
+        unit_groups
+    ):
+        ax = axes[
+            row_index
+        ][0]
+        for product, group in (
+            unit_frame.groupby(
+                "produto",
+                dropna=False,
+            )
+        ):
+            group = group.sort_values(
+                "periodo"
+            )
+            ax.plot(
+                group["periodo"],
+                group[
+                    "media_das_semanas"
+                ],
+                marker="o",
+                label=str(product),
+            )
+
+        unit_label = (
+            unit
+            if unit
+            else "unidade não informada"
+        )
+        ax.set_title(
+            f"Unidade: {unit_label}"
+        )
+        ax.set_xlabel("Mês")
+        ax.set_ylabel(
+            "Preço médio de revenda"
+        )
+        ax.legend()
+
+    fig.suptitle(
         "Tendência mensal derivada das observações semanais - Brasil"
     )
-    ax.set_xlabel("Mês")
-    ax.set_ylabel(
-        "Preço médio de revenda"
-    )
-    ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
     fig.savefig(
