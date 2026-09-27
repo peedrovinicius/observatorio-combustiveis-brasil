@@ -315,3 +315,19 @@ def test_kpi_cards_expose_unit_when_available() -> None:
     )
 
     assert "GASOLINA COMUM · R$/L" in cards
+
+
+def test_common_gasoline_ignores_premium() -> None:
+    products = pd.Series(
+        [
+            "GASOLINA PREMIUM",
+            "GASOLINA COMUM",
+        ]
+    )
+
+    assert (
+        _common_gasoline(
+            products
+        )
+        == "GASOLINA COMUM"
+    )
