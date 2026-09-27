@@ -415,6 +415,38 @@ def verify_open_data_provenance(
                 ),
             )
         )
+        raw_path = Path(
+            raw_relative
+        )
+        if (
+            raw_path.name
+            != raw_relative
+        ):
+            raise ValueError(
+                "Arquivo raw por posto deve "
+                "estar na raiz da camada."
+            )
+        if (
+            raw_path.stem
+            != dataset
+        ):
+            raise ValueError(
+                "Nome do arquivo raw não "
+                "corresponde ao dataset lógico."
+            )
+        expected_suffix = (
+            ".csv"
+            if kind == "csv"
+            else ".zip"
+        )
+        if (
+            raw_path.suffix.casefold()
+            != expected_suffix
+        ):
+            raise ValueError(
+                "Extensão do arquivo raw não "
+                "corresponde ao formato manifestado."
+            )
 
         extracted = item.get(
             "extracted_files"
@@ -432,6 +464,9 @@ def verify_open_data_provenance(
         extracted_paths: list[
             str
         ] = []
+        extracted_seen: set[
+            str
+        ] = set()
         for extracted_item in extracted:
             if not isinstance(
                 extracted_item,
@@ -462,6 +497,27 @@ def verify_open_data_provenance(
                     "Arquivo extraído manifestado "
                     "não é CSV."
                 )
+            if (
+                Path(
+                    extracted_relative
+                ).parts[0]
+                != dataset
+            ):
+                raise ValueError(
+                    "CSV extraído não pertence "
+                    "ao diretório do dataset lógico."
+                )
+            if (
+                extracted_relative
+                in extracted_seen
+            ):
+                raise ValueError(
+                    "CSV extraído duplicado "
+                    "no manifesto."
+                )
+            extracted_seen.add(
+                extracted_relative
+            )
             extracted_paths.append(
                 extracted_relative
             )
@@ -475,7 +531,10 @@ def verify_open_data_provenance(
                 list,
             )
             or sorted(
-                str(value)
+                str(value).replace(
+                    "\\",
+                    "/",
+                )
                 for value in legacy_paths
             )
             != sorted(
@@ -511,6 +570,28 @@ def verify_open_data_provenance(
         )
         raw_files.add(
             filename
+        )
+
+    actual_raw_files = {
+        path.name
+        for path in root.iterdir()
+        if (
+            path.is_file()
+            and path.suffix.casefold()
+            in {
+                ".csv",
+                ".zip",
+                ".xlsx",
+            }
+        )
+    }
+    if (
+        actual_raw_files
+        != raw_files
+    ):
+        raise ValueError(
+            "Arquivos raw locais por posto não "
+            "correspondem exatamente ao manifesto."
         )
 
     actual_csvs = {
