@@ -308,3 +308,45 @@ def replace_staged_files(
                     str(destination),
                 )
         raise
+
+
+def replace_text_file(
+    destination: Path,
+    content: str,
+    encoding: str = "utf-8",
+) -> Path:
+    if not content:
+        raise ValueError(
+            "Conteúdo textual de saída vazio."
+        )
+
+    destination.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with tempfile.TemporaryDirectory(
+        prefix=".text_file_",
+        dir=destination.parent,
+    ) as temporary:
+        stage = Path(
+            temporary
+        )
+        staged = (
+            stage
+            / destination.name
+        )
+        staged.write_text(
+            content,
+            encoding=encoding,
+        )
+        replace_staged_files(
+            [
+                (
+                    staged,
+                    destination,
+                )
+            ]
+        )
+
+    return destination
