@@ -507,9 +507,8 @@ def _replace_history_batch(
                 backed_up
             ):
                 if backup.exists():
-                    shutil.move(
-                        str(backup),
-                        str(original),
+                    backup.rename(
+                        original
                     )
             raise
 
