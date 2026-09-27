@@ -673,3 +673,64 @@ def test_publish_report_bundle_rejects_empty_insights_before_replacement(
         )
         == "antigo"
     )
+
+
+def test_state_ranking_chart_rejects_mixed_units(
+    tmp_path: Path,
+) -> None:
+    frame = pd.DataFrame(
+        {
+            "produto": [
+                "GASOLINA COMUM",
+                "GASOLINA COMUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/M3",
+            ],
+            "uf": [
+                "CE",
+                "SP",
+            ],
+            "preco_medio_revenda": [
+                6.30,
+                6300.0,
+            ],
+        }
+    )
+    output = tmp_path / "ranking.png"
+
+    plot_state_ranking(
+        frame,
+        output,
+    )
+
+    assert output.exists()
+    assert output.stat().st_size > 0
+
+
+def test_single_unit_subset_rejects_mixed_units() -> None:
+    from src.reporting import (
+        _single_unit_subset,
+    )
+
+    frame = pd.DataFrame(
+        {
+            "produto": [
+                "GASOLINA COMUM",
+                "GASOLINA COMUM",
+            ],
+            "unidade_medida": [
+                "R$/L",
+                "R$/M3",
+            ],
+        }
+    )
+
+    subset, label = _single_unit_subset(
+        frame,
+        "GASOLINA COMUM",
+    )
+
+    assert subset.empty
+    assert "múltiplas unidades" in label
