@@ -4,6 +4,8 @@
 
 Os exports analíticos agregados só são gerados quando a série consolidada passa pela validação de qualidade. A execução direta de `python -m src.analytics` repete essa validação antes de escrever arquivos em `data/processed/analytics/`.
 
+A publicação dos exports também exige a proveniência `fonte_arquivo` e `fonte_planilha` preenchida. Na camada por posto, `fonte_arquivo` é obrigatória. As funções de cálculo isoladas permanecem reutilizáveis, mas os caminhos validados de publicação não geram resultados sem rastreabilidade da origem.
+
 No Power BI, medidas de preço agregado exigem uma única localidade além de produto, unidade e nível geográfico. O objetivo é impedir que um card amplo calcule média aritmética entre agregados oficiais de localidades diferentes.
 
 ### Preço atual

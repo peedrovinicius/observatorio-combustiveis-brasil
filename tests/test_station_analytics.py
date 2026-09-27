@@ -84,6 +84,14 @@ def _sample() -> pd.DataFrame:
                 "B",
                 "C",
             ],
+            "fonte_arquivo": [
+                "postos.csv",
+                "postos.csv",
+                "postos.csv",
+                "postos.csv",
+                "postos.csv",
+                "postos.csv",
+            ],
         }
     )
 
@@ -449,3 +457,19 @@ def test_station_analytics_sort_units_deterministically() -> None:
         "R$ / litro",
         "R$ / m³",
     ]
+
+
+def test_validated_station_analytics_requires_provenance() -> None:
+    frame = _sample().drop(
+        columns=[
+            "fonte_arquivo"
+        ]
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="fonte_arquivo",
+    ):
+        build_validated_station_analytics_exports(
+            frame
+        )

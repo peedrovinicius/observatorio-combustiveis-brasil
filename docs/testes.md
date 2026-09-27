@@ -52,6 +52,7 @@ A suíte verifica, entre outros pontos:
 - relação etanol/gasolina somente entre observações da mesma unidade;
 - bloqueio de grupos ambíguos na relação etanol/gasolina;
 - barreira de qualidade antes dos analytics agregados;
+- proveniência obrigatória antes da publicação dos analytics agregados e por posto;
 - análises por estabelecimento;
 - analytics por posto preservam séries independentes por combinação de produto e unidade de medida;
 - barreira de qualidade antes dos analytics por posto;

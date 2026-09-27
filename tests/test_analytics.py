@@ -104,6 +104,26 @@ def _sample() -> pd.DataFrame:
                 "R$/L",
                 "R$/L",
             ],
+            "fonte_arquivo": [
+                "historico.xlsx",
+                "historico.xlsx",
+                "historico.xlsx",
+                "historico.xlsx",
+                "historico.xlsx",
+                "historico.xlsx",
+                "historico.xlsx",
+                "historico.xlsx",
+            ],
+            "fonte_planilha": [
+                "Dados",
+                "Dados",
+                "Dados",
+                "Dados",
+                "Dados",
+                "Dados",
+                "Dados",
+                "Dados",
+            ],
             "postos_pesquisados": [
                 100,
                 100,
@@ -731,3 +751,19 @@ def test_ratio_accepts_plain_fuel_aliases() -> None:
     )
 
     assert len(result) == 1
+
+
+def test_validated_aggregate_analytics_requires_provenance() -> None:
+    frame = _sample().drop(
+        columns=[
+            "fonte_planilha"
+        ]
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="fonte_planilha",
+    ):
+        build_validated_analytics_exports(
+            frame
+        )

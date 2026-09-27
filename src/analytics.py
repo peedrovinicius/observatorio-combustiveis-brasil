@@ -690,9 +690,46 @@ def build_analytics_exports(
     }
 
 
+def _validate_analytics_provenance(
+    frame: pd.DataFrame,
+) -> None:
+    required = (
+        "fonte_arquivo",
+        "fonte_planilha",
+    )
+    missing = [
+        column
+        for column in required
+        if column not in frame.columns
+    ]
+    if missing:
+        raise ValueError(
+            "Proveniência obrigatória ausente "
+            "nos analytics agregados: "
+            + ", ".join(missing)
+        )
+
+    for column in required:
+        values = (
+            frame[column]
+            .astype("string")
+            .str.strip()
+            .replace("", pd.NA)
+        )
+        if values.isna().any():
+            raise ValueError(
+                "Proveniência obrigatória vazia "
+                "nos analytics agregados: "
+                f"{column}"
+            )
+
+
 def build_validated_analytics_exports(
     frame: pd.DataFrame,
 ) -> dict[str, pd.DataFrame]:
+    _validate_analytics_provenance(
+        frame
+    )
     report = build_quality_report(
         frame
     )

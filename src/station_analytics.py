@@ -460,12 +460,40 @@ def build_station_analytics_exports(
     }
 
 
+def _validate_station_analytics_provenance(
+    frame: pd.DataFrame,
+) -> None:
+    column = "fonte_arquivo"
+    if column not in frame.columns:
+        raise ValueError(
+            "Proveniência obrigatória ausente "
+            "nos analytics por posto: "
+            "fonte_arquivo"
+        )
+
+    values = (
+        frame[column]
+        .astype("string")
+        .str.strip()
+        .replace("", pd.NA)
+    )
+    if values.isna().any():
+        raise ValueError(
+            "Proveniência obrigatória vazia "
+            "nos analytics por posto: "
+            "fonte_arquivo"
+        )
+
+
 def build_validated_station_analytics_exports(
     frame: pd.DataFrame,
 ) -> dict[
     str,
     pd.DataFrame,
 ]:
+    _validate_station_analytics_provenance(
+        frame
+    )
     report = (
         build_station_quality_report(
             frame
