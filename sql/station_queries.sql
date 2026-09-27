@@ -3,7 +3,7 @@
 -- A última coleta é calculada por produto e unidade de medida.
 
 -- Base auxiliar com a última data disponível por produto e unidade de medida.
-WITH ultima_coleta_produto AS (
+WITH ultima_coleta_serie AS (
     SELECT
         f.produto_posto_id,
         MAX(d.data_coleta) AS data_coleta
@@ -21,13 +21,13 @@ SELECT
     pr.unidade_medida,
     COUNT(*) AS observacoes,
     COUNT(DISTINCT p.posto_id) AS postos_distintos,
-    AVG(f.preco_revenda) AS preco_medio,
+    AVG(f.preco_revenda) AS preco_medio_observado,
     PERCENTILE_CONT(0.5)
         WITHIN GROUP (
             ORDER BY f.preco_revenda
-        ) AS mediana,
-    MIN(f.preco_revenda) AS preco_minimo,
-    MAX(f.preco_revenda) AS preco_maximo,
+        ) AS mediana_observada,
+    MIN(f.preco_revenda) AS preco_minimo_observado,
+    MAX(f.preco_revenda) AS preco_maximo_observado,
     PERCENTILE_CONT(0.25)
         WITHIN GROUP (
             ORDER BY f.preco_revenda
@@ -68,7 +68,7 @@ JOIN dim_produto_posto pr
     ON pr.produto_posto_id = f.produto_posto_id
 JOIN dim_posto p
     ON p.posto_id = f.posto_id
-JOIN ultima_coleta_produto u
+JOIN ultima_coleta_serie u
     ON u.produto_posto_id = f.produto_posto_id
     AND u.data_coleta = d.data_coleta
 GROUP BY
@@ -80,11 +80,11 @@ GROUP BY
 ORDER BY
     pr.produto,
     pr.unidade_medida,
-    preco_medio DESC;
+    preco_medio_observado DESC;
 
 
 -- Comparação entre bandeiras na última coleta por produto e unidade de medida.
-WITH ultima_coleta_produto AS (
+WITH ultima_coleta_serie AS (
     SELECT
         f.produto_posto_id,
         MAX(d.data_coleta) AS data_coleta
@@ -113,20 +113,26 @@ SELECT
     ) AS postos_distintos,
     AVG(
         f.preco_revenda
-    ) AS preco_medio,
+    ) AS preco_medio_observado,
     PERCENTILE_CONT(0.5)
         WITHIN GROUP (
             ORDER BY f.preco_revenda
-        ) AS mediana,
+        ) AS mediana_observada,
     MIN(
         f.preco_revenda
-    ) AS preco_minimo,
+    ) AS preco_minimo_observado,
     MAX(
         f.preco_revenda
-    ) AS preco_maximo,
+    ) AS preco_maximo_observado,
     STDDEV_SAMP(
         f.preco_revenda
-    ) AS desvio_padrao
+    ) AS desvio_padrao,
+    (
+        COUNT(*) >= 5
+        AND COUNT(
+            DISTINCT p.posto_id
+        ) >= 3
+    ) AS amostra_suficiente
 FROM fato_precos_postos f
 JOIN dim_data_coleta d
     ON d.data_coleta_id = f.data_coleta_id
@@ -134,7 +140,7 @@ JOIN dim_produto_posto pr
     ON pr.produto_posto_id = f.produto_posto_id
 JOIN dim_posto p
     ON p.posto_id = f.posto_id
-JOIN ultima_coleta_produto u
+JOIN ultima_coleta_serie u
     ON u.produto_posto_id = f.produto_posto_id
     AND u.data_coleta = d.data_coleta
 GROUP BY
@@ -150,19 +156,14 @@ GROUP BY
     ),
     pr.produto,
     pr.unidade_medida
-HAVING
-    COUNT(*) >= 5
-    AND COUNT(
-        DISTINCT p.posto_id
-    ) >= 3
 ORDER BY
     pr.produto,
     pr.unidade_medida,
-    preco_medio;
+    preco_medio_observado;
 
 
 -- Postos com menor preço na última coleta por produto e unidade de medida.
-WITH ultima_coleta_produto AS (
+WITH ultima_coleta_serie AS (
     SELECT
         f.produto_posto_id,
         MAX(d.data_coleta) AS data_coleta
@@ -188,7 +189,7 @@ JOIN dim_produto_posto pr
     ON pr.produto_posto_id = f.produto_posto_id
 JOIN dim_posto p
     ON p.posto_id = f.posto_id
-JOIN ultima_coleta_produto u
+JOIN ultima_coleta_serie u
     ON u.produto_posto_id = f.produto_posto_id
     AND u.data_coleta = d.data_coleta
 ORDER BY

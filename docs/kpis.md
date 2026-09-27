@@ -133,6 +133,8 @@ O resumo anual por produto registra:
 
 A comparação por bandeira informa quantidade de observações e de postos. O campo `amostra_suficiente` sinaliza grupos com pelo menos 5 observações e 3 postos distintos.
 
+O SQL de referência preserva também os grupos abaixo desse limiar e expõe o mesmo campo `amostra_suficiente`, em vez de removê-los com filtro. A decisão de ocultar ou destacar amostras pequenas fica na camada de apresentação.
+
 A sinalização é uma regra de apresentação do projeto, não uma definição estatística universal.
 
 ### Última coleta

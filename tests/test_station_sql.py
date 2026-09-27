@@ -20,7 +20,7 @@ def test_station_sql_uses_latest_date_per_product_unit() -> None:
 
     assert (
         sql.count(
-            "WITH ultima_coleta_produto AS"
+            "WITH ultima_coleta_serie AS"
         )
         == 3
     )
@@ -46,13 +46,18 @@ def test_station_sql_brand_sample_matches_python_rule() -> None:
         in sql
     )
     assert ") >= 3" in sql
+    assert "AS amostra_suficiente" in sql
+    assert "HAVING" not in sql
 
 
 def test_station_sql_distribution_exposes_expected_metrics() -> None:
     sql = _sql()
 
     expected = (
-        "mediana",
+        "preco_medio_observado",
+        "mediana_observada",
+        "preco_minimo_observado",
+        "preco_maximo_observado",
         "q1",
         "q3",
         "intervalo_interquartil",
@@ -63,3 +68,10 @@ def test_station_sql_distribution_exposes_expected_metrics() -> None:
 
     for metric in expected:
         assert metric in sql
+
+
+def test_station_sql_uses_series_cte_name() -> None:
+    sql = _sql()
+
+    assert "ultima_coleta_serie" in sql
+    assert "ultima_coleta_produto" not in sql
