@@ -90,3 +90,12 @@ A mesma lista de cinco imagens é compartilhada entre a geração do snapshot e 
 ## Coerência do estado versionado
 
 O repositório também testa que a publicação versionada é tudo ou nada. Se qualquer parte do snapshot público estiver presente, o conjunto completo deve existir: relatório de resultados, HTML, assets do site, cinco imagens do snapshot e bloco de resultados no README. Quando nenhum snapshot foi revisado e versionado, os marcadores do README permanecem vazios.
+
+
+## Recorte explícito nos gráficos
+
+Os gráficos por posto exibem a data da coleta da série selecionada. Se o arquivo analítico trouxer múltiplas datas para o mesmo produto e unidade em um gráfico que exige comparação simultânea, a visualização é substituída por uma mensagem de indisponibilidade.
+
+A dispersão municipal mostra até 12 municípios com maior intervalo interquartil entre os que possuem pelo menos 3 postos. A comparação por bandeira mostra até 10 grupos de maior cobertura entre os que atingem a regra de amostra mínima. Esses critérios aparecem no próprio gráfico e nas legendas do site.
+
+O gráfico de etanol e gasolina é diferente: cada município usa sua semana comparável mais recente, podendo haver datas distintas entre municípios. A comparação continua restrita à mesma unidade de medida.

@@ -178,6 +178,69 @@ def _ranking_period_label(
     return "semana " + label
 
 
+def _station_collection_label(
+    frame: pd.DataFrame,
+) -> str | None:
+    if (
+        frame.empty
+        or "data_coleta"
+        not in frame.columns
+    ):
+        return None
+
+    dates = (
+        pd.to_datetime(
+            frame["data_coleta"],
+            errors="coerce",
+        )
+        .dropna()
+        .dt.normalize()
+        .unique()
+    )
+    if len(dates) != 1:
+        return (
+            "coleta ambígua"
+            if len(dates) > 1
+            else None
+        )
+
+    return (
+        "coleta "
+        + pd.Timestamp(
+            dates[0]
+        ).strftime(
+            "%d/%m/%Y"
+        )
+    )
+
+
+def _station_dispersion_title(
+    series_label: str,
+    collection_label: str | None,
+) -> str:
+    title = (
+        "12 maiores dispersões municipais "
+        f"por posto - {series_label}"
+    )
+    if collection_label:
+        title += f" - {collection_label}"
+    return title
+
+
+def _station_brand_title(
+    series_label: str,
+    collection_label: str | None,
+) -> str:
+    title = (
+        "Mediana por bandeira entre "
+        "as 10 maiores coberturas - "
+        f"{series_label}"
+    )
+    if collection_label:
+        title += f" - {collection_label}"
+    return title
+
+
 def _location_label(
     row: pd.Series,
 ) -> str:
@@ -804,8 +867,22 @@ def plot_ethanol_gasoline(
         ],
         alpha=0.65,
     )
+    unit_label = ""
+    if "unidade_medida" in frame.columns:
+        unit = (
+            frame["unidade_medida"]
+            .astype("string")
+            .fillna("")
+            .str.strip()
+            .iloc[0]
+        )
+        if unit:
+            unit_label = f" - {unit}"
+
     ax.set_title(
-        "Etanol x gasolina comum - municípios"
+        "Etanol x gasolina comum - "
+        "última semana comparável por município"
+        + unit_label
     )
     ax.set_xlabel(
         "Preço médio da gasolina comum"
@@ -911,6 +988,25 @@ def plot_station_municipality_dispersion(
         )
         return
 
+    collection_label = (
+        _station_collection_label(
+            product_frame
+        )
+    )
+    if collection_label == (
+        "coleta ambígua"
+    ):
+        _save_empty_chart(
+            output,
+            "Dispersão municipal por posto",
+            (
+                "Gráfico indisponível: "
+                "a série contém múltiplas "
+                "datas de coleta."
+            ),
+        )
+        return
+
     frame = (
         product_frame.loc[
             product_frame[
@@ -975,8 +1071,10 @@ def plot_station_municipality_dispersion(
         ],
     )
     ax.set_title(
-        "Dispersão municipal "
-        f"por posto - {series_label}"
+        _station_dispersion_title(
+            series_label,
+            collection_label,
+        )
     )
     ax.set_xlabel(
         "Intervalo interquartil "
@@ -1069,6 +1167,25 @@ def plot_station_brand_median(
         )
         return
 
+    collection_label = (
+        _station_collection_label(
+            product_frame
+        )
+    )
+    if collection_label == (
+        "coleta ambígua"
+    ):
+        _save_empty_chart(
+            output,
+            "Mediana observada por bandeira",
+            (
+                "Gráfico indisponível: "
+                "a série contém múltiplas "
+                "datas de coleta."
+            ),
+        )
+        return
+
     sufficient = sufficient.loc[
         product_frame.index
     ]
@@ -1122,8 +1239,10 @@ def plot_station_brand_median(
         ],
     )
     ax.set_title(
-        "Mediana observada "
-        f"por bandeira - {series_label}"
+        _station_brand_title(
+            series_label,
+            collection_label,
+        )
     )
     ax.set_xlabel(
         "Mediana do preço observado"

@@ -661,12 +661,18 @@ def build_site(
           src="assets/ranking_ufs_gasolina.png"
           alt="Ranking dos maiores preços médios por UF"
         />
+        <figcaption>
+          Até 10 UFs na mesma semana, produto e unidade de medida.
+        </figcaption>
       </figure>
       <figure class="panel">
         <img
           src="assets/etanol_gasolina_municipios.png"
           alt="Relação entre preços de etanol e gasolina por município"
         />
+        <figcaption>
+          Cada município usa sua semana comparável mais recente, sempre na mesma unidade.
+        </figcaption>
       </figure>
     </section>
 
@@ -682,7 +688,7 @@ def build_site(
             alt="Dispersão dos preços observados por município"
           />
           <figcaption>
-            Intervalo interquartil em municípios com pelo menos 3 postos.
+            Até 12 municípios com maior intervalo interquartil, entre recortes com pelo menos 3 postos, na mesma coleta.
           </figcaption>
         </figure>
         <figure class="panel">
@@ -691,7 +697,7 @@ def build_site(
             alt="Mediana dos preços observados por bandeira"
           />
           <figcaption>
-            Comparação exibida somente para bandeiras com amostra suficiente.
+            Até 10 bandeiras com maior cobertura entre as que atingem a amostra mínima, na mesma coleta.
           </figcaption>
         </figure>
       </div>

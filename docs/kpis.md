@@ -103,6 +103,8 @@ IQR = Q3 - Q1
 
 O intervalo interquartil resume a dispersão dos 50% centrais da distribuição.
 
+No relatório visual, o gráfico de dispersão seleciona até 12 municípios com maior IQR entre os recortes com pelo menos 3 postos. O título informa que se trata desse subconjunto e inclui a data da coleta.
+
 ### Desvio padrão
 
 Calculado sobre as observações individuais de preço no recorte.
@@ -146,6 +148,8 @@ A comparação por bandeira informa quantidade de observações e de postos. O c
 O SQL de referência preserva também os grupos abaixo desse limiar e expõe o mesmo campo `amostra_suficiente`, em vez de removê-los com filtro. A decisão de ocultar ou destacar amostras pequenas fica na camada de apresentação.
 
 A sinalização é uma regra de apresentação do projeto, não uma definição estatística universal.
+
+No relatório visual, entre as bandeiras com amostra suficiente são exibidas até 10 com maior cobertura por postos e observações. As barras são ordenadas pela mediana para leitura comparativa, e o título inclui a data da coleta.
 
 ### Última coleta
 

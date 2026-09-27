@@ -859,3 +859,56 @@ def test_insights_reject_ranking_with_multiple_dates() -> None:
 
     assert "múltiplas datas" in markdown
     assert "### 5 maiores preços médios" not in markdown
+
+
+def test_station_collection_label_requires_single_date() -> None:
+    from src.reporting import (
+        _station_collection_label,
+    )
+
+    single = pd.DataFrame(
+        {
+            "data_coleta": [
+                "2026-09-20",
+                "2026-09-20",
+            ]
+        }
+    )
+    mixed = pd.DataFrame(
+        {
+            "data_coleta": [
+                "2026-09-13",
+                "2026-09-20",
+            ]
+        }
+    )
+
+    assert (
+        _station_collection_label(single)
+        == "coleta 20/09/2026"
+    )
+    assert (
+        _station_collection_label(mixed)
+        == "coleta ambígua"
+    )
+
+
+def test_station_chart_titles_expose_selection_semantics() -> None:
+    from src.reporting import (
+        _station_brand_title,
+        _station_dispersion_title,
+    )
+
+    dispersion = _station_dispersion_title(
+        "GASOLINA · R$/L",
+        "coleta 20/09/2026",
+    )
+    brands = _station_brand_title(
+        "GASOLINA · R$/L",
+        "coleta 20/09/2026",
+    )
+
+    assert "12 maiores dispersões municipais" in dispersion
+    assert "coleta 20/09/2026" in dispersion
+    assert "10 maiores coberturas" in brands
+    assert "coleta 20/09/2026" in brands
