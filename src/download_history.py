@@ -21,6 +21,9 @@ from .config import (
     ANP_HISTORICAL_PAGE,
     RAW_DIR,
 )
+from .http_integrity import (
+    validate_download_payload,
+)
 from .file_formats import (
     UnsupportedDownloadError,
     detect_download_kind,
@@ -638,6 +641,11 @@ def _download_xlsx_resource(
         allow_redirects=True,
     )
     response.raise_for_status()
+    validate_download_payload(
+        response.content,
+        response.headers,
+        response.url,
+    )
 
     try:
         kind = detect_download_kind(
@@ -721,6 +729,15 @@ def _download_xlsx_resource(
             allow_redirects=True,
         )
         if not file_response.ok:
+            continue
+
+        try:
+            validate_download_payload(
+                file_response.content,
+                file_response.headers,
+                file_response.url,
+            )
+        except RuntimeError:
             continue
 
         try:
