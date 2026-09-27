@@ -644,6 +644,24 @@ def _replace_open_data_batch(
                 )
                 for path in extracted
             ]
+            finalized_record[
+                "extracted_files"
+            ] = [
+                {
+                    "path": str(
+                        path.relative_to(
+                            stage_root
+                        )
+                    ),
+                    "bytes": (
+                        path.stat().st_size
+                    ),
+                    "sha256": _sha256(
+                        path.read_bytes()
+                    ),
+                }
+                for path in extracted
+            ]
             manifest_records.append(
                 finalized_record
             )
@@ -974,6 +992,18 @@ def main() -> None:
                             "",
                         )
                     ),
+                    "etag": (
+                        response.headers.get(
+                            "ETag",
+                            "",
+                        )
+                    ),
+                    "last_modified": (
+                        response.headers.get(
+                            "Last-Modified",
+                            "",
+                        )
+                    ),
                     "collected_at_utc": (
                         collected_at
                     ),
@@ -982,6 +1012,7 @@ def main() -> None:
         )
 
     manifest_base = {
+        "manifest_version": 1,
         "source": (
             "Agência Nacional do Petróleo, "
             "Gás Natural e Biocombustíveis - ANP"
