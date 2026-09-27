@@ -551,16 +551,22 @@ def build_ethanol_gasoline_ratio(
         "unidade_medida",
         "combustivel_comparavel",
     ]
-    class_size = (
+    distinct_prices = (
         cities.groupby(
             class_key,
             dropna=False,
-        )["produto"]
-        .transform("size")
+        )["preco_medio_revenda"]
+        .transform("nunique")
     )
     cities = cities.loc[
-        class_size.eq(1)
+        distinct_prices.eq(1)
     ].copy()
+    cities = (
+        cities.drop_duplicates(
+            subset=class_key,
+            keep="first",
+        )
+    )
 
     if cities.empty:
         return pd.DataFrame(
