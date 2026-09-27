@@ -725,6 +725,18 @@ def main() -> None:
                         "",
                     )
                 ),
+                "etag": (
+                    response.headers.get(
+                        "ETag",
+                        "",
+                    )
+                ),
+                "last_modified": (
+                    response.headers.get(
+                        "Last-Modified",
+                        "",
+                    )
+                ),
                 "bytes": len(
                     response.content
                 ),
@@ -738,7 +750,11 @@ def main() -> None:
         )
 
     manifest_data = {
+        "manifest_version": 1,
         "source": "ANP",
+        "source_page": (
+            ANP_HISTORICAL_PAGE
+        ),
         "series": (
             "Levantamento de Preços "
             "- série histórica semanal"
