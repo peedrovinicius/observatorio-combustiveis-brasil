@@ -116,23 +116,135 @@ def _parse_decimal(series: pd.Series) -> pd.Series:
     return series.map(parse)
 
 
+def normalize_cnpj(
+    series: pd.Series,
+) -> pd.Series:
+    normalized = (
+        series.astype("string")
+        .str.upper()
+        .str.replace(
+            r"[^0-9A-Z]",
+            "",
+            regex=True,
+        )
+        .str.strip()
+        .replace("", pd.NA)
+    )
+    valid = normalized.str.fullmatch(
+        r"[0-9A-Z]{12}[0-9]{2}",
+        na=False,
+    )
+    return normalized.where(
+        valid,
+        pd.NA,
+    )
+
+
+def _nonblank_station_field(
+    frame: pd.DataFrame,
+    column: str,
+) -> pd.Series:
+    if column not in frame.columns:
+        return pd.Series(
+            False,
+            index=frame.index,
+            dtype="boolean",
+        )
+    return (
+        frame[column]
+        .astype("string")
+        .str.strip()
+        .replace("", pd.NA)
+        .notna()
+    )
+
+
+def station_identity_issue_masks(
+    frame: pd.DataFrame,
+) -> dict[str, pd.Series]:
+    if "cnpj_revenda" in frame.columns:
+        raw_cnpj = (
+            frame["cnpj_revenda"]
+            .astype("string")
+            .str.strip()
+            .replace("", pd.NA)
+        )
+        normalized_cnpj = (
+            normalize_cnpj(
+                frame["cnpj_revenda"]
+            )
+        )
+    else:
+        raw_cnpj = pd.Series(
+            pd.NA,
+            index=frame.index,
+            dtype="string",
+        )
+        normalized_cnpj = pd.Series(
+            pd.NA,
+            index=frame.index,
+            dtype="string",
+        )
+
+    needs_fallback = (
+        normalized_cnpj.isna()
+    )
+    has_revenda = (
+        _nonblank_station_field(
+            frame,
+            "revenda",
+        )
+    )
+    has_logradouro = (
+        _nonblank_station_field(
+            frame,
+            "logradouro",
+        )
+    )
+    has_numero = (
+        _nonblank_station_field(
+            frame,
+            "numero",
+        )
+    )
+
+    return {
+        "invalid_cnpj": (
+            raw_cnpj.notna()
+            & normalized_cnpj.isna()
+        ),
+        "fallback_incomplete": (
+            needs_fallback
+            & ~(
+                has_revenda
+                & has_logradouro
+                & has_numero
+            )
+        ),
+        "fallback_missing_revenda": (
+            needs_fallback
+            & ~has_revenda
+        ),
+        "fallback_missing_logradouro": (
+            needs_fallback
+            & ~has_logradouro
+        ),
+        "fallback_missing_numero": (
+            needs_fallback
+            & ~has_numero
+        ),
+    }
+
+
 def station_identity(
     frame: pd.DataFrame,
 ) -> pd.Series:
     index = frame.index
 
     if "cnpj_revenda" in frame.columns:
-        cnpj = (
+        cnpj = normalize_cnpj(
             frame["cnpj_revenda"]
-            .astype("string")
-            .str.replace(
-                r"\D",
-                "",
-                regex=True,
-            )
-            .str.strip()
         )
-        cnpj = cnpj.mask(cnpj.eq(""))
     else:
         cnpj = pd.Series(
             pd.NA,
@@ -256,9 +368,34 @@ def deduplicate_station_rows(
         for key in BUSINESS_KEY
         if key in working.columns
     ]
-    working = working.drop_duplicates(
-        subset=keys,
-        keep="last",
+    issues = station_identity_issue_masks(
+        working
+    )
+    reliable_identity = ~issues[
+        "fallback_incomplete"
+    ]
+
+    reliable = (
+        working.loc[
+            reliable_identity
+        ]
+        .drop_duplicates(
+            subset=keys,
+            keep="last",
+        )
+    )
+    unreliable = working.loc[
+        ~reliable_identity
+    ]
+    working = pd.concat(
+        [
+            reliable,
+            unreliable,
+        ],
+        ignore_index=False,
+    ).sort_values(
+        "_source_order",
+        kind="stable",
     )
 
     return working.drop(
@@ -455,6 +592,20 @@ def _overlap_audit(
         }
 
     working = frame.copy()
+    issues = station_identity_issue_masks(
+        working
+    )
+    working = working.loc[
+        ~issues[
+            "fallback_incomplete"
+        ]
+    ].copy()
+    if working.empty:
+        return {
+            "grupos_sobrepostos": 0,
+            "grupos_com_preco_divergente": 0,
+        }
+
     working["_posto_identidade"] = (
         station_identity(working)
     )
@@ -535,6 +686,38 @@ def consolidate_station_data_with_audit(
         sort=False,
     )
     rows_before_dedup = len(combined)
+    identity_issues = (
+        station_identity_issue_masks(
+            combined
+        )
+    )
+    identity_audit = {
+        "cnpjs_invalidos": int(
+            identity_issues[
+                "invalid_cnpj"
+            ].sum()
+        ),
+        "fallbacks_incompletos": int(
+            identity_issues[
+                "fallback_incomplete"
+            ].sum()
+        ),
+        "fallbacks_sem_revenda": int(
+            identity_issues[
+                "fallback_missing_revenda"
+            ].sum()
+        ),
+        "fallbacks_sem_logradouro": int(
+            identity_issues[
+                "fallback_missing_logradouro"
+            ].sum()
+        ),
+        "fallbacks_sem_numero": int(
+            identity_issues[
+                "fallback_missing_numero"
+            ].sum()
+        ),
+    }
     overlap = _overlap_audit(
         combined
     )
@@ -582,6 +765,7 @@ def consolidate_station_data_with_audit(
             - len(combined)
         ),
         **overlap,
+        **identity_audit,
         "linhas_finais": int(
             len(combined)
         ),
@@ -596,9 +780,20 @@ def consolidate_station_data_with_audit(
         )
         for item in file_audits
     )
+    identity_issue_total = (
+        identity_audit[
+            "cnpjs_invalidos"
+        ]
+        + identity_audit[
+            "fallbacks_incompletos"
+        ]
+    )
     audit["status"] = (
         "passed"
-        if invalid_total == 0
+        if (
+            invalid_total == 0
+            and identity_issue_total == 0
+        )
         else "review"
     )
 

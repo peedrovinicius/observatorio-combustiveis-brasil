@@ -8,7 +8,9 @@ from .config import REPORTS_DIR
 from .station_data import (
     BUSINESS_KEY,
     STATION_OUTPUT,
+    normalize_cnpj,
     station_identity,
+    station_identity_issue_masks,
 )
 
 REQUIRED_COLUMNS = {
@@ -85,11 +87,14 @@ def build_station_quality_report(
     )
 
     if "cnpj_revenda" in working.columns:
-        cnpj = (
+        raw_cnpj = (
             working["cnpj_revenda"]
             .astype("string")
             .str.strip()
             .replace("", pd.NA)
+        )
+        cnpj = normalize_cnpj(
+            working["cnpj_revenda"]
         )
         report[
             "postos_distintos_cnpj"
@@ -97,8 +102,64 @@ def build_station_quality_report(
             cnpj.dropna().nunique()
         )
         report["cnpj_ausente"] = int(
-            cnpj.isna().sum()
+            raw_cnpj.isna().sum()
         )
+    else:
+        raw_cnpj = pd.Series(
+            pd.NA,
+            index=working.index,
+            dtype="string",
+        )
+        cnpj = pd.Series(
+            pd.NA,
+            index=working.index,
+            dtype="string",
+        )
+        report[
+            "postos_distintos_cnpj"
+        ] = 0
+        report["cnpj_ausente"] = int(
+            len(working)
+        )
+
+    identity_issues = (
+        station_identity_issue_masks(
+            working
+        )
+    )
+    report["cnpj_invalido"] = int(
+        identity_issues[
+            "invalid_cnpj"
+        ].sum()
+    )
+    report[
+        "fallback_identidade_incompleta"
+    ] = int(
+        identity_issues[
+            "fallback_incomplete"
+        ].sum()
+    )
+    report[
+        "fallback_sem_revenda"
+    ] = int(
+        identity_issues[
+            "fallback_missing_revenda"
+        ].sum()
+    )
+    report[
+        "fallback_sem_logradouro"
+    ] = int(
+        identity_issues[
+            "fallback_missing_logradouro"
+        ].sum()
+    )
+    report[
+        "fallback_sem_numero"
+    ] = int(
+        identity_issues[
+            "fallback_missing_numero"
+        ].sum()
+    )
 
     if "bandeira" in working.columns:
         bandeira = (
@@ -192,6 +253,12 @@ def build_station_quality_report(
         ],
         report[
             "duplicidades_chave_negocio"
+        ],
+        report[
+            "cnpj_invalido"
+        ],
+        report[
+            "fallback_identidade_incompleta"
         ],
         *required_nulls.values(),
     ]

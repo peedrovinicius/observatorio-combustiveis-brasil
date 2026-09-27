@@ -30,6 +30,10 @@ A suíte verifica, entre outros pontos:
 - qualidade agregada;
 - identidade geográfica mínima por nível antes da modelagem;
 - identidade e deduplicação de postos;
+- suporte ao CNPJ alfanumérico sem remoção de letras;
+- bloqueio de CNPJ inválido e fallback de posto incompleto;
+- preservação de linhas com fallback incompleto sem deduplicação indevida;
+- exclusão de fallback incompleto da auditoria de sobreposição;
 - precedência entre publicações sobrepostas;
 - auditoria de exclusões agregadas e por posto;
 - publicação transacional das bases consolidadas junto das respectivas auditorias;

@@ -33,7 +33,9 @@ etanol_gasolina_ultimas_4_semanas/dados.csv
 
 Essa referência evita perder a origem quando ZIPs diferentes contêm CSVs com o mesmo nome e permite aplicar a precedência de forma determinística.
 
-Se o CNPJ estiver disponível, ele identifica o posto. Quando não estiver, é usado um identificador de fallback composto por UF, município, revenda, logradouro e número.
+Se o CNPJ estiver disponível e possuir estrutura válida, ele identifica o posto. O projeto aceita tanto o formato numérico tradicional quanto o CNPJ alfanumérico de 14 posições, preservando letras na identidade técnica.
+
+Quando o CNPJ estiver ausente, é usado um identificador de fallback composto por UF, município, revenda, logradouro e número. Para que esse fallback seja considerado confiável, revenda, logradouro e número precisam estar preenchidos. Linhas com fallback incompleto não são deduplicadas entre si e são bloqueadas pela validação de qualidade antes da modelagem.
 
 ## Grão
 
@@ -72,3 +74,18 @@ Essa camada permite:
 - análise de cobertura da pesquisa.
 
 Os agregados nacionais, regionais e estaduais oficiais continuam sendo preservados na tabela fato agregada, pois possuem metodologia própria de ponderação.
+
+
+## Integridade da identidade do posto
+
+A auditoria de ingestão registra separadamente:
+
+- CNPJs com estrutura inválida;
+- fallbacks incompletos;
+- fallbacks sem revenda;
+- fallbacks sem logradouro;
+- fallbacks sem número.
+
+Registros com fallback incompleto permanecem separados na consolidação e não participam da contagem de sobreposições, pois não existe identidade suficiente para concluir que duas linhas representam o mesmo estabelecimento.
+
+A validação de qualidade posterior trata CNPJ inválido e fallback incompleto como problemas bloqueantes antes da modelagem.

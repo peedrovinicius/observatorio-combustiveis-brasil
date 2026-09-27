@@ -11,6 +11,7 @@ from src.station_data import (
     consolidate_station_data,
     consolidate_station_data_with_audit,
     deduplicate_station_rows,
+    normalize_cnpj,
     prepare_station_file,
     source_priority,
     source_reference,
@@ -734,3 +735,179 @@ def test_station_dimension_persists_unique_station_key() -> None:
             "posto_chave"
         ].str.len().eq(64).all()
     )
+
+
+
+def test_normalize_cnpj_supports_alphanumeric_format() -> None:
+    values = pd.Series(
+        [
+            "00.000.000/E08G-12",
+            "00000000E08G12",
+        ]
+    )
+
+    normalized = normalize_cnpj(
+        values
+    )
+
+    assert normalized.tolist() == [
+        "00000000E08G12",
+        "00000000E08G12",
+    ]
+
+
+def test_station_identity_preserves_alphanumeric_cnpj_letters() -> None:
+    frame = pd.DataFrame(
+        {
+            "cnpj_revenda": [
+                "00.000.000/E08G-12",
+                "00.000.000/F08G-12",
+            ],
+            "uf": [
+                "CE",
+                "CE",
+            ],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO B",
+            ],
+        }
+    )
+
+    identities = station_identity(
+        frame
+    )
+
+    assert (
+        identities.iloc[0]
+        == "cnpj:00000000E08G12"
+    )
+    assert (
+        identities.iloc[1]
+        == "cnpj:00000000F08G12"
+    )
+    assert (
+        identities.iloc[0]
+        != identities.iloc[1]
+    )
+
+
+def test_deduplication_keeps_incomplete_fallback_rows_separate() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_coleta": pd.to_datetime(
+                [
+                    "2026-09-20",
+                    "2026-09-20",
+                ]
+            ),
+            "cnpj_revenda": [
+                pd.NA,
+                pd.NA,
+            ],
+            "uf": [
+                "CE",
+                "CE",
+            ],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO A",
+            ],
+            "logradouro": [
+                pd.NA,
+                pd.NA,
+            ],
+            "numero": [
+                pd.NA,
+                pd.NA,
+            ],
+            "produto": [
+                "GASOLINA",
+                "GASOLINA",
+            ],
+            "unidade_medida": [
+                "R$ / litro",
+                "R$ / litro",
+            ],
+            "preco_revenda": [
+                6.10,
+                6.20,
+            ],
+        }
+    )
+
+    result = deduplicate_station_rows(
+        frame
+    )
+
+    assert len(result) == 2
+
+
+
+def test_consolidation_does_not_merge_incomplete_station_fallbacks(
+    tmp_path: Path,
+) -> None:
+    first = [
+        "NE",
+        "CE",
+        "FORTALEZA",
+        "POSTO A",
+        "",
+        "",
+        "",
+        "",
+        "CENTRO",
+        "",
+        "GASOLINA",
+        "20/09/2026",
+        "6,10",
+        "",
+        "R$ / litro",
+        "BRANCA",
+    ]
+    second = first.copy()
+    second[12] = "6,20"
+
+    _write_sample(
+        tmp_path
+        / "dados.csv",
+        [
+            first,
+            second,
+        ],
+    )
+
+    frame, audit = (
+        consolidate_station_data_with_audit(
+            tmp_path
+        )
+    )
+
+    assert len(frame) == 2
+    assert (
+        audit[
+            "fallbacks_incompletos"
+        ]
+        == 2
+    )
+    assert (
+        audit[
+            "grupos_sobrepostos"
+        ]
+        == 0
+    )
+    assert (
+        audit[
+            "linhas_removidas_por_sobreposicao"
+        ]
+        == 0
+    )
+    assert audit["status"] == "review"
