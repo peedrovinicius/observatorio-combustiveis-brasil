@@ -965,11 +965,18 @@ def test_history_batch_install_failure_restores_all_scopes_and_manifest(
     original_move = (
         history.shutil.move
     )
+    failed = False
 
     def failing_move(
         source: str,
         destination: str,
     ):
+        nonlocal failed
+        if failed:
+            raise AssertionError(
+                "rollback não deve reutilizar shutil.move"
+            )
+
         source_path = Path(
             source
         )
@@ -982,6 +989,7 @@ def test_history_batch_install_failure_restores_all_scopes_and_manifest(
             and destination_path.parent
             == tmp_path
         ):
+            failed = True
             raise OSError(
                 "falha simulada"
             )
