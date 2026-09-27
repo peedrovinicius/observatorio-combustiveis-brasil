@@ -44,6 +44,7 @@ A suíte verifica, entre outros pontos:
 - modelo estrela agregado;
 - barreira de qualidade antes da modelagem agregada;
 - modelo estrela por posto;
+- presença da proveniência `fonte_arquivo` antes da modelagem por posto;
 - KPIs agregados;
 - barreira de qualidade antes dos analytics agregados;
 - análises por estabelecimento;

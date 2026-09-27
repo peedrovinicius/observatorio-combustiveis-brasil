@@ -107,6 +107,8 @@ Antes da criação de `dim_data_coleta`, `dim_produto_posto`, `dim_posto` e `fat
 
 Essa separação impede que um conjunto com problemas estruturais seja materializado em dimensões, fatos ou posteriormente carregado no PostgreSQL.
 
+A modelagem exige também `fonte_arquivo` para cada observação. Esse campo preserva a rastreabilidade até o arquivo bruto e faz parte do contrato da `fato_precos_postos`. Se ele estiver ausente, a modelagem falha com erro explícito de contrato antes de construir os CSVs.
+
 
 ## Unicidade do grão nas tabelas fato
 

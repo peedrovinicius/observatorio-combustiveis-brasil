@@ -28,8 +28,8 @@ def _valid_station_frame() -> pd.DataFrame:
                 "POSTO B",
             ],
             "cnpj_revenda": [
-                "00.000.000/0001-00",
-                "00.000.000/0002-00",
+                "00.000.001/0001-36",
+                "00.000.002/0001-80",
             ],
             "produto": [
                 "GASOLINA",
@@ -112,6 +112,22 @@ def test_validated_station_model_blocks_duplicate_business_key() -> None:
             "falhou na validação "
             "de qualidade"
         ),
+    ):
+        build_validated_station_model(
+            frame
+        )
+
+
+def test_validated_station_model_requires_source_provenance() -> None:
+    frame = _valid_station_frame().drop(
+        columns=[
+            "fonte_arquivo"
+        ]
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="fonte_arquivo",
     ):
         build_validated_station_model(
             frame

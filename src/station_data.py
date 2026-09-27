@@ -52,6 +52,14 @@ REQUIRED_SOURCE_COLUMNS = {
     "unidade_medida",
 }
 
+STATION_MODEL_REQUIRED_COLUMNS = {
+    "data_coleta",
+    "produto",
+    "unidade_medida",
+    "preco_revenda",
+    "fonte_arquivo",
+}
+
 BUSINESS_KEY = [
     "data_coleta",
     "_posto_identidade",
@@ -847,6 +855,19 @@ def consolidate_station_data(
 def build_station_star_schema(
     frame: pd.DataFrame,
 ) -> dict[str, pd.DataFrame]:
+    missing = (
+        STATION_MODEL_REQUIRED_COLUMNS
+        - set(frame.columns)
+    )
+    if missing:
+        raise ValueError(
+            "Colunas obrigatórias ausentes "
+            "para o modelo por posto: "
+            + ", ".join(
+                sorted(missing)
+            )
+        )
+
     working = frame.copy()
 
     dim_data = pd.DataFrame(
