@@ -467,13 +467,23 @@ def _classify_fuel(
         dtype="string",
     )
 
-    ethanol = normalized.str.contains(
-        "ETANOL",
-        na=False,
+    ethanol = (
+        normalized.str.contains(
+            "ETANOL",
+            na=False,
+        )
+        & normalized.str.contains(
+            "HIDRAT",
+            na=False,
+        )
     )
     gasoline = (
         normalized.str.contains(
             "GASOLINA",
+            na=False,
+        )
+        & normalized.str.contains(
+            "COMUM",
             na=False,
         )
         & ~normalized.str.contains(
