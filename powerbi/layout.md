@@ -22,6 +22,13 @@ O tema oficial está em `powerbi/theme.json`.
 
 Objetivo: responder rapidamente qual é o cenário atual.
 
+### Filtros
+
+- produto;
+- unidade de medida;
+- nível geográfico;
+- localidade.
+
 ### Linha superior
 
 Cinco cartões:
@@ -58,6 +65,7 @@ Visuais:
 Filtros:
 
 - produto;
+- unidade de medida;
 - UF;
 - município;
 - período.
@@ -102,9 +110,16 @@ Visuais:
 - relação etanol/gasolina;
 - dispersão entre preços;
 - ranking por município;
-- filtro por UF.
+- filtro por UF;
+- filtro por unidade de medida.
 
 A página apresenta a razão observada. Qualquer interpretação de vantagem econômica deve ter hipótese explícita.
+
+## Regra de série analítica
+
+Medidas agregadas de preço devem operar em uma única combinação de produto, unidade de medida, nível geográfico e localidade. Comparações entre localidades devem ocorrer por categorias do visual, não por média aritmética entre agregados oficiais.
+
+Na camada por posto, produto e unidade de medida também definem conjuntamente a série. A última data de coleta é obtida para a série inteira e não separadamente por cada município ou bandeira.
 
 ## Convenções
 
