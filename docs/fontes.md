@@ -101,3 +101,12 @@ A camada por posto também registra exclusões e sobreposições em:
 ```text
 reports/station_ingestion_audit_2026.json
 ```
+
+
+### Verificação ativa de integridade
+
+Os manifestos têm versão explícita e não funcionam apenas como registro histórico. Antes da inspeção e transformação agregada, o pipeline confere tamanho e SHA-256 de cada XLSX histórico e exige correspondência exata entre os quatro escopos manifestados e os arquivos locais.
+
+Na camada por posto, o pipeline confere o arquivo raw baixado e também cada CSV extraído de ZIP, com tamanho e SHA-256 próprios. CSVs adicionais não manifestados bloqueiam a consolidação.
+
+Os registros também preservam, quando fornecidos pelo servidor, `ETag` e `Last-Modified`. Esses cabeçalhos são metadados auxiliares; a integridade local é decidida pelo SHA-256 e pelo tamanho.
