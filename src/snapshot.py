@@ -9,8 +9,10 @@ from .config import (
     PROJECT_ROOT,
     REPORTS_DIR,
 )
+from .publication_contract import (
+    PUBLIC_IMAGE_FILES,
+)
 from .publish_readme import (
-    README_IMAGES,
     update_readme_results,
 )
 from .site import build_site
@@ -41,7 +43,7 @@ ANALYTICS_DIR = (
     / "analytics"
 )
 
-SNAPSHOT_IMAGES = README_IMAGES
+SNAPSHOT_IMAGES = PUBLIC_IMAGE_FILES
 
 
 def publish_snapshot(
