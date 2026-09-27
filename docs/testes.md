@@ -28,6 +28,7 @@ A suíte verifica, entre outros pontos:
 - datas e decimais;
 - consolidação de 2026;
 - qualidade agregada;
+- rejeição de datasets vazios nas duas camadas;
 - proveniência obrigatória da fato agregada;
 - coerência semântica das estatísticas agregadas;
 - identidade geográfica mínima por nível antes da modelagem;
