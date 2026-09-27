@@ -8,6 +8,16 @@
 - Docker Desktop somente se a camada PostgreSQL for utilizada;
 - Power BI Desktop somente para construção ou atualização do dashboard.
 
+## Perfis de dependência
+
+O projeto separa as dependências por finalidade:
+
+- `requirements.txt`: execução do pipeline e PostgreSQL;
+- `requirements-dev.txt`: runtime + pytest para testes e desenvolvimento;
+- `requirements-notebook.txt`: runtime + Jupyter para análise exploratória.
+
+O runner local e o CI usam `requirements-dev.txt`, evitando instalar Jupyter apenas para executar testes.
+
 ## Fluxo recomendado no Windows
 
 Na raiz do repositório:
@@ -73,7 +83,7 @@ Criar o ambiente:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
 Executar testes, incluindo a integração offline:
