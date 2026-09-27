@@ -257,7 +257,7 @@ def test_validated_aggregate_analytics_blocks_invalid_data() -> None:
 
 
 
-def test_rankings_use_latest_date_per_product() -> None:
+def test_rankings_use_latest_date_per_product_unit() -> None:
     frame = pd.DataFrame(
         {
             "data_inicial": [
@@ -763,6 +763,22 @@ def test_validated_aggregate_analytics_requires_provenance() -> None:
     with pytest.raises(
         ValueError,
         match="fonte_planilha",
+    ):
+        build_validated_analytics_exports(
+            frame
+        )
+
+
+def test_validated_aggregate_analytics_rejects_blank_provenance() -> None:
+    frame = _sample()
+    frame.loc[
+        0,
+        "fonte_arquivo",
+    ] = " "
+
+    with pytest.raises(
+        ValueError,
+        match="fonte_arquivo",
     ):
         build_validated_analytics_exports(
             frame

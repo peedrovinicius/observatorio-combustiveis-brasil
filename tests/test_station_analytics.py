@@ -473,3 +473,19 @@ def test_validated_station_analytics_requires_provenance() -> None:
         build_validated_station_analytics_exports(
             frame
         )
+
+
+def test_validated_station_analytics_rejects_blank_provenance() -> None:
+    frame = _sample()
+    frame.loc[
+        0,
+        "fonte_arquivo",
+    ] = " "
+
+    with pytest.raises(
+        ValueError,
+        match="fonte_arquivo",
+    ):
+        build_validated_station_analytics_exports(
+            frame
+        )
