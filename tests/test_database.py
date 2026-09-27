@@ -1032,3 +1032,23 @@ def test_aggregate_sql_schema_columns_match_loader_contract() -> None:
             )
         )
         assert declared == TABLE_COLUMNS[table]
+
+
+def test_aggregate_schema_protects_metric_semantics() -> None:
+    from src.config import PROJECT_ROOT
+
+    schema = (
+        PROJECT_ROOT
+        / "sql"
+        / "schema.sql"
+    ).read_text(
+        encoding="utf-8",
+    )
+
+    assert "CHECK (postos_pesquisados >= 0)" in schema
+    assert "CHECK (preco_minimo_revenda > 0)" in schema
+    assert "CHECK (preco_maximo_revenda > 0)" in schema
+    assert "CHECK (desvio_padrao_revenda >= 0)" in schema
+    assert "CHECK (coef_variacao_revenda >= 0)" in schema
+    assert "preco_medio_revenda >= preco_minimo_revenda" in schema
+    assert "preco_medio_revenda <= preco_maximo_revenda" in schema

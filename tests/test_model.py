@@ -241,3 +241,45 @@ def test_model_normalizes_geographic_level_and_uf_case() -> None:
         == "municipio"
     )
     assert locality["uf"] == "CE"
+
+
+def test_validated_star_schema_blocks_impossible_aggregate_statistics() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "data_final": [
+                "2026-01-10",
+            ],
+            "nivel_geografico": [
+                "brasil",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+            "preco_minimo_revenda": [
+                6.1,
+            ],
+            "preco_maximo_revenda": [
+                6.5,
+            ],
+            "desvio_padrao_revenda": [
+                -0.1,
+            ],
+            "postos_pesquisados": [
+                3.5,
+            ],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="falhou na validação",
+    ):
+        build_validated_star_schema(
+            frame
+        )

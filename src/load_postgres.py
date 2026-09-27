@@ -641,6 +641,34 @@ def _validate_aggregate_csv_values(
                         value.strip()
                     )
 
+                for column in (
+                    "preco_minimo_revenda",
+                    "preco_maximo_revenda",
+                ):
+                    value = parsed.get(column)
+                    if (
+                        value is not None
+                        and value <= 0
+                    ):
+                        add_error(
+                            column,
+                            "deve ser maior que zero",
+                        )
+
+                for column in (
+                    "desvio_padrao_revenda",
+                    "coef_variacao_revenda",
+                ):
+                    value = parsed.get(column)
+                    if (
+                        value is not None
+                        and value < 0
+                    ):
+                        add_error(
+                            column,
+                            "não pode ser negativo",
+                        )
+
                 average = parsed.get(
                     "preco_medio_revenda"
                 )
@@ -666,6 +694,26 @@ def _validate_aggregate_csv_values(
                 ):
                     add_error(
                         "preco_minimo_revenda",
+                        "não pode exceder "
+                        "preco_maximo_revenda",
+                    )
+                if (
+                    average is not None
+                    and minimum is not None
+                    and average < minimum
+                ):
+                    add_error(
+                        "preco_medio_revenda",
+                        "não pode ser menor que "
+                        "preco_minimo_revenda",
+                    )
+                if (
+                    average is not None
+                    and maximum is not None
+                    and average > maximum
+                ):
+                    add_error(
+                        "preco_medio_revenda",
                         "não pode exceder "
                         "preco_maximo_revenda",
                     )

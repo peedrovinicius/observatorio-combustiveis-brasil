@@ -210,27 +210,167 @@ def build_quality_report(
         else 0
     )
 
-    range_inconsistencies = 0
-    if {
+    optional_numeric_columns = (
         "preco_minimo_revenda",
         "preco_maximo_revenda",
-    }.issubset(frame.columns):
-        minimum = pd.to_numeric(
-            frame["preco_minimo_revenda"],
+        "desvio_padrao_revenda",
+        "coef_variacao_revenda",
+    )
+    parsed_optional: dict[
+        str,
+        pd.Series,
+    ] = {}
+    invalid_optional: dict[
+        str,
+        int,
+    ] = {}
+    for column in optional_numeric_columns:
+        if column not in frame.columns:
+            continue
+        raw = (
+            frame[column]
+            .astype("string")
+            .str.strip()
+            .replace("", pd.NA)
+        )
+        parsed = pd.to_numeric(
+            frame[column],
             errors="coerce",
         )
-        maximum = pd.to_numeric(
-            frame["preco_maximo_revenda"],
-            errors="coerce",
+        parsed_optional[column] = parsed
+        invalid_optional[column] = int(
+            (
+                raw.notna()
+                & parsed.isna()
+            ).sum()
         )
-        range_inconsistencies = int(
+
+    report[
+        "invalid_optional_numeric_rows"
+    ] = invalid_optional
+
+    minimum = parsed_optional.get(
+        "preco_minimo_revenda"
+    )
+    maximum = parsed_optional.get(
+        "preco_maximo_revenda"
+    )
+    stddev = parsed_optional.get(
+        "desvio_padrao_revenda"
+    )
+    coefficient = parsed_optional.get(
+        "coef_variacao_revenda"
+    )
+
+    report[
+        "non_positive_min_price_rows"
+    ] = int(
+        (minimum <= 0)
+        .fillna(False)
+        .sum()
+    ) if minimum is not None else 0
+    report[
+        "non_positive_max_price_rows"
+    ] = int(
+        (maximum <= 0)
+        .fillna(False)
+        .sum()
+    ) if maximum is not None else 0
+    report[
+        "negative_standard_deviation_rows"
+    ] = int(
+        (stddev < 0)
+        .fillna(False)
+        .sum()
+    ) if stddev is not None else 0
+    report[
+        "negative_coefficient_variation_rows"
+    ] = int(
+        (coefficient < 0)
+        .fillna(False)
+        .sum()
+    ) if coefficient is not None else 0
+
+    report["min_greater_than_max_rows"] = (
+        int(
             (minimum > maximum)
             .fillna(False)
             .sum()
         )
-    report["min_greater_than_max_rows"] = (
-        range_inconsistencies
+        if (
+            minimum is not None
+            and maximum is not None
+        )
+        else 0
     )
+    report[
+        "mean_outside_min_max_rows"
+    ] = (
+        int(
+            (
+                (
+                    minimum.notna()
+                    & prices.notna()
+                    & prices.lt(minimum)
+                )
+                | (
+                    maximum.notna()
+                    & prices.notna()
+                    & prices.gt(maximum)
+                )
+            ).sum()
+        )
+        if (
+            minimum is not None
+            and maximum is not None
+        )
+        else 0
+    )
+
+    if "postos_pesquisados" in frame.columns:
+        raw_station_count = (
+            frame["postos_pesquisados"]
+            .astype("string")
+            .str.strip()
+            .replace("", pd.NA)
+        )
+        station_count = pd.to_numeric(
+            frame["postos_pesquisados"],
+            errors="coerce",
+        )
+        report[
+            "invalid_station_count_rows"
+        ] = int(
+            (
+                raw_station_count.notna()
+                & station_count.isna()
+            ).sum()
+        )
+        report[
+            "non_integer_station_count_rows"
+        ] = int(
+            (
+                station_count.notna()
+                & station_count.mod(1).ne(0)
+            ).sum()
+        )
+        report[
+            "negative_station_count_rows"
+        ] = int(
+            (
+                station_count < 0
+            ).fillna(False).sum()
+        )
+    else:
+        report[
+            "invalid_station_count_rows"
+        ] = 0
+        report[
+            "non_integer_station_count_rows"
+        ] = 0
+        report[
+            "negative_station_count_rows"
+        ] = 0
 
     blocking_keys = (
         "invalid_start_date_rows",
@@ -246,14 +386,33 @@ def build_quality_report(
         "invalid_price_rows",
         "non_positive_price_rows",
         "duplicate_rows_by_business_key",
+        "non_positive_min_price_rows",
+        "non_positive_max_price_rows",
+        "negative_standard_deviation_rows",
+        "negative_coefficient_variation_rows",
         "min_greater_than_max_rows",
+        "mean_outside_min_max_rows",
+        "invalid_station_count_rows",
+        "non_integer_station_count_rows",
+        "negative_station_count_rows",
     )
 
     report["status"] = (
         "passed"
-        if all(
-            report[key] == 0
-            for key in blocking_keys
+        if (
+            all(
+                report[key] == 0
+                for key in blocking_keys
+            )
+            and all(
+                value == 0
+                for value in (
+                    report[
+                        "invalid_optional_numeric_rows"
+                    ]
+                    .values()
+                )
+            )
         )
         else "failed"
     )

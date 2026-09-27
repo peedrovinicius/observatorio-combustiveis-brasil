@@ -94,7 +94,11 @@ A validação verifica:
 - preços não positivos;
 - duplicidades pela chave de negócio;
 - identidade geográfica mínima compatível com o nível informado;
-- preço mínimo maior que preço máximo.
+- preço mínimo maior que preço máximo;
+- preços mínimo e máximo não positivos, quando publicados;
+- média fora do intervalo mínimo/máximo;
+- desvio padrão ou coeficiente de variação negativos;
+- quantidade de postos inválida, fracionária ou negativa.
 
 Para identidade geográfica, a validação exige:
 
