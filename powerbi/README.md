@@ -77,6 +77,7 @@ Essas tabelas são úteis para conferência dos resultados do Power BI e anális
 Filtros:
 
 - produto;
+- unidade de medida;
 - período;
 - nível geográfico.
 
@@ -86,7 +87,7 @@ Cards:
 - variação semanal;
 - preço mínimo;
 - preço máximo;
-- postos pesquisados.
+- postos pesquisados na última semana.
 
 Visuais:
 
@@ -99,6 +100,7 @@ Visuais:
 Filtros:
 
 - produto;
+- unidade de medida;
 - UF;
 - município.
 
@@ -159,6 +161,10 @@ O projeto não define automaticamente uma regra fixa de vantagem econômica. O d
 ## Medidas
 
 As medidas estão em [`medidas.dax`](medidas.dax).
+
+As medidas de preço exigem uma única série no contexto do visual. No modelo agregado, isso significa um único produto e uma única unidade de medida. No modelo por posto, a série é identificada por `produto_posto_id`, que já representa produto + unidade. Se o contexto misturar unidades, as medidas retornam vazio em vez de produzir uma média entre grandezas incompatíveis.
+
+Para cards de cobertura agregada, use `Postos Pesquisados Última Semana` quando a intenção for mostrar a cobertura da observação corrente. A medida simples `Postos Pesquisados` continua disponível para tabelas ou contextos em que a soma faça sentido.
 
 ## Regra importante
 
