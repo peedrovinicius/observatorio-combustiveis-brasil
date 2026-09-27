@@ -70,3 +70,18 @@ def test_station_measures_require_single_product_unit_series() -> None:
         "Última Data de Coleta ="
         in dax
     )
+
+
+def test_aggregate_date_scan_reapplies_selected_unit() -> None:
+    dax = _dax()
+
+    assert (
+        "VAR Unidade =\n    SELECTEDVALUE ( fato_precos_semanais[unidade_medida] )"
+        in dax
+    )
+    assert (
+        dax.count(
+            "TREATAS (\n                        { Unidade },\n                        fato_precos_semanais[unidade_medida]\n                    )"
+        )
+        >= 2
+    )
