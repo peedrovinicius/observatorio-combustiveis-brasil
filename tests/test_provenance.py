@@ -4,6 +4,10 @@ from pathlib import Path
 
 import pytest
 
+from src.config import (
+    ANP_HISTORICAL_PAGE,
+    ANP_OPEN_DATA_PAGE,
+)
 from src.provenance import (
     verified_history_files,
     verify_history_provenance,
@@ -46,6 +50,18 @@ def _write_history_manifest(
         records.append(
             {
                 "scope": scope,
+                "source_page": ANP_HISTORICAL_PAGE,
+                "discovered_url": (
+                    "https://www.gov.br/anp/"
+                    f"{scope}.xlsx"
+                ),
+                "final_url": (
+                    "https://www.gov.br/anp/"
+                    f"{scope}.xlsx"
+                ),
+                "collected_at_utc": (
+                    "2026-09-27T20:00:00+00:00"
+                ),
                 "filename": filename,
                 "detected_format": "xlsx",
                 "bytes": len(
@@ -65,7 +81,7 @@ def _write_history_manifest(
             {
                 "manifest_version": 1,
                 "source": "ANP",
-                "source_page": "https://example.test/history",
+                "source_page": ANP_HISTORICAL_PAGE,
                 "collected_at_utc": "2026-09-27T20:00:00+00:00",
                 "files": records,
             }
@@ -192,12 +208,23 @@ def _write_open_manifest(
             {
                 "manifest_version": 1,
                 "source": "ANP",
-                "source_page": "https://example.test/open-data",
+                "source_page": ANP_OPEN_DATA_PAGE,
                 "collected_at_utc": "2026-09-27T20:00:00+00:00",
                 "files": [
                     {
                         "dataset": (
                             "automotivos_2026_s1"
+                        ),
+                        "url": (
+                            "https://www.gov.br/anp/"
+                            "automotivos.csv"
+                        ),
+                        "final_url": (
+                            "https://www.gov.br/anp/"
+                            "automotivos.csv"
+                        ),
+                        "collected_at_utc": (
+                            "2026-09-27T20:00:00+00:00"
                         ),
                         "filename": direct_name,
                         "detected_format": "csv",
@@ -213,6 +240,17 @@ def _write_open_manifest(
                     {
                         "dataset": (
                             "etanol_gasolina_setembro_2026"
+                        ),
+                        "url": (
+                            "https://www.gov.br/anp/"
+                            "etanol.zip"
+                        ),
+                        "final_url": (
+                            "https://www.gov.br/anp/"
+                            "etanol.zip"
+                        ),
+                        "collected_at_utc": (
+                            "2026-09-27T20:00:00+00:00"
                         ),
                         "filename": raw_zip_name,
                         "detected_format": "zip",
@@ -493,3 +531,38 @@ def test_verified_history_files_returns_only_manifested_snapshot(
         )
         for path in files
     )
+
+
+
+def test_history_provenance_rejects_record_timestamp_mismatch(
+    tmp_path: Path,
+) -> None:
+    _write_history_manifest(
+        tmp_path
+    )
+    manifest_path = (
+        tmp_path
+        / "history_manifest.json"
+    )
+    manifest = json.loads(
+        manifest_path.read_text(
+            encoding="utf-8",
+        )
+    )
+    manifest["files"][0][
+        "collected_at_utc"
+    ] = "2026-09-27T20:01:00+00:00"
+    manifest_path.write_text(
+        json.dumps(
+            manifest
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Timestamp do arquivo histórico",
+    ):
+        verify_history_provenance(
+            tmp_path
+        )
