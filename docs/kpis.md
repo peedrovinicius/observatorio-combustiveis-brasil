@@ -61,6 +61,8 @@ A comparação usa gasolina comum, excluindo gasolina aditivada.
 
 Para cada município e unidade de medida, o cálculo usa a semana mais recente em que etanol e gasolina comum possuem observação simultaneamente na mesma unidade. Isso evita dividir preços provenientes de semanas diferentes ou grandezas incompatíveis.
 
+Se mais de uma observação elegível cair na mesma classe de combustível para o mesmo município, data e unidade, o grupo é tratado como ambíguo e não gera razão. O pipeline não escolhe silenciosamente o primeiro valor nem o maior preço.
+
 O projeto reporta a razão observada. Qualquer limiar usado para interpretar vantagem econômica deve ser explicitado como hipótese adicional.
 
 ### Postos pesquisados
