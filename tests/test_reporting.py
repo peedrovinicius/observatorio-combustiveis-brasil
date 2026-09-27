@@ -4,6 +4,9 @@ import pandas as pd
 import pytest
 
 import src.reporting as reporting_module
+from src.publication_contract import (
+    PUBLIC_IMAGE_FILES,
+)
 from src.reporting import (
     _location_label,
     _publish_report_bundle,
@@ -291,13 +294,7 @@ def _create_report_stage(
     assets.mkdir(
         parents=True,
     )
-    for filename in [
-        "tendencia_brasil_2026.png",
-        "ranking_ufs_gasolina.png",
-        "etanol_gasolina_municipios.png",
-        "dispersao_municipios_postos.png",
-        "mediana_bandeiras_postos.png",
-    ]:
+    for filename in PUBLIC_IMAGE_FILES:
         (
             assets
             / filename
