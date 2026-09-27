@@ -49,6 +49,8 @@ RETURN
 Última Data Disponível =
 VAR Nivel =
     SELECTEDVALUE ( dim_localidade[nivel_geografico] )
+VAR Unidade =
+    SELECTEDVALUE ( fato_precos_semanais[unidade_medida] )
 RETURN
     IF (
         [Série Agregada Única],
@@ -61,6 +63,10 @@ RETURN
                     TREATAS (
                         { Nivel },
                         dim_localidade[nivel_geografico]
+                    ),
+                    TREATAS (
+                        { Unidade },
+                        fato_precos_semanais[unidade_medida]
                     )
                 ) > 0
             ),
@@ -82,6 +88,8 @@ VAR UltimaData =
     [Última Data Disponível]
 VAR Nivel =
     SELECTEDVALUE ( dim_localidade[nivel_geografico] )
+VAR Unidade =
+    SELECTEDVALUE ( fato_precos_semanais[unidade_medida] )
 VAR DataAnterior =
     MAXX (
         FILTER (
@@ -93,6 +101,10 @@ VAR DataAnterior =
                     TREATAS (
                         { Nivel },
                         dim_localidade[nivel_geografico]
+                    ),
+                    TREATAS (
+                        { Unidade },
+                        fato_precos_semanais[unidade_medida]
                     )
                 ) > 0
         ),
