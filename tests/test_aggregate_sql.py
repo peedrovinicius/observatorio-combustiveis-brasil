@@ -129,3 +129,14 @@ def test_city_top_20_is_partitioned_by_product_unit() -> None:
     )
     assert "WHERE ordem <= 20" in sql
     assert "LIMIT 20" not in sql
+
+
+def test_ratio_sql_rejects_ambiguous_fuel_classes() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+
+    assert "AS etanol_observacoes" in sql
+    assert "AS gasolina_observacoes" in sql
+    assert "etanol_observacoes = 1" in sql
+    assert "gasolina_observacoes = 1" in sql
