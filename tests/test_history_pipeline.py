@@ -1729,3 +1729,134 @@ def test_aggregate_audit_reviews_ignored_schema_without_other_issues(
         == 1
     )
     assert audit["status"] == "review"
+
+
+
+def _write_scope_csv(
+    path: Path,
+    scope: str,
+    level: str,
+) -> None:
+    data: dict[
+        str,
+        list[object],
+    ] = {
+        "data_inicial": [
+            "2026-01-04",
+        ],
+        "data_final": [
+            "2026-01-10",
+        ],
+        "produto": [
+            "GASOLINA",
+        ],
+        "unidade_medida": [
+            "R$/L",
+        ],
+        "preco_medio_revenda": [
+            6.0,
+        ],
+    }
+
+    if level == "regiao":
+        data["regiao"] = [
+            "NORDESTE",
+        ]
+    elif level == "estado":
+        data["uf"] = [
+            "CE",
+        ]
+    elif level == "municipio":
+        data["uf"] = [
+            "CE",
+        ]
+        data["municipio"] = [
+            "FORTALEZA",
+        ]
+
+    pd.DataFrame(
+        data
+    ).to_csv(
+        path
+        / (
+            f"historico_semanal_{scope}"
+            "__dados__dados.csv"
+        ),
+        index=False,
+    )
+
+
+def test_strict_consolidation_accepts_matching_history_scopes(
+    tmp_path: Path,
+) -> None:
+    _write_scope_csv(
+        tmp_path,
+        "brasil",
+        "brasil",
+    )
+    _write_scope_csv(
+        tmp_path,
+        "regioes",
+        "regiao",
+    )
+    _write_scope_csv(
+        tmp_path,
+        "estados",
+        "estado",
+    )
+    _write_scope_csv(
+        tmp_path,
+        "municipios_2026",
+        "municipio",
+    )
+
+    frame, audit = (
+        build_analytics_table_with_audit(
+            tmp_path,
+            history_only=True,
+            require_complete_history=True,
+        )
+    )
+
+    assert len(frame) == 4
+    assert (
+        audit[
+            "linhas_nivel_geografico_incompativel"
+        ]
+        == 0
+    )
+
+
+def test_strict_consolidation_rejects_scope_geography_mismatch(
+    tmp_path: Path,
+) -> None:
+    _write_scope_csv(
+        tmp_path,
+        "brasil",
+        "estado",
+    )
+    _write_scope_csv(
+        tmp_path,
+        "regioes",
+        "regiao",
+    )
+    _write_scope_csv(
+        tmp_path,
+        "estados",
+        "estado",
+    )
+    _write_scope_csv(
+        tmp_path,
+        "municipios_2026",
+        "municipio",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Nível geográfico incompatível",
+    ):
+        build_analytics_table_with_audit(
+            tmp_path,
+            history_only=True,
+            require_complete_history=True,
+        )
