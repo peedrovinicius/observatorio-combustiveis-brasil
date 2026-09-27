@@ -74,12 +74,18 @@ def test_history_discovery_rejects_duplicate_scope() -> None:
 def test_decimal_parser_handles_brazilian_and_dot_decimal() -> None:
     parsed = parse_decimal_series(
         pd.Series(
-            ["6,12", "6.12", "1.234,56"]
+            [
+                "6,12",
+                "6.12",
+                "1.234,56",
+                "1,234.56",
+            ]
         )
     )
     assert parsed.tolist() == [
         6.12,
         6.12,
+        1234.56,
         1234.56,
     ]
 
