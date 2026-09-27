@@ -576,6 +576,7 @@ def build_ethanol_gasoline_ratio(
         for column in [
             "uf",
             "municipio",
+            "unidade_medida",
         ]
         if column in pivot.columns
     ]
