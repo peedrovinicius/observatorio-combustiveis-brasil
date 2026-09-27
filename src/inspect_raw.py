@@ -77,22 +77,20 @@ def inspect(path: Path) -> dict[str, object]:
 
 
 def main() -> None:
-    verify_history_provenance(
-        RAW_DIR
-    )
-
-    files = [
-        path
-        for path in RAW_DIR.iterdir()
-        if path.is_file()
-        and path.name != "README.md"
-        and path.suffix.lower() != ".json"
-    ]
-
-    if not files:
-        raise SystemExit(
-            "Nenhum arquivo bruto encontrado. Execute python -m src.download_history."
+    manifest = (
+        verify_history_provenance(
+            RAW_DIR
         )
+    )
+    files = sorted(
+        RAW_DIR
+        / str(
+            item["filename"]
+        )
+        for item in manifest[
+            "files"
+        ]
+    )
 
     report = {path.name: inspect(path) for path in sorted(files)}
     output = RAW_DIR / "inspection.json"
