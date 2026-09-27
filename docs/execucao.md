@@ -256,3 +256,15 @@ base processada
 ```
 
 Se uma etapa anterior for regenerada depois de uma etapa posterior, a publicação é bloqueada e informa qual módulo precisa ser reexecutado.
+
+
+## Downloaders ativos
+
+Os pontos de entrada de aquisição suportados são:
+
+```powershell
+python -m src.download_history
+python -m src.download_open_data
+```
+
+`src.download_anp` é mantido apenas por compatibilidade com testes antigos de descoberta e seu `main()` é bloqueado. Ele não deve ser usado para gravar dados raw.
