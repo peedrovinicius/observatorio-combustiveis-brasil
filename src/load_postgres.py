@@ -332,11 +332,15 @@ def _validate_station_csv_values(
                 .items()
             ):
                 value = row.get(column)
-                if (
-                    not _is_blank(value)
-                    and len(value.strip())
-                    > limit
-                ):
+                if _is_blank(value):
+                    continue
+                if value != value.strip():
+                    add_error(
+                        column,
+                        "não deve conter espaços "
+                        "externos",
+                    )
+                if len(value) > limit:
                     add_error(
                         column,
                         "excede o limite de "
@@ -449,7 +453,7 @@ def _validate_station_csv_values(
                     )
                     and re.fullmatch(
                         r"[0-9a-f]{64}",
-                        station_key.strip(),
+                        station_key,
                     )
                     is None
                 ):
@@ -465,7 +469,7 @@ def _validate_station_csv_values(
                     not _is_blank(uf)
                     and re.fullmatch(
                         r"[A-Z]{2}",
-                        uf.strip(),
+                        uf,
                     )
                     is None
                 ):
