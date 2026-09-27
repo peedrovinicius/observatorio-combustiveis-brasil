@@ -41,7 +41,7 @@ if (-not (Test-Path $python)) {
 }
 
 Write-Step "Instalando dependências"
-Invoke-NativeChecked -FilePath $python -Arguments @("-m", "pip", "install", "-r", "requirements.txt") -Description "Instalação das dependências"
+Invoke-NativeChecked -FilePath $python -Arguments @("-m", "pip", "install", "-r", "requirements-dev.txt") -Description "Instalação das dependências"
 
 Write-Step "Executando testes"
 Invoke-NativeChecked -FilePath $python -Arguments @("-m", "pytest") -Description "Execução dos testes"
