@@ -9,6 +9,11 @@ from datetime import (
 )
 from pathlib import Path
 
+from .config import (
+    ANP_HISTORICAL_PAGE,
+    ANP_OPEN_DATA_PAGE,
+)
+
 MANIFEST_VERSION = 1
 
 HISTORY_SCOPES = {
@@ -285,6 +290,17 @@ def verify_history_provenance(
     )
     records = manifest["files"]
 
+    if (
+        manifest[
+            "source_page"
+        ]
+        != ANP_HISTORICAL_PAGE
+    ):
+        raise ValueError(
+            "Manifesto histórico aponta para "
+            "página de origem inesperada."
+        )
+
     scopes: set[str] = set()
     filenames: set[str] = set()
 
@@ -301,6 +317,47 @@ def verify_history_provenance(
                 "",
             )
         ).strip()
+
+        if (
+            item.get(
+                "collected_at_utc"
+            )
+            != manifest[
+                "collected_at_utc"
+            ]
+        ):
+            raise ValueError(
+                "Timestamp do arquivo histórico "
+                "diverge do manifesto."
+            )
+        if (
+            item.get(
+                "source_page"
+            )
+            != manifest[
+                "source_page"
+            ]
+        ):
+            raise ValueError(
+                "Página de origem do arquivo "
+                "histórico diverge do manifesto."
+            )
+        for field in (
+            "discovered_url",
+            "final_url",
+        ):
+            if not str(
+                item.get(
+                    field,
+                    "",
+                )
+            ).startswith(
+                "https://"
+            ):
+                raise ValueError(
+                    "URL histórica ausente ou "
+                    f"inválida: {field}."
+                )
 
         if (
             not scope
@@ -411,6 +468,17 @@ def verify_open_data_provenance(
     )
     records = manifest["files"]
 
+    if (
+        manifest[
+            "source_page"
+        ]
+        != ANP_OPEN_DATA_PAGE
+    ):
+        raise ValueError(
+            "Manifesto por posto aponta para "
+            "página de origem inesperada."
+        )
+
     datasets: set[str] = set()
     raw_files: set[str] = set()
     expected_csvs: set[str] = set()
@@ -434,6 +502,35 @@ def verify_open_data_provenance(
                 "",
             )
         ).strip().casefold()
+
+        if (
+            item.get(
+                "collected_at_utc"
+            )
+            != manifest[
+                "collected_at_utc"
+            ]
+        ):
+            raise ValueError(
+                "Timestamp do arquivo por posto "
+                "diverge do manifesto."
+            )
+        for field in (
+            "url",
+            "final_url",
+        ):
+            if not str(
+                item.get(
+                    field,
+                    "",
+                )
+            ).startswith(
+                "https://"
+            ):
+                raise ValueError(
+                    "URL por posto ausente ou "
+                    f"inválida: {field}."
+                )
 
         if (
             not dataset
