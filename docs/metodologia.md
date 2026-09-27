@@ -93,7 +93,17 @@ A validação verifica:
 - preços ausentes ou inválidos;
 - preços não positivos;
 - duplicidades pela chave de negócio;
+- identidade geográfica mínima compatível com o nível informado;
 - preço mínimo maior que preço máximo.
+
+Para identidade geográfica, a validação exige:
+
+- nível `regiao`: campo `regiao` preenchido;
+- nível `estado`: pelo menos `uf` ou `estado` preenchido;
+- nível `municipio`: `municipio` preenchido e pelo menos `uf` ou `estado` preenchido;
+- nível `brasil`: nenhum identificador geográfico adicional obrigatório.
+
+A regra exige somente o mínimo necessário para identificar a localidade e não pressupõe que todos os campos geográficos estejam presentes em todos os níveis.
 
 A qualidade da base final é classificada como:
 

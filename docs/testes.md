@@ -28,6 +28,7 @@ A suíte verifica, entre outros pontos:
 - datas e decimais;
 - consolidação de 2026;
 - qualidade agregada;
+- identidade geográfica mínima por nível antes da modelagem;
 - identidade e deduplicação de postos;
 - precedência entre publicações sobrepostas;
 - auditoria de exclusões agregadas e por posto;

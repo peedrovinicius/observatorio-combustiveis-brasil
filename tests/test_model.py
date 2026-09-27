@@ -125,3 +125,40 @@ def test_validated_star_schema_accepts_clean_aggregate_data() -> None:
         )
         == 1
     )
+
+
+
+def test_validated_star_schema_blocks_municipality_without_state_context() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_inicial": [
+                "2026-01-04",
+            ],
+            "data_final": [
+                "2026-01-10",
+            ],
+            "nivel_geografico": [
+                "municipio",
+            ],
+            "municipio": [
+                "FORTALEZA",
+            ],
+            "produto": [
+                "GASOLINA",
+            ],
+            "preco_medio_revenda": [
+                6.0,
+            ],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "falhou na validação "
+            "de qualidade"
+        ),
+    ):
+        build_validated_star_schema(
+            frame
+        )

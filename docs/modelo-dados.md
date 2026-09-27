@@ -59,6 +59,8 @@ O nível geográfico é armazenado na dimensão de localidade e pode ser:
 - estado;
 - município.
 
+Antes da modelagem, o pipeline valida a identidade mínima da localidade. Região exige o nome da região. Estado exige UF ou nome do estado. Município exige o nome do município e também UF ou nome do estado, evitando uma localidade municipal sem contexto estadual.
+
 ## Por que separar dimensões
 
 A modelagem evita repetição de atributos textuais na fato e simplifica relacionamentos no Power BI e consultas SQL.

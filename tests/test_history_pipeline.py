@@ -233,6 +233,165 @@ def test_quality_report_blocks_outside_2026() -> None:
     assert report["status"] == "failed"
 
 
+def test_quality_report_blocks_region_without_identifier() -> None:
+    frame = _valid_quality_frame()
+    frame.loc[
+        0,
+        "nivel_geografico",
+    ] = "regiao"
+
+    report = build_quality_report(
+        frame
+    )
+
+    assert (
+        report[
+            "missing_region_identifier_rows"
+        ]
+        == 1
+    )
+    assert report["status"] == "failed"
+
+
+def test_quality_report_accepts_state_with_uf_only() -> None:
+    frame = _valid_quality_frame()
+    frame.loc[
+        0,
+        "nivel_geografico",
+    ] = "estado"
+    frame["uf"] = ["CE"]
+
+    report = build_quality_report(
+        frame
+    )
+
+    assert (
+        report[
+            "missing_state_identifier_rows"
+        ]
+        == 0
+    )
+    assert report["status"] == "passed"
+
+
+def test_quality_report_accepts_state_with_name_only() -> None:
+    frame = _valid_quality_frame()
+    frame.loc[
+        0,
+        "nivel_geografico",
+    ] = "estado"
+    frame["estado"] = [
+        "CEARA"
+    ]
+
+    report = build_quality_report(
+        frame
+    )
+
+    assert (
+        report[
+            "missing_state_identifier_rows"
+        ]
+        == 0
+    )
+    assert report["status"] == "passed"
+
+
+def test_quality_report_blocks_state_without_identifier() -> None:
+    frame = _valid_quality_frame()
+    frame.loc[
+        0,
+        "nivel_geografico",
+    ] = "estado"
+
+    report = build_quality_report(
+        frame
+    )
+
+    assert (
+        report[
+            "missing_state_identifier_rows"
+        ]
+        == 1
+    )
+    assert report["status"] == "failed"
+
+
+def test_quality_report_blocks_municipality_without_name() -> None:
+    frame = _valid_quality_frame()
+    frame.loc[
+        0,
+        "nivel_geografico",
+    ] = "municipio"
+    frame["uf"] = ["CE"]
+
+    report = build_quality_report(
+        frame
+    )
+
+    assert (
+        report[
+            "missing_municipality_identifier_rows"
+        ]
+        == 1
+    )
+    assert report["status"] == "failed"
+
+
+def test_quality_report_blocks_municipality_without_state_context() -> None:
+    frame = _valid_quality_frame()
+    frame.loc[
+        0,
+        "nivel_geografico",
+    ] = "municipio"
+    frame["municipio"] = [
+        "FORTALEZA"
+    ]
+
+    report = build_quality_report(
+        frame
+    )
+
+    assert (
+        report[
+            "missing_municipality_state_identifier_rows"
+        ]
+        == 1
+    )
+    assert report["status"] == "failed"
+
+
+def test_quality_report_accepts_municipality_with_uf() -> None:
+    frame = _valid_quality_frame()
+    frame.loc[
+        0,
+        "nivel_geografico",
+    ] = "municipio"
+    frame["municipio"] = [
+        "FORTALEZA"
+    ]
+    frame["uf"] = ["CE"]
+
+    report = build_quality_report(
+        frame
+    )
+
+    assert (
+        report[
+            "missing_municipality_identifier_rows"
+        ]
+        == 0
+    )
+    assert (
+        report[
+            "missing_municipality_state_identifier_rows"
+        ]
+        == 0
+    )
+    assert report["status"] == "passed"
+
+
+
 
 def test_history_cleanup_replaces_only_same_scope(
     tmp_path: Path,

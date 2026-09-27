@@ -31,6 +31,26 @@ def _blank_count(series: pd.Series) -> int:
     return int(values.isna().sum())
 
 
+def _nonblank_mask(
+    frame: pd.DataFrame,
+    column: str,
+) -> pd.Series:
+    if column not in frame.columns:
+        return pd.Series(
+            False,
+            index=frame.index,
+            dtype="boolean",
+        )
+
+    return (
+        frame[column]
+        .astype("string")
+        .str.strip()
+        .replace("", pd.NA)
+        .notna()
+    )
+
+
 def build_quality_report(
     frame: pd.DataFrame,
 ) -> dict[str, object]:
@@ -103,6 +123,56 @@ def build_quality_report(
         ).sum()
     )
 
+    has_region = _nonblank_mask(
+        frame,
+        "regiao",
+    )
+    has_uf = _nonblank_mask(
+        frame,
+        "uf",
+    )
+    has_state = _nonblank_mask(
+        frame,
+        "estado",
+    )
+    has_municipality = _nonblank_mask(
+        frame,
+        "municipio",
+    )
+    has_state_identity = (
+        has_uf
+        | has_state
+    )
+
+    report["missing_region_identifier_rows"] = int(
+        (
+            levels.eq("regiao")
+            & ~has_region
+        ).sum()
+    )
+    report["missing_state_identifier_rows"] = int(
+        (
+            levels.eq("estado")
+            & ~has_state_identity
+        ).sum()
+    )
+    report[
+        "missing_municipality_identifier_rows"
+    ] = int(
+        (
+            levels.eq("municipio")
+            & ~has_municipality
+        ).sum()
+    )
+    report[
+        "missing_municipality_state_identifier_rows"
+    ] = int(
+        (
+            levels.eq("municipio")
+            & ~has_state_identity
+        ).sum()
+    )
+
     prices = pd.to_numeric(
         frame["preco_medio_revenda"],
         errors="coerce",
@@ -169,6 +239,10 @@ def build_quality_report(
         "end_before_start_rows",
         "blank_product_rows",
         "invalid_geographic_level_rows",
+        "missing_region_identifier_rows",
+        "missing_state_identifier_rows",
+        "missing_municipality_identifier_rows",
+        "missing_municipality_state_identifier_rows",
         "invalid_price_rows",
         "non_positive_price_rows",
         "duplicate_rows_by_business_key",
