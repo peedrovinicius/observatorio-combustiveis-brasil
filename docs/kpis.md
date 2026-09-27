@@ -59,7 +59,7 @@ Quando o site apresenta o recorte visual de gasolina, somente gasolina comum é 
 (preço médio do etanol / preço médio da gasolina comum) × 100
 ```
 
-A comparação usa gasolina comum, excluindo gasolina aditivada e outras denominações de gasolina que não indiquem explicitamente a classe comum. Para o etanol, somente denominações que indiquem etanol hidratado entram no cálculo.
+A comparação usa gasolina comum, excluindo gasolina aditivada e outras denominações de gasolina que não indiquem explicitamente a classe comum. Para o etanol, somente denominações que indiquem etanol hidratado entram no cálculo. Os aliases simples `GASOLINA` e `ETANOL`, usados na série aberta por posto, são reconhecidos como equivalentes às classes comum e hidratado quando aparecem exatamente com esses nomes.
 
 Para cada município e unidade de medida, o cálculo usa a semana mais recente em que etanol e gasolina comum possuem observação simultaneamente na mesma unidade. Isso evita dividir preços provenientes de semanas diferentes ou grandezas incompatíveis.
 
