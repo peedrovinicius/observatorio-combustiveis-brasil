@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from src.provenance import (
+    verified_history_files,
     verify_history_provenance,
     verify_open_data_provenance,
 )
@@ -461,3 +462,34 @@ def test_provenance_rejects_non_utc_timestamp(
         verify_history_provenance(
             tmp_path
         )
+
+
+
+def test_verified_history_files_returns_only_manifested_snapshot(
+    tmp_path: Path,
+) -> None:
+    _write_history_manifest(
+        tmp_path
+    )
+    unrelated = (
+        tmp_path
+        / "arquivo_extra.xlsx"
+    )
+    unrelated.write_bytes(
+        b"nao-usar"
+    )
+
+    files = (
+        verified_history_files(
+            tmp_path
+        )
+    )
+
+    assert len(files) == 4
+    assert unrelated not in files
+    assert all(
+        path.name.startswith(
+            "historico_semanal_"
+        )
+        for path in files
+    )
