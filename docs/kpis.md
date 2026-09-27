@@ -32,15 +32,15 @@ Para análises de dispersão dentro de uma semana devem ser utilizados os campos
 
 ### Média das semanas no mês
 
-Média aritmética das observações semanais oficiais contidas no mês.
+Média aritmética das observações semanais oficiais contidas no mês, calculada separadamente por produto e unidade de medida.
 
 É um **indicador derivado pelo projeto** e não substitui a série mensal oficial da ANP.
 
 ### Ranking por UF e município
 
-Os rankings utilizam o preço médio publicado na semana mais recente disponível para cada produto. A data não é escolhida globalmente entre todos os combustíveis.
+Os rankings utilizam o preço médio publicado na semana mais recente disponível para cada combinação de produto e unidade de medida. A data não é escolhida globalmente entre todos os combustíveis ou unidades.
 
-Assim, um produto continua aparecendo no ranking mesmo quando outro possui uma publicação mais recente.
+Assim, uma série continua aparecendo no ranking mesmo quando outra possui uma publicação mais recente.
 
 São produzidas duas posições:
 
@@ -59,7 +59,7 @@ Quando o site apresenta o recorte visual de gasolina, somente gasolina comum é 
 
 A comparação usa gasolina comum, excluindo gasolina aditivada.
 
-Para cada município, o cálculo usa a semana mais recente em que etanol e gasolina comum possuem observação simultaneamente. Isso evita dividir preços provenientes de semanas diferentes.
+Para cada município e unidade de medida, o cálculo usa a semana mais recente em que etanol e gasolina comum possuem observação simultaneamente na mesma unidade. Isso evita dividir preços provenientes de semanas diferentes ou grandezas incompatíveis.
 
 O projeto reporta a razão observada. Qualquer limiar usado para interpretar vantagem econômica deve ser explicitado como hipótese adicional.
 
