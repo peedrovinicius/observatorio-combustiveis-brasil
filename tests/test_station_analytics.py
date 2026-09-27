@@ -45,12 +45,12 @@ def _sample() -> pd.DataFrame:
                 "POSTO E",
             ],
             "cnpj_revenda": [
-                "00000000000100",
-                "00000000000100",
-                "00000000000200",
-                "00000000000300",
-                "00000000000400",
-                "00000000000500",
+                "00000001000136",
+                "00000001000136",
+                "00000002000180",
+                "00000003000125",
+                "00000004000170",
+                "00000005000114",
             ],
             "produto": [
                 "GASOLINA",
@@ -152,6 +152,78 @@ def test_latest_distribution_uses_latest_date_per_product() -> None:
             "2026-09-18"
         )
     )
+
+
+def test_latest_distribution_uses_latest_date_per_product_unit() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_coleta": [
+                "2026-09-19",
+                "2026-09-20",
+                "2026-09-18",
+            ],
+            "uf": [
+                "CE",
+                "CE",
+                "CE",
+            ],
+            "municipio": [
+                "FORTALEZA",
+                "FORTALEZA",
+                "FORTALEZA",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO A",
+                "POSTO A",
+            ],
+            "cnpj_revenda": [
+                "00000001000136",
+                "00000001000136",
+                "00000001000136",
+            ],
+            "produto": [
+                "PRODUTO TESTE",
+                "PRODUTO TESTE",
+                "PRODUTO TESTE",
+            ],
+            "unidade_medida": [
+                "R$ / litro",
+                "R$ / litro",
+                "R$ / m³",
+            ],
+            "preco_revenda": [
+                6.00,
+                6.10,
+                4.50,
+            ],
+        }
+    )
+
+    result = (
+        build_latest_municipality_distribution(
+            frame
+        )
+    )
+
+    latest = {
+        (
+            row.unidade_medida,
+            row.data_coleta,
+        )
+        for row in result.itertuples()
+    }
+
+    assert latest == {
+        (
+            "R$ / litro",
+            pd.Timestamp("2026-09-20"),
+        ),
+        (
+            "R$ / m³",
+            pd.Timestamp("2026-09-18"),
+        ),
+    }
 
 
 def test_municipality_distribution_calculates_median_and_iqr() -> None:

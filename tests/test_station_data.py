@@ -101,7 +101,7 @@ def test_transform_station_file_uses_official_schema(
             "CE",
             "FORTALEZA",
             "POSTO TESTE",
-            "00.000.000/0001-00",
+            "00.000.001/0001-36",
             "RUA A",
             "1",
             "",
@@ -128,7 +128,7 @@ def test_station_identity_prefers_cnpj() -> None:
     frame = pd.DataFrame(
         {
             "cnpj_revenda": [
-                "00.000.000/0001-00"
+                "00.000.001/0001-36"
             ],
             "uf": ["CE"],
             "municipio": ["FORTALEZA"],
@@ -138,7 +138,7 @@ def test_station_identity_prefers_cnpj() -> None:
 
     assert (
         station_identity(frame).iloc[0]
-        == "cnpj:00000000000100"
+        == "cnpj:00000001000136"
     )
 
 
@@ -205,8 +205,8 @@ def test_deduplication_prefers_newer_source_when_price_changes() -> None:
                 ]
             ),
             "cnpj_revenda": [
-                "00.000.000/0001-00",
-                "00.000.000/0001-00",
+                "00.000.001/0001-36",
+                "00.000.001/0001-36",
             ],
             "uf": ["CE", "CE"],
             "municipio": [
@@ -250,7 +250,7 @@ def test_consolidation_removes_overlap(
         "CE",
         "FORTALEZA",
         "POSTO TESTE",
-        "00.000.000/0001-00",
+        "00.000.001/0001-36",
         "RUA A",
         "1",
         "",
@@ -288,25 +288,25 @@ def test_ingestion_audit_counts_rejected_rows(
         [
             [
                 "NE", "CE", "FORTALEZA", "POSTO A",
-                "00.000.000/0001-00", "RUA A", "1", "",
+                "00.000.001/0001-36", "RUA A", "1", "",
                 "CENTRO", "60000-000", "GASOLINA",
                 "20/09/2026", "6,10", "", "R$ / litro", "BRANCA",
             ],
             [
                 "NE", "CE", "FORTALEZA", "POSTO B",
-                "00.000.000/0002-00", "RUA B", "2", "",
+                "00.000.002/0001-80", "RUA B", "2", "",
                 "CENTRO", "60000-000", "GASOLINA",
                 "data-invalida", "6,20", "", "R$ / litro", "BRANCA",
             ],
             [
                 "NE", "CE", "FORTALEZA", "POSTO C",
-                "00.000.000/0003-00", "RUA C", "3", "",
+                "00.000.003/0001-25", "RUA C", "3", "",
                 "CENTRO", "60000-000", "GASOLINA",
                 "20/09/2025", "6,30", "", "R$ / litro", "BRANCA",
             ],
             [
                 "NE", "CE", "FORTALEZA", "POSTO D",
-                "00.000.000/0004-00", "RUA D", "4", "",
+                "00.000.004/0001-70", "RUA D", "4", "",
                 "CENTRO", "60000-000", "GASOLINA",
                 "20/09/2026", "0", "", "R$ / litro", "BRANCA",
             ],
@@ -342,7 +342,7 @@ def test_consolidation_audit_measures_overlap(
 ) -> None:
     older = [
         "NE", "CE", "FORTALEZA", "POSTO TESTE",
-        "00.000.000/0001-00", "RUA A", "1", "",
+        "00.000.001/0001-36", "RUA A", "1", "",
         "CENTRO", "60000-000", "GASOLINA",
         "31/08/2026", "6,10", "", "R$ / litro", "BRANCA",
     ]
@@ -401,8 +401,8 @@ def test_station_star_schema_keeps_fact_grain() -> None:
                 "POSTO A",
             ],
             "cnpj_revenda": [
-                "00.000.000/0001-00",
-                "00.000.000/0001-00",
+                "00.000.001/0001-36",
+                "00.000.001/0001-36",
             ],
             "produto": [
                 "GASOLINA",
@@ -500,7 +500,7 @@ def test_consolidation_uses_parent_dataset_for_priority(
         "CE",
         "FORTALEZA",
         "POSTO TESTE",
-        "00.000.000/0001-00",
+        "00.000.001/0001-36",
         "RUA A",
         "1",
         "",
@@ -569,8 +569,8 @@ def test_station_dimension_is_stable_by_identity() -> None:
                 "POSTO NOVO",
             ],
             "cnpj_revenda": [
-                "00.000.000/0001-00",
-                "00.000.000/0001-00",
+                "00.000.001/0001-36",
+                "00.000.001/0001-36",
             ],
             "produto": [
                 "GASOLINA",
@@ -653,8 +653,8 @@ def test_station_key_is_stable_for_same_cnpj() -> None:
     frame = pd.DataFrame(
         {
             "cnpj_revenda": [
-                "00.000.000/0001-00",
-                "00.000.000/0001-00",
+                "00.000.001/0001-36",
+                "00.000.001/0001-36",
             ],
             "uf": [
                 "CE",
@@ -693,8 +693,8 @@ def test_station_dimension_persists_unique_station_key() -> None:
                 "POSTO B",
             ],
             "cnpj_revenda": [
-                "00.000.000/0001-00",
-                "00.000.000/0002-00",
+                "00.000.001/0001-36",
+                "00.000.002/0001-80",
             ],
             "produto": [
                 "GASOLINA",
@@ -928,7 +928,7 @@ def test_prepare_station_file_preserves_leading_zero_cnpj(
             "CE",
             "FORTALEZA",
             "POSTO TESTE",
-            "00000000000100",
+            "00000001000136",
             "RUA A",
             "1",
             "",
@@ -952,13 +952,13 @@ def test_prepare_station_file_preserves_leading_zero_cnpj(
             0,
             "cnpj_revenda",
         ]
-        == "00000000000100"
+        == "00000001000136"
     )
     assert (
         station_identity(
             prepared
         ).iloc[0]
-        == "cnpj:00000000000100"
+        == "cnpj:00000001000136"
     )
 
 

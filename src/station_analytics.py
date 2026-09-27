@@ -140,7 +140,7 @@ def _prepare_station(
     return working
 
 
-def _latest_by_product(
+def _latest_by_product_unit(
     frame: pd.DataFrame,
 ) -> pd.DataFrame:
     if frame.empty:
@@ -241,7 +241,7 @@ def build_station_coverage(
 def build_latest_municipality_distribution(
     frame: pd.DataFrame,
 ) -> pd.DataFrame:
-    working = _latest_by_product(
+    working = _latest_by_product_unit(
         _prepare_station(frame)
     )
     if working.empty:
@@ -342,7 +342,7 @@ def build_latest_brand_summary(
     min_observations: int = 5,
     min_stations: int = 3,
 ) -> pd.DataFrame:
-    working = _latest_by_product(
+    working = _latest_by_product_unit(
         _prepare_station(frame)
     )
     if working.empty:

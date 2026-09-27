@@ -141,7 +141,7 @@ Visuais:
 - intervalo interquartil;
 - coeficiente de variação.
 
-A data mais recente deve ser avaliada por produto. Uma única data máxima global pode excluir produtos cuja coleta mais recente ocorreu em outro dia.
+A data mais recente deve ser avaliada por combinação de produto e unidade de medida. Uma única data máxima global pode excluir séries cuja coleta mais recente ocorreu em outro dia.
 
 ## Página 5: Etanol × Gasolina
 
