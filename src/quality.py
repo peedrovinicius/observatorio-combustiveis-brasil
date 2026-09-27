@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import unicodedata
 
 import pandas as pd
 
@@ -23,6 +24,36 @@ VALID_LEVELS = {
     "estado",
     "municipio",
 }
+
+
+def normalize_geographic_level(
+    series: pd.Series,
+) -> pd.Series:
+    values = (
+        series.astype("string")
+        .str.strip()
+    )
+
+    def normalize(
+        value: object,
+    ) -> object:
+        if pd.isna(value):
+            return pd.NA
+        text = unicodedata.normalize(
+            "NFKD",
+            str(value),
+        )
+        return "".join(
+            char
+            for char in text
+            if not unicodedata.combining(
+                char
+            )
+        ).casefold()
+
+    return values.map(
+        normalize
+    ).astype("string")
 
 
 def _blank_count(series: pd.Series) -> int:
@@ -115,11 +146,8 @@ def build_quality_report(
         frame["produto"]
     )
 
-    levels = (
+    levels = normalize_geographic_level(
         frame["nivel_geografico"]
-        .astype("string")
-        .str.strip()
-        .str.lower()
     )
     report["invalid_geographic_level_rows"] = int(
         (
