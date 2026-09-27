@@ -59,6 +59,7 @@ def test_station_quality_passes_clean_data() -> None:
         ]
         == 1
     )
+    assert report["postos_distintos"] == 1
 
 
 def test_station_quality_blocks_duplicate_business_key() -> None:
@@ -269,6 +270,8 @@ def test_station_quality_accepts_complete_fallback_without_cnpj() -> None:
         ]
         == 0
     )
+    assert report["postos_distintos_cnpj"] == 0
+    assert report["postos_distintos"] == 1
     assert report["status"] == "passed"
 
 
@@ -314,3 +317,49 @@ def test_station_quality_reports_missing_fallback_geography() -> None:
         == 1
     )
     assert report["status"] == "failed"
+
+
+def test_station_quality_counts_homonymous_municipalities_by_uf() -> None:
+    frame = pd.DataFrame(
+        {
+            "data_coleta": [
+                "2026-09-20",
+                "2026-09-20",
+            ],
+            "uf": [
+                "PI",
+                "RS",
+            ],
+            "municipio": [
+                "BOM JESUS",
+                "BOM JESUS",
+            ],
+            "produto": [
+                "GASOLINA",
+                "GASOLINA",
+            ],
+            "preco_revenda": [
+                6.10,
+                6.20,
+            ],
+            "unidade_medida": [
+                "R$ / litro",
+                "R$ / litro",
+            ],
+            "cnpj_revenda": [
+                "00.000.001/0001-36",
+                "00.000.002/0001-80",
+            ],
+            "revenda": [
+                "POSTO A",
+                "POSTO B",
+            ],
+        }
+    )
+
+    report = build_station_quality_report(
+        frame
+    )
+
+    assert report["municipios"] == 2
+    assert report["postos_distintos"] == 2

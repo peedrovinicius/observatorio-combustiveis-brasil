@@ -363,3 +363,21 @@ def test_common_gasoline_rejects_multiple_aliases() -> None:
         )
         is None
     )
+
+
+def test_quality_cards_prefers_total_station_identity_count() -> None:
+    from src.site import _quality_cards
+
+    cards = _quality_cards(
+        {"status": "passed"},
+        {
+            "status": "passed",
+            "municipios": 10,
+            "postos_distintos": 25,
+            "postos_distintos_cnpj": 20,
+        },
+    )
+
+    assert "Postos distintos" in cards
+    assert "<strong>25</strong>" in cards
+    assert "Postos por CNPJ" not in cards

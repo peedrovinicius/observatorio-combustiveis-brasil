@@ -69,3 +69,10 @@ Se houver mais de uma unidade de medida para gasolina comum, o ranking também n
 Da mesma forma, se mais de um rótulo de produto for reconhecido simultaneamente como gasolina comum no mesmo recorte, o site não escolhe um alias pela ordem dos dados. O ranking é tratado como indisponível até que a série esteja inequivocamente identificada.
 
 Essa regra mantém o HTML consistente com os gráficos e com a definição metodológica do ranking.
+
+
+## Cobertura por estabelecimento
+
+A cobertura de postos usa a identidade completa do projeto: CNPJ normalizado quando disponível e fallback confiável por UF, município, revenda, logradouro e número quando o CNPJ está ausente. O indicador público `Postos distintos` não se limita, portanto, aos estabelecimentos com CNPJ preenchido.
+
+Municípios são contados pela combinação UF + município, evitando fundir localidades homônimas de estados diferentes.

@@ -119,6 +119,8 @@ Permite comparar dispersão relativa entre municípios ou produtos.
 
 Quantidade de estabelecimentos distintos no recorte, usando CNPJ quando disponível e identidade de fallback quando necessário.
 
+Nos cartões de cobertura do relatório web, a contagem usa essa identidade completa. A métrica `postos_distintos_cnpj` permanece apenas como diagnóstico específico de registros identificados por CNPJ.
+
 ### Cobertura
 
 O resumo anual identifica municípios pela combinação de UF e nome, evitando fundir municípios homônimos de estados diferentes.

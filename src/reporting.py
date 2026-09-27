@@ -349,13 +349,18 @@ def build_insights_markdown(
             "- Dados por posto: "
             f"**{quality_stations.get('status', 'n/d')}**"
         )
-        if (
-            "postos_distintos_cnpj"
-            in quality_stations
-        ):
+        station_count = (
+            quality_stations.get(
+                "postos_distintos",
+                quality_stations.get(
+                    "postos_distintos_cnpj",
+                ),
+            )
+        )
+        if station_count is not None:
             lines.append(
-                "- Postos distintos por CNPJ: "
-                f"**{quality_stations['postos_distintos_cnpj']}**"
+                "- Postos distintos: "
+                f"**{station_count}**"
             )
         if (
             "municipios"

@@ -338,8 +338,11 @@ def _quality_cards(
     establishments = (
         str(
             stations.get(
-                "postos_distintos_cnpj",
-                "n/d",
+                "postos_distintos",
+                stations.get(
+                    "postos_distintos_cnpj",
+                    "n/d",
+                ),
             )
         )
         if stations
@@ -360,7 +363,7 @@ def _quality_cards(
         <strong>{html.escape(municipalities)}</strong>
       </article>
       <article class="metric">
-        <span>Postos por CNPJ</span>
+        <span>Postos distintos</span>
         <strong>{html.escape(establishments)}</strong>
       </article>
     """

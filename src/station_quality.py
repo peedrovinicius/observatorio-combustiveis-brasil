@@ -75,8 +75,28 @@ def build_station_quality_report(
         .dropna()
         .nunique()
     )
-    report["municipios"] = int(
+    municipality_uf = (
+        working["uf"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+        .replace("", pd.NA)
+    )
+    municipality_name = (
         working["municipio"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+        .replace("", pd.NA)
+    )
+    municipality_identity = (
+        municipality_uf.str.cat(
+            municipality_name,
+            sep="|",
+        )
+    )
+    report["municipios"] = int(
+        municipality_identity
         .dropna()
         .nunique()
     )
@@ -175,6 +195,25 @@ def build_station_quality_report(
         ].sum()
     )
 
+    identity = station_identity(
+        working
+    )
+    valid_identity = ~(
+        identity_issues[
+            "invalid_cnpj"
+        ]
+        | identity_issues[
+            "fallback_incomplete"
+        ]
+    )
+    report["postos_distintos"] = int(
+        identity.loc[
+            valid_identity
+        ]
+        .dropna()
+        .nunique()
+    )
+
     if "bandeira" in working.columns:
         bandeira = (
             working["bandeira"]
@@ -215,7 +254,7 @@ def build_station_quality_report(
 
     working[
         "_posto_identidade"
-    ] = station_identity(working)
+    ] = identity
     keys = [
         column
         for column in BUSINESS_KEY
