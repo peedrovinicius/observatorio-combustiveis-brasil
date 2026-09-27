@@ -497,9 +497,8 @@ def _replace_processed_batch(
                 backed_up
             ):
                 if backup.exists():
-                    shutil.move(
-                        str(backup),
-                        str(original),
+                    backup.rename(
+                        original
                     )
             raise
 
