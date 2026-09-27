@@ -85,3 +85,8 @@ Municípios são contados pela combinação UF + município, evitando fundir loc
 ## Contrato visual do README
 
 A mesma lista de cinco imagens é compartilhada entre a geração do snapshot e a publicação do bloco visual do README. A atualização do README exige que o relatório de resultados e todos os PNGs existam e tenham conteúdo, evitando referências para um snapshot incompleto.
+
+
+## Coerência do estado versionado
+
+O repositório também testa que a publicação versionada é tudo ou nada. Se qualquer parte do snapshot público estiver presente, o conjunto completo deve existir: relatório de resultados, HTML, assets do site, cinco imagens do snapshot e bloco de resultados no README. Quando nenhum snapshot foi revisado e versionado, os marcadores do README permanecem vazios.

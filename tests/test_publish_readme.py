@@ -256,3 +256,68 @@ def test_publish_readme_rejects_empty_public_asset(
             results,
             snapshot,
         )
+
+
+def test_repository_public_snapshot_is_all_or_nothing() -> None:
+    readme = (
+        PROJECT_ROOT
+        / "README.md"
+    ).read_text(
+        encoding="utf-8",
+    )
+    block = (
+        readme.split(
+            START_MARKER,
+            1,
+        )[1]
+        .split(
+            END_MARKER,
+            1,
+        )[0]
+        .strip()
+    )
+
+    snapshot_dir = (
+        PROJECT_ROOT
+        / "assets"
+        / "snapshot"
+    )
+    results = (
+        PROJECT_ROOT
+        / "docs"
+        / "resultados-2026.md"
+    )
+    site = (
+        PROJECT_ROOT
+        / "docs"
+        / "index.html"
+    )
+    site_assets = (
+        PROJECT_ROOT
+        / "docs"
+        / "assets"
+    )
+    snapshot_images = [
+        snapshot_dir
+        / filename
+        for filename in README_IMAGES
+    ]
+    public_items = [
+        results,
+        site,
+        site_assets,
+        *snapshot_images,
+    ]
+    existing = [
+        path.exists()
+        for path in public_items
+    ]
+
+    if any(existing):
+        assert all(existing)
+        assert (
+            "## Resultados reais de 2026"
+            in block
+        )
+    else:
+        assert block == ""
