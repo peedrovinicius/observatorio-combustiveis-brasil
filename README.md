@@ -28,7 +28,7 @@ A fonte principal é a Agência Nacional do Petróleo, Gás Natural e Biocombust
 - rastreabilidade com origem, horário, tamanho e SHA-256;
 - tratamento e validação com Python e pandas;
 - série agregada para Brasil, regiões, estados e municípios;
-- segunda camada no grão por posto, produto e data de coleta;
+- segunda camada no grão por posto, produto, unidade de medida e data de coleta;
 - dois modelos estrela separados por granularidade;
 - PostgreSQL com DDL, views e consultas analíticas;
 - KPIs, rankings, tendência e relação etanol/gasolina;
@@ -45,8 +45,8 @@ O projeto mantém dois grãos analíticos separados para não misturar conceitos
 
 | Camada | Grão | Uso principal |
 | --- | --- | --- |
-| Agregados oficiais | período × produto × localidade | indicadores publicados e comparações geográficas |
-| Preços por posto | data da coleta × posto × produto | dispersão, bandeira, revenda e distribuição de preços |
+| Agregados oficiais | período × produto × unidade de medida × localidade | indicadores publicados e comparações geográficas |
+| Preços por posto | data da coleta × posto × produto × unidade de medida | dispersão, bandeira, revenda e distribuição de preços |
 
 Os detalhes estão em [`docs/modelo-dados.md`](docs/modelo-dados.md) e [`docs/dados-abertos-postos.md`](docs/dados-abertos-postos.md).
 
