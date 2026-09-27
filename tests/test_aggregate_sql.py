@@ -100,3 +100,32 @@ def test_ratio_sql_requires_same_unit() -> None:
         "PARTITION BY uf, municipio, unidade_medida"
         in sql
     )
+
+
+def test_latest_aggregate_view_is_scoped_by_geographic_level() -> None:
+    sql = VIEWS_SQL.read_text(
+        encoding="utf-8",
+    )
+
+    assert (
+        "GROUP BY\n        produto,\n        unidade_medida,\n        nivel_geografico"
+        in sql
+    )
+    assert (
+        "u.nivel_geografico = v.nivel_geografico"
+        in sql
+    )
+
+
+def test_city_top_20_is_partitioned_by_product_unit() -> None:
+    sql = QUERIES_SQL.read_text(
+        encoding="utf-8",
+    )
+
+    assert "WITH municipios_ordenados AS" in sql
+    assert (
+        "PARTITION BY\n                produto,\n                unidade_medida"
+        in sql
+    )
+    assert "WHERE ordem <= 20" in sql
+    assert "LIMIT 20" not in sql
