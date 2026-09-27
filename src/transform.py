@@ -83,21 +83,81 @@ def parse_decimal_series(series: pd.Series) -> pd.Series:
     def parse(value: object) -> float | None:
         if pd.isna(value):
             return None
-        if isinstance(value, (int, float)):
-            return float(value)
+        if isinstance(
+            value,
+            (
+                int,
+                float,
+            ),
+        ):
+            return float(
+                value
+            )
 
-        text = str(value).strip().replace("R$", "").replace(" ", "")
+        text = (
+            str(
+                value
+            )
+            .strip()
+            .replace(
+                "R$",
+                "",
+            )
+            .replace(
+                "\u00a0",
+                "",
+            )
+            .replace(
+                " ",
+                "",
+            )
+        )
         if not text:
             return None
-        if "," in text:
-            text = text.replace(".", "").replace(",", ".")
+
+        if (
+            "," in text
+            and "." in text
+        ):
+            if (
+                text.rfind(
+                    ","
+                )
+                > text.rfind(
+                    "."
+                )
+            ):
+                text = (
+                    text.replace(
+                        ".",
+                        "",
+                    )
+                    .replace(
+                        ",",
+                        ".",
+                    )
+                )
+            else:
+                text = text.replace(
+                    ",",
+                    "",
+                )
+        elif "," in text:
+            text = text.replace(
+                ",",
+                ".",
+            )
 
         try:
-            return float(text)
+            return float(
+                text
+            )
         except ValueError:
             return None
 
-    return series.map(parse)
+    return series.map(
+        parse
+    )
 
 
 def detect_header_row(path: Path, sheet_name: str, max_rows: int = 30) -> int:
@@ -128,16 +188,56 @@ def read_excel_sheet(path: Path, sheet_name: str) -> pd.DataFrame:
     frame = pd.read_excel(path, sheet_name=sheet_name, header=header_row)
     frame = frame.dropna(how="all").copy()
 
-    frame.columns = [normalize_column(column) for column in frame.columns]
+    normalized_columns = [
+        normalize_column(
+            column
+        )
+        for column in frame.columns
+    ]
+    duplicates = sorted(
+        {
+            column
+            for column in normalized_columns
+            if (
+                column
+                and not column.startswith(
+                    "unnamed"
+                )
+                and normalized_columns.count(
+                    column
+                )
+                > 1
+            )
+        }
+    )
+    if duplicates:
+        raise ValueError(
+            "Colunas duplicadas após normalização "
+            f"em {sheet_name}: "
+            + ", ".join(
+                duplicates
+            )
+        )
+
+    frame.columns = (
+        normalized_columns
+    )
 
     unnamed = [
-        column for column in frame.columns
-        if not column or column.startswith("unnamed")
+        column
+        for column in frame.columns
+        if (
+            not column
+            or column.startswith(
+                "unnamed"
+            )
+        )
     ]
     if unnamed:
-        frame = frame.drop(columns=unnamed, errors="ignore")
-
-    frame = frame.loc[:, ~frame.columns.duplicated()].copy()
+        frame = frame.drop(
+            columns=unnamed,
+            errors="ignore",
+        )
 
     for column in ("data_inicial", "data_final", "data_coleta"):
         if column in frame.columns:
@@ -157,10 +257,18 @@ def read_excel_sheet(path: Path, sheet_name: str) -> pd.DataFrame:
         if column in frame.columns:
             frame[column] = parse_decimal_series(frame[column])
 
-    if "postos_pesquisados" in frame.columns:
-        frame["postos_pesquisados"] = pd.to_numeric(
-            frame["postos_pesquisados"], errors="coerce"
-        ).astype("Int64")
+    if (
+        "postos_pesquisados"
+        in frame.columns
+    ):
+        frame[
+            "postos_pesquisados"
+        ] = pd.to_numeric(
+            frame[
+                "postos_pesquisados"
+            ],
+            errors="coerce",
+        )
 
     frame["fonte_arquivo"] = path.name
     frame["fonte_planilha"] = sheet_name
