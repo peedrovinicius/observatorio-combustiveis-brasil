@@ -382,6 +382,7 @@ def test_consolidation_audit_measures_overlap(
         ]
         == 1
     )
+    assert audit["status"] == "review"
 
 
 def test_station_star_schema_keeps_fact_grain() -> None:
@@ -1016,3 +1017,116 @@ def test_deduplication_keeps_fallback_without_uf_separate() -> None:
     )
 
     assert len(result) == 2
+
+
+
+def test_station_consolidation_reviews_rows_outside_2026(
+    tmp_path: Path,
+) -> None:
+    valid = [
+        "NE",
+        "CE",
+        "FORTALEZA",
+        "POSTO A",
+        "00.000.001/0001-36",
+        "RUA A",
+        "1",
+        "",
+        "CENTRO",
+        "60000-000",
+        "GASOLINA",
+        "20/09/2026",
+        "6,10",
+        "",
+        "R$ / litro",
+        "BRANCA",
+    ]
+    outside = valid.copy()
+    outside[3] = "POSTO B"
+    outside[4] = "00.000.002/0001-80"
+    outside[11] = "20/09/2025"
+
+    _write_sample(
+        tmp_path
+        / "dados.csv",
+        [
+            valid,
+            outside,
+        ],
+    )
+
+    frame, audit = (
+        consolidate_station_data_with_audit(
+            tmp_path
+        )
+    )
+
+    assert len(frame) == 1
+    assert (
+        audit["arquivos"][0][
+            "linhas_fora_2026"
+        ]
+        == 1
+    )
+    assert audit["status"] == "review"
+
+
+def test_prepare_station_file_rejects_duplicate_normalized_columns(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "duplicado.csv"
+    )
+    frame = pd.DataFrame(
+        [[
+            "NE",
+            "CE",
+            "CE",
+            "FORTALEZA",
+            "POSTO",
+            "00.000.001/0001-36",
+            "RUA A",
+            "1",
+            "",
+            "CENTRO",
+            "60000-000",
+            "GASOLINA",
+            "20/09/2026",
+            "6,10",
+            "R$ / litro",
+        ]],
+        columns=[
+            "Regiao - Sigla",
+            "Estado - Sigla",
+            "UF",
+            "Municipio",
+            "Revenda",
+            "CNPJ da Revenda",
+            "Nome da Rua",
+            "Numero Rua",
+            "Complemento",
+            "Bairro",
+            "Cep",
+            "Produto",
+            "Data da Coleta",
+            "Valor de Venda",
+            "Unidade de Medida",
+        ],
+    )
+    frame.to_csv(
+        path,
+        sep=";",
+        index=False,
+        encoding="utf-8-sig",
+    )
+
+    import pytest
+
+    with pytest.raises(
+        ValueError,
+        match="colunas duplicadas após normalização",
+    ):
+        prepare_station_file(
+            path
+        )
