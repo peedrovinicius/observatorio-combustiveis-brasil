@@ -94,3 +94,37 @@ def test_notebooks_use_python_kernel_metadata() -> None:
             )
             == "python3"
         )
+
+
+def test_notebook_trend_mentions_unit_grouping() -> None:
+    path = (
+        PROJECT_ROOT
+        / "notebooks"
+        / "01_analise_exploratoria.ipynb"
+    )
+    notebook = json.loads(
+        path.read_text(
+            encoding="utf-8",
+        )
+    )
+    source = "\n".join(
+        "".join(
+            cell.get(
+                "source",
+                []
+            )
+        )
+        for cell in notebook.get(
+            "cells",
+            []
+        )
+        if cell.get(
+            "cell_type"
+        ) == "code"
+    )
+
+    assert "groupby('unidade_medida'" in source
+    assert (
+        "produto', 'unidade_medida'"
+        in source
+    )
