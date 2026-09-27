@@ -16,6 +16,8 @@ O serviço cria:
 - usuário: `combustiveis`;
 - porta local: `5432`.
 
+No fluxo `run_local.ps1 -WithPostgres`, o Docker Compose espera o `healthcheck` do PostgreSQL ficar saudável antes de executar `src.load_postgres`. O limite de espera é de 60 segundos.
+
 A senha do `docker-compose.yml` é apenas para desenvolvimento local.
 
 ## 2. Configuração
