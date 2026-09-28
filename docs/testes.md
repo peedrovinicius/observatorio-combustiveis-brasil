@@ -31,6 +31,8 @@ A suíte verifica, entre outros pontos:
 - substituição transacional do lote completo de datasets por posto e manifesto;
 - bloqueio de descoberta parcial ou duplicada dos dados abertos de 2026;
 - verificação ativa de tamanho e SHA-256 da camada raw contra os manifestos;
+- manifesto transacional da transformação por posto ligado ao manifesto raw;
+- rejeição de adulteração do bundle processado por posto, incluindo CSV, auditoria e manifesto raw;
 - rejeição de arquivos raw ou CSVs extraídos não manifestados;
 - substituição transacional do lote histórico e do manifesto com rollback integral;
 - normalização de schema;
