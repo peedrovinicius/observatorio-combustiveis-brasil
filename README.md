@@ -11,7 +11,7 @@ Dados oficiais da ANP transformados em pipeline reprodutível, PostgreSQL, anál
 ![Power BI](https://img.shields.io/badge/Power%20BI-Dashboard-F2C811?logo=powerbi&logoColor=black)
 ![Fonte](https://img.shields.io/badge/Fonte-ANP.gov.br-0B6E4F)
 
-[Relatório web](docs/index.html) · [Metodologia](docs/metodologia.md) · [Modelo de dados](docs/modelo-dados.md) · [Execução](docs/execucao.md) · [Issues](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/issues) · [Como contribuir](CONTRIBUTING.md)
+[HTML do relatório](docs/index.html) · [Metodologia](docs/metodologia.md) · [Modelo de dados](docs/modelo-dados.md) · [Execução](docs/execucao.md) · [Issues](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/issues) · [Como contribuir](CONTRIBUTING.md)
 
 **Cobertura:** 2026 · agregados oficiais e preços por posto · fonte ANP
 
