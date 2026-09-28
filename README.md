@@ -2,7 +2,7 @@
 
 # Observatório de Combustíveis Brasil
 
-Pipeline analítico de preços de combustíveis com dados públicos oficiais da ANP.
+Dados oficiais da ANP transformados em pipeline reprodutível, PostgreSQL, análises SQL e preparação para Power BI.
 
 [![CI](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/actions/workflows/ci.yml/badge.svg)](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
@@ -11,7 +11,9 @@ Pipeline analítico de preços de combustíveis com dados públicos oficiais da 
 ![Power BI](https://img.shields.io/badge/Power%20BI-Dashboard-F2C811?logo=powerbi&logoColor=black)
 ![Fonte](https://img.shields.io/badge/Fonte-ANP.gov.br-0B6E4F)
 
-[Metodologia](docs/metodologia.md) · [Modelo de dados](docs/modelo-dados.md) · [Execução](docs/execucao.md) · [Issues](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/issues) · [Como contribuir](CONTRIBUTING.md)
+[Relatório web](docs/index.html) · [Metodologia](docs/metodologia.md) · [Modelo de dados](docs/modelo-dados.md) · [Execução](docs/execucao.md) · [Issues](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/issues) · [Como contribuir](CONTRIBUTING.md)
+
+**Cobertura:** 2026 · agregados oficiais e preços por posto · fonte ANP
 
 </div>
 
