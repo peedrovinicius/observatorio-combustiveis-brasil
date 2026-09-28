@@ -3,3 +3,9 @@ contact_links:
   - name: Documentação do projeto
     url: https://github.com/peedrovinicius/observatorio-combustiveis-brasil#metodologia
     about: Consulte metodologia, fontes, modelo de dados e testes antes de abrir uma issue.
+  - name: Suporte
+    url: https://github.com/peedrovinicius/observatorio-combustiveis-brasil/blob/main/SUPPORT.md
+    about: Veja onde registrar problemas, melhorias e dúvidas sobre o projeto.
+  - name: Segurança
+    url: https://github.com/peedrovinicius/observatorio-combustiveis-brasil/blob/main/SECURITY.md
+    about: Vulnerabilidades ainda não corrigidas não devem ser publicadas em issues.
