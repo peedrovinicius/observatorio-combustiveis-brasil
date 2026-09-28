@@ -2,7 +2,7 @@
 
 # Observatório de Combustíveis Brasil
 
-**Data Analytics de preços de combustíveis com dados públicos oficiais da ANP**
+Pipeline analítico de preços de combustíveis com dados públicos oficiais da ANP.
 
 [![CI](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/actions/workflows/ci.yml/badge.svg)](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
@@ -10,6 +10,8 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Modelo%20Estrela-4169E1?logo=postgresql&logoColor=white)
 ![Power BI](https://img.shields.io/badge/Power%20BI-Dashboard-F2C811?logo=powerbi&logoColor=black)
 ![Fonte](https://img.shields.io/badge/Fonte-ANP.gov.br-0B6E4F)
+
+[Metodologia](docs/metodologia.md) · [Modelo de dados](docs/modelo-dados.md) · [Execução](docs/execucao.md) · [Como contribuir](CONTRIBUTING.md)
 
 </div>
 
