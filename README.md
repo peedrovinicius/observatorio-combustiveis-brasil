@@ -25,23 +25,14 @@ A fonte principal é a Agência Nacional do Petróleo, Gás Natural e Biocombust
 
 ## O que o projeto entrega
 
-- ingestão reproduzível de dados oficiais da ANP;
-- rastreabilidade com origem, horário, tamanho e SHA-256;
-- manifestos de transformação para as camadas agregada e por posto;
-- tratamento e validação com Python e pandas;
-- série agregada para Brasil, regiões, estados e municípios;
-- segunda camada no grão por posto, produto, unidade de medida e data de coleta;
-- dois modelos estrela separados por granularidade;
-- PostgreSQL com DDL, views e consultas analíticas;
-- KPIs, rankings, tendência e relação etanol/gasolina;
-- média, mediana, quartis, dispersão, cobertura e bandeiras na camada por posto;
-- notebook de análise exploratória;
-- relatório web estático em `docs/`;
-- medidas DAX, tema e especificação visual para Power BI;
-- auditoria explícita de linhas excluídas e sobreposições entre fontes;
-- testes unitários e integração offline do fluxo analítico;
-- Ruff, cobertura mínima e integração PostgreSQL real no CI;
-- smoke test agendado contra as fontes oficiais da ANP.
+- ingestão e validação de dados oficiais da ANP, com manifestos e SHA-256;
+- camadas analíticas separadas para agregados oficiais e preços por posto;
+- modelos estrela e carga PostgreSQL com DDL, views e consultas analíticas;
+- KPIs de preço, dispersão, cobertura, bandeiras e relação etanol/gasolina;
+- notebook, relatório web estático e especificação para Power BI;
+- auditoria de exclusões, sobreposições e qualidade dos dados;
+- testes unitários, integração offline e PostgreSQL real na CI;
+- smoke test periódico das fontes oficiais.
 
 ## Arquitetura de dados
 
