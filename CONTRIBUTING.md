@@ -8,6 +8,18 @@ Contribuições são bem-vindas quando preservam a rastreabilidade dos dados, a 
 2. Se a mudança não estiver registrada, abra uma issue descrevendo problema, motivação e escopo.
 3. Informe se a proposta afeta fonte, granularidade, regra de qualidade, KPI, SQL, DAX ou visualização.
 
+## Boas primeiras contribuições
+
+Há espaço para contribuições pequenas e verificáveis, especialmente em:
+
+- documentação de fontes, KPIs e exemplos;
+- testes para validações já existentes;
+- consultas SQL adicionais sobre métricas já modeladas;
+- melhorias de acessibilidade e apresentação do relatório;
+- verificações de qualidade que preservem a separação entre agregados e preços por posto.
+
+Mudanças metodológicas ou de granularidade devem ser discutidas em uma issue antes da implementação.
+
 ## Fluxo recomendado
 
 1. Crie uma branch curta e específica a partir de `main`.
