@@ -11,7 +11,7 @@ Pipeline analítico de preços de combustíveis com dados públicos oficiais da 
 ![Power BI](https://img.shields.io/badge/Power%20BI-Dashboard-F2C811?logo=powerbi&logoColor=black)
 ![Fonte](https://img.shields.io/badge/Fonte-ANP.gov.br-0B6E4F)
 
-[Metodologia](docs/metodologia.md) · [Modelo de dados](docs/modelo-dados.md) · [Execução](docs/execucao.md) · [Como contribuir](CONTRIBUTING.md)
+[Metodologia](docs/metodologia.md) · [Modelo de dados](docs/modelo-dados.md) · [Execução](docs/execucao.md) · [Issues](https://github.com/peedrovinicius/observatorio-combustiveis-brasil/issues) · [Como contribuir](CONTRIBUTING.md)
 
 </div>
 
