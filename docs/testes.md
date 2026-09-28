@@ -1,162 +1,55 @@
 # Testes
 
-O projeto usa `pytest` para validar regras unitárias e um fluxo de integração offline.
+O projeto usa `pytest` para testes unitários e de integração.
 
 ## Execução
 
-Instale o perfil de desenvolvimento:
-
 ```bash
 python -m pip install -r requirements-dev.txt
-```
-
-Depois execute:
-
-```bash
 python -m pytest
 ```
 
-O runner local executa a mesma suíte antes do pipeline:
+No Windows, `scripts/run_local.ps1` executa a suíte antes do pipeline.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\run_local.ps1
-```
+## Cobertura
 
-## Cobertura lógica
+Os testes estão organizados em torno dos contratos que sustentam o pipeline:
 
-A suíte verifica, entre outros pontos:
+- descoberta, download e integridade das fontes oficiais;
+- normalização de schema, datas, números e unidades;
+- proveniência e SHA-256 das camadas raw e processada;
+- deduplicação, sobreposições e identidade de estabelecimentos;
+- barreiras de qualidade para agregados e dados por posto;
+- modelos estrela, chaves e integridade referencial;
+- KPIs e regras de comparação entre produtos e unidades;
+- contratos de carga e consultas PostgreSQL;
+- geração de gráficos, site e publicação transacional do snapshot;
+- rollback de saídas quando uma etapa de publicação falha;
+- higiene dos notebooks e regras de estilo do repositório.
 
-- descoberta das fontes oficiais;
-- reconhecimento de CSV, ZIP e XLSX pelo conteúdo;
-- substituição transacional do lote completo de datasets por posto e manifesto;
-- bloqueio de descoberta parcial ou duplicada dos dados abertos de 2026;
-- verificação ativa de tamanho e SHA-256 da camada raw contra os manifestos;
-- manifesto transacional da transformação por posto ligado ao manifesto raw;
-- rejeição de adulteração do bundle processado por posto, incluindo CSV, auditoria e manifesto raw;
-- rejeição de arquivos raw ou CSVs extraídos não manifestados;
-- substituição transacional do lote histórico e do manifesto com rollback integral;
-- normalização de schema;
-- rejeição de colunas que colidem depois da normalização;
-- preservação de valores numéricos anômalos para diagnóstico posterior;
-- substituição transacional do lote de CSVs processados;
-- publicação transacional do manifesto de transformação histórica junto dos CSVs;
-- verificação de SHA-256 entre manifesto raw, manifesto processado e CSVs históricos;
-- rejeição de edição ou inserção manual de CSV histórico processado;
-- preservação integral do lote processado anterior quando uma planilha é inválida ou a instalação falha;
-- datas e decimais;
-- consolidação de 2026;
-- cobertura completa dos quatro escopos históricos;
-- compatibilidade entre escopo histórico e nível geográfico;
-- remoção apenas de duplicatas semanticamente equivalentes;
-- preservação de duplicidades divergentes para a barreira de qualidade;
-- qualidade agregada;
-- rejeição de datasets vazios nas duas camadas;
-- proveniência obrigatória da fato agregada;
-- coerência semântica das estatísticas agregadas;
-- identidade geográfica mínima por nível antes da modelagem;
-- identidade e deduplicação de postos;
-- suporte ao CNPJ alfanumérico sem remoção de letras;
-- preservação de zeros à esquerda na leitura de CNPJ;
-- bloqueio de CNPJ com formato estrutural incompatível e fallback de posto incompleto;
-- exigência dos cinco componentes do fallback de identidade;
-- preservação de linhas com fallback incompleto sem deduplicação indevida;
-- exclusão de fallback incompleto da auditoria de sobreposição;
-- precedência entre publicações sobrepostas;
-- auditoria de exclusões agregadas e por posto;
-- status de revisão para linhas por posto fora de 2026 e sobreposições com preço divergente;
-- publicação transacional das bases consolidadas junto das respectivas auditorias;
-- substituição transacional dos lotes de modelo e analytics;
-- rollback integral dos CSVs derivados quando uma escrita ou instalação falha;
-- modelo estrela agregado;
-- barreira de qualidade antes da modelagem agregada;
-- modelo estrela por posto;
-- presença da proveniência `fonte_arquivo` antes da modelagem por posto;
-- KPIs agregados;
-- semântica produto + unidade de medida nos analytics agregados;
-- relação etanol/gasolina somente entre observações da mesma unidade;
-- bloqueio de grupos ambíguos na relação etanol/gasolina;
-- barreira de qualidade antes dos analytics agregados;
-- proveniência obrigatória antes da publicação dos analytics agregados e por posto;
-- análises por estabelecimento;
-- analytics por posto preservam séries independentes por combinação de produto e unidade de medida;
-- barreira de qualidade antes dos analytics por posto;
-- contrato dos CSVs com PostgreSQL;
-- validação de tipos e limites dos CSVs agregados antes do COPY;
-- integridade referencial dos CSVs agregados antes da conexão com PostgreSQL;
-- bloqueio pré-carga de dimensões temporais fora de 2026;
-- alinhamento automático entre cabeçalhos gerados pelo modelo por posto, contrato da carga e colunas declaradas no SQL;
-- alinhamento automático entre o modelo agregado, contrato da carga e `sql/schema.sql`;
-- limites de texto, hash SHA-256, coerência temporal e precisão decimal antes do COPY;
-- integridade referencial dos CSVs por posto antes da conexão com PostgreSQL;
-- unicidade do grão das duas tabelas fato no PostgreSQL;
-- unicidade natural de localidade e produto por posto no PostgreSQL;
-- separação segura de comandos SQL com strings, comentários e blocos PostgreSQL;
-- consistência das consultas SQL agregadas com a última semana por produto e unidade de medida;
-- guardas DAX contra mistura de unidades;
-- última semana comparável para etanol e gasolina comum;
-- consistência das consultas SQL por posto com a regra de última coleta por combinação de produto e unidade de medida;
-- regra mínima de amostra por bandeira no SQL;
-- geração de gráficos;
-- publicação transacional do bundle visual com rollback;
-- geração de placeholders visuais para recortes vazios ou sem gasolina comum;
-- publicação transacional de snapshot, site e README;
-- rollback integral do snapshot versionável quando a instalação falha;
-- construção do relatório web;
-- proibição de substituição silenciosa da gasolina comum por outro produto no site;
-- regra de estilo que bloqueia travessões tipográficos nos arquivos textuais do repositório;
-- higiene dos notebooks, sem outputs ou contadores de execução versionados.
+A lista de casos executados está nos arquivos `tests/test_*.py` e `tests/integration/`, que são a referência para o comportamento coberto.
 
 ## Integração offline
 
-`tests/integration/test_offline_pipeline.py` cria arquivos temporários sintéticos apenas durante o teste.
-
-O teste percorre:
+`tests/integration/test_offline_pipeline.py` cria fixtures temporárias e percorre os dois fluxos principais sem depender da rede:
 
 ```text
-Excel agregado
-  -> transformação
-  -> consolidação
-  -> qualidade
-  -> modelo estrela
-  -> analytics
-
-CSV no schema por posto
-  -> ingestão
-  -> auditoria
-  -> qualidade
-  -> modelo estrela
-  -> analytics por posto
-
-saídas analíticas
-  -> cinco gráficos
-  -> relatório de insights
+Excel agregado -> transformação -> consolidação -> qualidade -> modelo -> analytics
+CSV por posto  -> ingestão -> auditoria -> qualidade -> modelo -> analytics
 ```
 
-As fixtures não entram em `data/`, não são publicadas e não são usadas nos resultados do projeto. O objetivo é validar a integração entre componentes sem depender da rede ou da disponibilidade momentânea do portal da ANP.
-
+As fixtures não são publicadas nem usadas nos resultados do projeto.
 
 ## Qualidade do código e cobertura
 
-O CI executa `ruff check .` antes da suíte de testes. O Ruff bloqueia erros de importação, imports mortos e erros sintáticos cobertos pelas regras configuradas no `pyproject.toml`.
+A CI executa `ruff check .` antes dos testes. A cobertura usa branch coverage sobre `src/` e exige no mínimo 75%.
 
-A cobertura é medida com branch coverage sobre `src/`. A baseline observada ao ativar o controle foi de 77%, e o projeto exige no mínimo 75% para impedir regressões sem transformar pequenas oscilações em falha artificial.
+## PostgreSQL no CI
 
-## PostgreSQL real no CI
+`tests/integration/test_postgres_live.py` roda contra PostgreSQL 16, aplica schemas e constraints, executa `COPY` e valida registros nas tabelas fato e na view agregada.
 
-Além dos testes de contrato SQL, o CI sobe um serviço PostgreSQL 16 real e executa `tests/integration/test_postgres_live.py`.
+## Smoke das fontes da ANP
 
-O teste cria um bundle sintético dos dois modelos, executa o loader completo, aplica schemas, constraints, `COPY` e views, e confirma registros nas duas tabelas fato e na view agregada.
+`.github/workflows/anp-smoke.yml` roda semanalmente e também pode ser acionado manualmente. Ele verifica as páginas de origem, os escopos esperados, o acesso aos recursos e as assinaturas dos formatos publicados.
 
-## Smoke das fontes oficiais da ANP
-
-O workflow `.github/workflows/anp-smoke.yml` pode ser disparado manualmente e também roda semanalmente.
-
-Ele valida ao vivo:
-
-- a página histórica e os quatro escopos esperados;
-- a página de dados abertos por posto;
-- a presença das famílias mínimas de 2026;
-- acesso HTTP aos recursos descobertos;
-- assinatura de ZIP/XLSX e conteúdo CSV sem baixar integralmente cada arquivo.
-
-Esse workflow é separado do CI normal para que uma indisponibilidade externa da ANP não bloqueie todo commit local.
+O smoke fica separado da CI normal para que indisponibilidade externa da ANP não bloqueie alterações no código.
