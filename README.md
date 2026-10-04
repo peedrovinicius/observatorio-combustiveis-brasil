@@ -81,6 +81,27 @@ O snapshot cria o relatório de resultados, os gráficos, o relatório web está
 Instruções completas: [`docs/execucao.md`](docs/execucao.md).
 
 <!-- RESULTS:START -->
+
+## Resultados reais de 2026
+
+Os resultados abaixo são gerados pelo pipeline a partir das fontes públicas oficiais da ANP.
+
+[Ver relatório completo](docs/resultados-2026.md)
+
+<p align="center">
+  <img src="assets/snapshot/tendencia_brasil_2026.png" alt="Tendência dos preços no Brasil em 2026" width="95%" />
+</p>
+
+<p align="center">
+  <img src="assets/snapshot/ranking_ufs_gasolina.png" alt="Ranking de preços por UF" width="47%" />
+  <img src="assets/snapshot/etanol_gasolina_municipios.png" alt="Relação entre etanol e gasolina por município" width="47%" />
+</p>
+
+<p align="center">
+  <img src="assets/snapshot/dispersao_municipios_postos.png" alt="Dispersão dos preços observados por município" width="47%" />
+  <img src="assets/snapshot/mediana_bandeiras_postos.png" alt="Mediana dos preços observados por bandeira" width="47%" />
+</p>
+
 <!-- RESULTS:END -->
 
 ## Saídas analíticas

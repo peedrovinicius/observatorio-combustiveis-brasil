@@ -783,3 +783,27 @@ def test_validated_aggregate_analytics_rejects_blank_provenance() -> None:
         build_validated_analytics_exports(
             frame
         )
+
+
+def test_real_anp_state_names_keep_homonymous_cities_separate() -> None:
+    frame = pd.DataFrame({
+        "data_inicial": ["2026-09-20"] * 4,
+        "nivel_geografico": ["municipio"] * 4,
+        "estado": ["PARÁ", "PARÁ", "RIO GRANDE DO NORTE", "RIO GRANDE DO NORTE"],
+        "municipio": ["SAO MIGUEL"] * 4,
+        "produto": ["ETANOL", "GASOLINA", "ETANOL", "GASOLINA"],
+        "unidade_medida": ["R$/L"] * 4,
+        "preco_medio_revenda": [4.0, 5.0, 3.0, 6.0],
+    })
+    result = build_ethanol_gasoline_ratio(frame).set_index("uf")
+    assert len(result) == 2
+    assert result.loc["PA", "relacao_etanol_gasolina_pct"] == 80.0
+    assert result.loc["RN", "relacao_etanol_gasolina_pct"] == 50.0
+    assert "uf" not in frame.columns
+
+
+def test_state_name_conversion_preserves_existing_uf() -> None:
+    frame = _sample()
+    frame["estado"] = "SAO PAULO"
+    result = build_ethanol_gasoline_ratio(frame)
+    assert result.iloc[0]["uf"] == "CE"

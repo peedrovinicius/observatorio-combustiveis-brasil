@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="Análise de preços de combustíveis no Brasil com dados públicos da ANP."
+  />
+  <title>Observatório de Combustíveis Brasil</title>
+  <link rel="stylesheet" href="site.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="shell">
+      <p class="eyebrow">Dados públicos oficiais da ANP</p>
+      <h1>Observatório de Combustíveis Brasil</h1>
+      <p class="lead">
+        Preços de combustíveis em 2026 analisados com Python,
+        PostgreSQL, modelagem dimensional e Power BI.
+      </p>
+      <p class="updated">Atualização do relatório: 2026-10-04 14:02 UTC</p>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section>
+      <div class="section-heading">
+        <p class="eyebrow">Brasil</p>
+        <h2>Indicadores principais</h2>
+      </div>
+      <div class="cards">
+        
+            <article class="card">
+              <p class="eyebrow">ETANOL HIDRATADO · R$/l</p>
+              <strong>R$ 4,13</strong>
+              <span>última semana</span>
+              <dl>
+                <div><dt>Variação semanal</dt><dd>+0,73%</dd></div>
+                <div><dt>Desde início do ano</dt><dd>-8,83%</dd></div>
+                <div><dt>Mínimo em 2026</dt><dd>R$ 3,91</dd></div>
+                <div><dt>Máximo em 2026</dt><dd>R$ 4,72</dd></div>
+              </dl>
+            </article>
+            
+
+            <article class="card">
+              <p class="eyebrow">GASOLINA ADITIVADA · R$/l</p>
+              <strong>R$ 6,72</strong>
+              <span>última semana</span>
+              <dl>
+                <div><dt>Variação semanal</dt><dd>-0,15%</dd></div>
+                <div><dt>Desde início do ano</dt><dd>+3,23%</dd></div>
+                <div><dt>Mínimo em 2026</dt><dd>R$ 6,50</dd></div>
+                <div><dt>Máximo em 2026</dt><dd>R$ 6,98</dd></div>
+              </dl>
+            </article>
+            
+
+            <article class="card">
+              <p class="eyebrow">GASOLINA COMUM · R$/l</p>
+              <strong>R$ 6,55</strong>
+              <span>última semana</span>
+              <dl>
+                <div><dt>Variação semanal</dt><dd>+0,00%</dd></div>
+                <div><dt>Desde início do ano</dt><dd>+4,13%</dd></div>
+                <div><dt>Mínimo em 2026</dt><dd>R$ 6,28</dd></div>
+                <div><dt>Máximo em 2026</dt><dd>R$ 6,78</dd></div>
+              </dl>
+            </article>
+            
+
+            <article class="card">
+              <p class="eyebrow">GLP · R$/13kg</p>
+              <strong>R$ 114,88</strong>
+              <span>última semana</span>
+              <dl>
+                <div><dt>Variação semanal</dt><dd>+0,07%</dd></div>
+                <div><dt>Desde início do ano</dt><dd>+4,08%</dd></div>
+                <div><dt>Mínimo em 2026</dt><dd>R$ 109,67</dd></div>
+                <div><dt>Máximo em 2026</dt><dd>R$ 114,98</dd></div>
+              </dl>
+            </article>
+            
+
+            <article class="card">
+              <p class="eyebrow">GNV · R$/m³</p>
+              <strong>R$ 4,74</strong>
+              <span>última semana</span>
+              <dl>
+                <div><dt>Variação semanal</dt><dd>-0,21%</dd></div>
+                <div><dt>Desde início do ano</dt><dd>+5,80%</dd></div>
+                <div><dt>Mínimo em 2026</dt><dd>R$ 4,33</dd></div>
+                <div><dt>Máximo em 2026</dt><dd>R$ 4,76</dd></div>
+              </dl>
+            </article>
+            
+
+            <article class="card">
+              <p class="eyebrow">OLEO DIESEL · R$/l</p>
+              <strong>R$ 6,90</strong>
+              <span>última semana</span>
+              <dl>
+                <div><dt>Variação semanal</dt><dd>+0,73%</dd></div>
+                <div><dt>Desde início do ano</dt><dd>+14,05%</dd></div>
+                <div><dt>Mínimo em 2026</dt><dd>R$ 6,03</dd></div>
+                <div><dt>Máximo em 2026</dt><dd>R$ 7,45</dd></div>
+              </dl>
+            </article>
+            
+
+            <article class="card">
+              <p class="eyebrow">OLEO DIESEL S10 · R$/l</p>
+              <strong>R$ 7,35</strong>
+              <span>última semana</span>
+              <dl>
+                <div><dt>Variação semanal</dt><dd>+0,27%</dd></div>
+                <div><dt>Desde início do ano</dt><dd>+20,10%</dd></div>
+                <div><dt>Mínimo em 2026</dt><dd>R$ 6,09</dd></div>
+                <div><dt>Máximo em 2026</dt><dd>R$ 7,58</dd></div>
+              </dl>
+            </article>
+            
+      </div>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <p class="eyebrow">Série temporal</p>
+        <h2>Evolução dos preços</h2>
+      </div>
+      <figure class="panel">
+        <img
+          src="assets/tendencia_brasil_2026.png"
+          alt="Tendência dos preços médios no Brasil em 2026"
+        />
+        <figcaption>
+          Indicador mensal derivado das observações semanais oficiais, com painéis separados por unidade de medida.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="two-column">
+      <div>
+        <div class="section-heading">
+          <p class="eyebrow">Geografia</p>
+          <h2>Ranking por UF</h2>
+        </div>
+        <div class="panel table-panel">
+          <p class="note">Série: GASOLINA COMUM · R$/l · semana 27/09/2026 a 03/10/2026</p>
+          <table>
+            <thead>
+              <tr>
+                <th>UF</th>
+                <th>Preço médio</th>
+                <th>Postos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>RR</td><td>R$ 7,56</td><td>15</td></tr>
+<tr><td>RO</td><td>R$ 7,42</td><td>54</td></tr>
+<tr><td>AC</td><td>R$ 7,25</td><td>11</td></tr>
+<tr><td>AM</td><td>R$ 7,06</td><td>54</td></tr>
+<tr><td>CE</td><td>R$ 6,97</td><td>121</td></tr>
+<tr><td>SE</td><td>R$ 6,97</td><td>40</td></tr>
+<tr><td>TO</td><td>R$ 6,95</td><td>49</td></tr>
+<tr><td>PE</td><td>R$ 6,93</td><td>171</td></tr>
+<tr><td>MT</td><td>R$ 6,90</td><td>83</td></tr>
+<tr><td>PI</td><td>R$ 6,82</td><td>59</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-heading">
+          <p class="eyebrow">Qualidade</p>
+          <h2>Cobertura dos dados</h2>
+        </div>
+        <div class="quality-grid">
+          
+      <article class="metric">
+        <span>Série agregada</span>
+        <strong>passed</strong>
+      </article>
+      <article class="metric">
+        <span>Dados por posto</span>
+        <strong>passed</strong>
+      </article>
+      <article class="metric">
+        <span>Municípios cobertos</span>
+        <strong>417</strong>
+      </article>
+      <article class="metric">
+        <span>Postos distintos</span>
+        <strong>8271</strong>
+      </article>
+    
+        </div>
+      </div>
+    </section>
+
+    <section class="two-column">
+      <figure class="panel">
+        <img
+          src="assets/ranking_ufs_gasolina.png"
+          alt="Ranking dos maiores preços médios por UF"
+        />
+        <figcaption>
+          Até 10 UFs na mesma semana, produto e unidade de medida.
+        </figcaption>
+      </figure>
+      <figure class="panel">
+        <img
+          src="assets/etanol_gasolina_municipios.png"
+          alt="Relação entre preços de etanol e gasolina por município"
+        />
+        <figcaption>
+          Cada município usa sua semana comparável mais recente, sempre na mesma unidade.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <p class="eyebrow">Mercado por posto</p>
+        <h2>Dispersão e bandeiras</h2>
+      </div>
+      <div class="two-column">
+        <figure class="panel">
+          <img
+            src="assets/dispersao_municipios_postos.png"
+            alt="Dispersão dos preços observados por município"
+          />
+          <figcaption>
+            Até 12 municípios com maior intervalo interquartil, entre recortes com pelo menos 3 postos, na mesma coleta.
+          </figcaption>
+        </figure>
+        <figure class="panel">
+          <img
+            src="assets/mediana_bandeiras_postos.png"
+            alt="Mediana dos preços observados por bandeira"
+          />
+          <figcaption>
+            Até 10 bandeiras com maior cobertura entre as que atingem a amostra mínima, na mesma coleta.
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="method">
+      <p class="eyebrow">Metodologia</p>
+      <h2>Leitura responsável</h2>
+      <p>
+        Os agregados nacionais, regionais e estaduais preservam os
+        indicadores publicados pela ANP. Cálculos derivados pelo projeto
+        são identificados separadamente. Valores extremos não são removidos
+        automaticamente.
+      </p>
+      <p>
+        <a
+          href="https://github.com/peedrovinicius/observatorio-combustiveis-brasil/blob/main/docs/resultados-2026.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Relatório detalhado</a>
+        <span aria-hidden="true"> · </span>
+        <a
+          href="https://github.com/peedrovinicius/observatorio-combustiveis-brasil"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Documentação técnica</a>
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      Fonte: Agência Nacional do Petróleo, Gás Natural e Biocombustíveis.
+    </div>
+  </footer>
+</body>
+</html>

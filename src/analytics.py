@@ -9,6 +9,17 @@ from .quality import build_quality_report
 
 ANALYTICS_DIR = PROCESSED_DIR / "analytics"
 
+STATE_CODES = {
+    "ACRE": "AC", "ALAGOAS": "AL", "AMAPA": "AP", "AMAZONAS": "AM",
+    "BAHIA": "BA", "CEARA": "CE", "DISTRITO FEDERAL": "DF",
+    "ESPIRITO SANTO": "ES", "GOIAS": "GO", "MARANHAO": "MA",
+    "MATO GROSSO": "MT", "MATO GROSSO DO SUL": "MS", "MINAS GERAIS": "MG",
+    "PARA": "PA", "PARAIBA": "PB", "PARANA": "PR", "PERNAMBUCO": "PE",
+    "PIAUI": "PI", "RIO DE JANEIRO": "RJ", "RIO GRANDE DO NORTE": "RN",
+    "RIO GRANDE DO SUL": "RS", "RONDONIA": "RO", "RORAIMA": "RR",
+    "SANTA CATARINA": "SC", "SAO PAULO": "SP", "SERGIPE": "SE", "TOCANTINS": "TO",
+}
+
 KPI_COLUMNS = [
     "produto",
     "unidade_medida",
@@ -94,6 +105,16 @@ def _prepare(frame: pd.DataFrame) -> pd.DataFrame:
         )
 
     working = frame.copy()
+    if "estado" in working.columns:
+        states = (
+            working["estado"].astype("string").str.strip().str.upper()
+            .str.normalize("NFKD").str.encode("ascii", errors="ignore").str.decode("ascii")
+        )
+        inferred_uf = states.map(STATE_CODES)
+        if "uf" in working.columns:
+            working["uf"] = working["uf"].astype("string").replace("", pd.NA).fillna(inferred_uf)
+        else:
+            working["uf"] = inferred_uf
     working["data_inicial"] = pd.to_datetime(
         working["data_inicial"],
         errors="coerce",
